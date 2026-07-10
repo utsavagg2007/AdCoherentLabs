@@ -120,7 +120,7 @@ Score extraction layers (entities, segments, claims, routing) against gold label
 ```bash
 python3 -m eval.run_eval
 ```
-*Evaluates recall, precision, and accuracy against quality bars defined in [eval/run_eval.py](file:///home/shadowxlord/AdCoherentLabs/eval/run_eval.py).*
+*Evaluates recall, precision, and accuracy against quality bars defined in [eval/run_eval.py](eval/run_eval.py).*
 
 ### Run Rule Engine Mutation Tests
 Validate that the rule engine catches corrupted/mutated LLM output scenarios:

@@ -4,8 +4,10 @@ These feed ``schema.CVFinding`` values: numbers only, never judgments.
 Whether 4.2:1 contrast on a disclosure is acceptable is the rule
 engine's call, not this module's.
 
-No ML, no I/O, no external calls — every function is deterministic
-arithmetic over its arguments.
+No ML and no file I/O — every function is deterministic arithmetic over
+its arguments. ``estimate_region_contrast`` additionally samples an
+image array that is *passed in* (the caller does any file reading), so
+this module still never touches the filesystem or the network.
 """
 
 from __future__ import annotations
@@ -37,6 +39,47 @@ def contrast_ratio(rgb_fg: tuple, rgb_bg: tuple) -> float:
     l2 = relative_luminance(rgb_bg)
     lighter, darker = max(l1, l2), min(l1, l2)
     return (lighter + 0.05) / (darker + 0.05)
+
+
+def estimate_region_contrast(image, bbox: tuple) -> float | None:
+    """Best-effort WCAG contrast of a text region against its background.
+
+    ``image`` is an OpenCV BGR array; ``bbox`` is (x, y, w, h) normalized
+    to [0, 1]. The region is split into two luminance clusters by Otsu's
+    threshold (text strokes vs. background); the mean color of each
+    cluster is taken as one side of the pair. ``contrast_ratio`` is
+    symmetric, so which cluster is "foreground" does not matter.
+
+    Returns None (not an exception) when the region is too small or
+    single-colored to estimate — callers simply emit no finding then.
+    Approximate by nature (anti-aliasing, gradients, imagery behind
+    text), so it is evidence for the rule engine, not a verdict.
+    """
+    import cv2
+    import numpy as np
+
+    h_img, w_img = image.shape[:2]
+    x, y, w, h = bbox
+    x0, y0 = int(round(x * w_img)), int(round(y * h_img))
+    x1, y1 = int(round((x + w) * w_img)), int(round((y + h) * h_img))
+    x0, x1 = max(0, min(x0, w_img - 1)), max(0, min(x1, w_img))
+    y0, y1 = max(0, min(y0, h_img - 1)), max(0, min(y1, h_img))
+    if x1 - x0 < 2 or y1 - y0 < 2:
+        return None
+    crop = image[y0:y1, x0:x1]
+    if crop.size == 0:
+        return None
+    gray = cv2.cvtColor(crop, cv2.COLOR_BGR2GRAY)
+    thresh, _ = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    pixels = crop.reshape(-1, 3)
+    mask = gray.reshape(-1) <= thresh
+    dark, light = pixels[mask], pixels[~mask]
+    if len(dark) == 0 or len(light) == 0:
+        return None
+    db, lb = dark.mean(axis=0), light.mean(axis=0)  # BGR
+    fg = (float(db[2]), float(db[1]), float(db[0]))  # -> RGB
+    bg = (float(lb[2]), float(lb[1]), float(lb[0]))
+    return contrast_ratio(fg, bg)
 
 
 def text_height_pct(box_height_px: float, image_height_px: float) -> float:

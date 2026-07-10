@@ -165,7 +165,17 @@ def score_corpus(corpus: list[dict], tier: str = "free") -> dict:
 
     for gold in corpus:
         pred = analyze_asset(gold, tier=tier)
-        ent_results.append(scorer.entity_metrics(gold["entities"], pred.get("entities", [])))
+        # Align predicted segments to gold by text/bbox overlap and remap
+        # ids, so entity/claim/CV scoring credits correct extraction on
+        # re-segmented OCR output instead of penalizing id drift.
+        mapping = scorer.align_segment_ids(gold["segments"], pred.get("segments", []))
+        pred = scorer.remap_segment_ids(pred, mapping)
+        # Entities in value mode: same type + normalized value (span-
+        # agnostic), the mode built for OCR assets whose char spans never
+        # line up with gold.
+        ent_results.append(
+            scorer.entity_metrics(gold["entities"], pred.get("entities", []),
+                                  match_mode="value"))
         seg_results.append(scorer.segment_metrics(gold["segments"], pred.get("segments", [])))
         claim_results.append(
             scorer.claim_metrics(gold["claim_candidates"], pred.get("claim_candidates", []))

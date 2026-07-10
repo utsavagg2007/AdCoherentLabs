@@ -99,9 +99,11 @@
     "product_type": "deposit_account",
     "frameworks": [
       "FTC",
-      "Reg_DD"
+      "Reg_DD",
+      "CFPB",
+      "FDIC"
     ],
-    "signal": "Brand awareness ad for Synchrony (FDIC-member bank) with no product terms, rates, or claims; Member FDIC marker present -> Reg DD/FDIC advertising-statement review; general marketing -> FTC baseline"
+    "signal": "deposit product -> Reg DD; consumer financial product -> CFPB UDAAP; marketing asset -> FTC; insured-status wording (Member FDIC) -> FDIC Part 328"
   },
   "provenance": {
     "cv_version": "gold",

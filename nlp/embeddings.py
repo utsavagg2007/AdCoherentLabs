@@ -13,9 +13,15 @@ rule-based in ``nlp.entities`` and must never route through this module.
 
 from __future__ import annotations
 
+import functools
 import os
 
 MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
+
+# MiniLM-L6 truncates at 256 word-pieces; encoding a whole long asset
+# would silently score only an arbitrary prefix. Callers (routing) cap
+# their input to roughly this many characters before comparing.
+MAX_INPUT_CHARS = 1000
 
 _model = None  # loaded once, reused for every call
 
@@ -30,18 +36,33 @@ def _get_model():
     return _model
 
 
+@functools.lru_cache(maxsize=512)
+def _unit_vector(text: str):
+    """L2-normalized embedding for one text, memoized.
+
+    The fallbacks compare each segment against a small fixed set of
+    reference sentences, so caching per-text unit vectors means every
+    reference is encoded exactly once (ever) and each distinct segment
+    exactly once — instead of re-encoding both sides on every pairwise
+    call. Vectors are treated as read-only.
+    """
+    return _get_model().encode(text, convert_to_numpy=True,
+                               normalize_embeddings=True)
+
+
 def embed_text(text: str) -> list[float]:
     """Embedding vector for one text (384 floats for MiniLM-L6)."""
-    vec = _get_model().encode(text, convert_to_numpy=True)
-    return vec.tolist()
+    return _unit_vector(text).tolist()
 
 
 def semantic_similarity(text_a: str, text_b: str) -> float:
-    """Cosine similarity of the two texts' embeddings, in [-1, 1]."""
-    embs = _get_model().encode(
-        [text_a, text_b], convert_to_numpy=True, normalize_embeddings=True
-    )
-    return float(embs[0] @ embs[1])
+    """Cosine similarity of the two texts' embeddings, in [-1, 1].
+
+    Both operands are cached unit vectors (see :func:`_unit_vector`), so
+    repeated comparisons against the same reference sentences reuse a
+    single encode.
+    """
+    return float(_unit_vector(text_a) @ _unit_vector(text_b))
 
 
 def get_embedding_model_version() -> str:

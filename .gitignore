@@ -12,6 +12,35 @@ pnpm-debug.log*
 .venv/
 __pycache__/
 *.pyc
+*.pyo
+*.egg-info/
+
+# Testing artifacts
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.tox/
+.hypothesis/
+test-results/
+junit*.xml
+
+# Temporary logs / outputs / benchmarks
+*.log
+*.tmp
+shakedown_report.md
+eval/results/*.csv
+benchmark*/
+*.prof
+
+# Generated images / files from test runs
+*.generated.png
+*.generated.jpg
+
+# Local environment
+.envrc
+.python-version
 
 # Claude/IDE settings
 .claude/

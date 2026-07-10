@@ -1,8 +1,19 @@
 {
   "asset_id": "1291568653069566",
   "findings": [],
-  "reviewed_clear": ["seg_1", "seg_2", "seg_3", "seg_4", "seg_5"],
-  "frameworks_evaluated": ["FTC", "Reg_DD"],
+  "reviewed_clear": [
+    "seg_1",
+    "seg_2",
+    "seg_3",
+    "seg_4",
+    "seg_5"
+  ],
+  "frameworks_evaluated": [
+    "FTC",
+    "Reg_DD",
+    "CFPB",
+    "FDIC"
+  ],
   "llm_meta": {
     "model": "claude-fable-5",
     "prompt_version": "compliance-review-v1.3",

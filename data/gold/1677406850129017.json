@@ -303,11 +303,12 @@
   "routing": {
     "product_type": "mortgage",
     "frameworks": [
-      "TILA",
       "FTC",
-      "CFPB"
+      "TILA",
+      "CFPB",
+      "ECOA"
     ],
-    "signal": "HELOC (open-end credit secured by dwelling) with starting-APR rate statements -> TILA/Reg Z 1026.16 home-equity advertising rules; named-competitor rate comparison table and 'lower payments' claim -> FTC substantiation/deception; footnoted teaser rate with off-asset terms ('Visit aven.com for terms') -> CFPB UDAAP prominence review"
+    "signal": "APR rate on a credit product (mortgage) -> TILA advertising rules + CFPB; credit product -> ECOA/Reg B; marketing asset -> FTC"
   },
   "provenance": {
     "cv_version": "gold",

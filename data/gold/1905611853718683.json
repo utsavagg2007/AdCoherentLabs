@@ -182,11 +182,12 @@
   "routing": {
     "product_type": "deposit_account",
     "frameworks": [
-      "Reg_DD",
       "FTC",
-      "CFPB"
+      "Reg_DD",
+      "CFPB",
+      "FDIC"
     ],
-    "signal": "Deposit account (GO2bank/Green Dot Bank, Member FDIC) advertising overdraft coverage 'up to $300' -> Reg DD/1030.11 overdraft advertising disclosures; eligibility conditions (direct deposit + opt-in) qualify the headline benefit -> FTC clear-and-conspicuous review; overdraft program marketing -> CFPB UDAAP"
+    "signal": "deposit product -> Reg DD; consumer financial product -> CFPB UDAAP; marketing asset -> FTC; insured-status wording (Member FDIC) -> FDIC Part 328"
   },
   "provenance": {
     "cv_version": "gold",

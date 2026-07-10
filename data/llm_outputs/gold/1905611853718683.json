@@ -6,8 +6,13 @@
       "framework": "Reg_DD",
       "severity": "low",
       "verdict": "compliant",
-      "cited_segment_ids": ["seg_1", "seg_2"],
-      "cited_entity_ids": ["ent_1"],
+      "cited_segment_ids": [
+        "seg_1",
+        "seg_2"
+      ],
+      "cited_entity_ids": [
+        "ent_1"
+      ],
       "quoted_evidence": "Overdraft protection up to $300",
       "claim_candidate_id": "clm_1",
       "reasoning": "The overdraft coverage amount is stated as a ceiling ('up to $300') with its eligibility conditions disclosed immediately adjacent ('with eligible direct deposits and opt-in'), and the fine print directs to full fee terms at the product page. The advertisement does not state a rate of return, so § 1030.8(b) APY phrasing is not implicated; the bonus-disclosure requirements of § 1030.8(d) are not triggered because no bonus is offered."
@@ -17,15 +22,27 @@
       "framework": "FTC",
       "severity": "low",
       "verdict": "compliant",
-      "cited_segment_ids": ["seg_4"],
-      "cited_entity_ids": ["ent_2"],
+      "cited_segment_ids": [
+        "seg_4"
+      ],
+      "cited_entity_ids": [
+        "ent_2"
+      ],
       "quoted_evidence": "Fees, terms and conditions apply.",
       "claim_candidate_id": null,
       "reasoning": "The coverage claim is qualified in the same creative: the fee caveat and the issuing-bank attribution are present in the fine print, and the app screenshot depicts account features rather than making additional claims. No deceptive net impression identified."
     }
   ],
-  "reviewed_clear": ["seg_3", "seg_5"],
-  "frameworks_evaluated": ["Reg_DD", "FTC", "CFPB"],
+  "reviewed_clear": [
+    "seg_3",
+    "seg_5"
+  ],
+  "frameworks_evaluated": [
+    "Reg_DD",
+    "FTC",
+    "CFPB",
+    "FDIC"
+  ],
   "llm_meta": {
     "model": "claude-fable-5",
     "prompt_version": "compliance-review-v1.3",

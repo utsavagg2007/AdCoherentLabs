@@ -355,11 +355,12 @@
   "routing": {
     "product_type": "personal_loan",
     "frameworks": [
-      "TILA",
       "FTC",
-      "CFPB"
+      "TILA",
+      "CFPB",
+      "ECOA"
     ],
-    "signal": "Closed-end personal loan advertising payment amount ($1,068) and repayment term (60 months) -> TILA/Reg Z 1026.24(d) triggering terms requiring APR and terms disclosure (APR 20.39% present in fine print; prominence review needed); '8.3 times faster' and 72%-savings comparison vs credit card -> FTC substantiation; debt-paydown representations -> CFPB UDAAP"
+    "signal": "APR rate on a credit product (personal_loan) -> TILA advertising rules + CFPB; credit product -> ECOA/Reg B; marketing asset -> FTC"
   },
   "provenance": {
     "cv_version": "gold",

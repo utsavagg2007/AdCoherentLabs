@@ -20,9 +20,13 @@ import hashlib
 import inspect
 import json
 
-#: Bump on any semantic change to checks, lexicons, or thresholds.
-#: History: 1.0.0 taxonomy v1 (45 checks); 1.1.0 review/asset scope split.
-RULESET_VERSION = "1.1.0"
+#: Bump on any semantic change to checks, lexicons, thresholds, or the
+#: state table.
+#: History: 1.0.0 taxonomy v1 (45 checks); 1.1.0 review/asset scope
+#: split; 1.2.0 state UDAP metadata table added to the ruleset;
+#: 1.3.0 STATE_UDAP checks (taxonomy §6, 4 checks); 1.3.1 ALL-GRD-005
+#: evidence enriched with valid-id counts.
+RULESET_VERSION = "1.3.1"
 
 _cache: dict[tuple, str] = {}
 
@@ -48,10 +52,23 @@ def ruleset_hash(registry: dict | None = None) -> str:
     if registry is None:
         from rule_engine.core import CHECK_REGISTRY
         registry = CHECK_REGISTRY
-    key = tuple(sorted(registry))
-    if key not in _cache:
-        from rule_engine import checks_universal, lexicons
+    from rule_engine import checks_universal, lexicons, state_udap_table
 
+    # Cache key must cover everything the hash covers, not just the set of
+    # check ids: an in-process edit to a check's source or a lexicon/
+    # threshold bump has to invalidate the cache, otherwise the returned
+    # hash contradicts the docstring's promise that "any edit changes the
+    # hash". Per-check source is included directly; lexicon/threshold/state
+    # tables are covered by their version strings (the module contract is
+    # to bump those on any change).
+    key = (
+        RULESET_VERSION,
+        tuple((cid, c.scope, tuple(c.families), tuple(c.frameworks),
+               _source_of(c.fn)) for cid, c in sorted(registry.items())),
+        lexicons.LEXICON_VERSION, lexicons.THRESHOLDS_VERSION,
+        state_udap_table.STATE_TABLE_VERSION, checks_universal.NUM_TOL,
+    )
+    if key not in _cache:
         payload = {
             "ruleset_version": RULESET_VERSION,
             "checks": {
@@ -68,6 +85,8 @@ def ruleset_hash(registry: dict | None = None) -> str:
                            "HEIGHT_MIN_PCT": lexicons.HEIGHT_MIN_PCT,
                            "APR_HEIGHT_RATIO_MIN": lexicons.APR_HEIGHT_RATIO_MIN,
                            "NUM_TOL": checks_universal.NUM_TOL},
+            "state_udap": {"version": state_udap_table.STATE_TABLE_VERSION,
+                           "table": state_udap_table.STATE_UDAP_TABLE},
         }
         blob = json.dumps(payload, sort_keys=True).encode()
         _cache[key] = hashlib.sha256(blob).hexdigest()[:16]

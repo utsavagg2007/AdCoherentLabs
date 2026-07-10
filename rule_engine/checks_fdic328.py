@@ -1,11 +1,13 @@
 """FDIC Part 328 checks — §4 of docs/check_taxonomy.md (12 CFR Part 328).
 
 Deliberately separate from Reg DD: Part 328 governs WHO may claim FDIC
-insurance and HOW; Reg DD governs deposit terms. schema.Framework has no
-FDIC value yet (taxonomy change request #1), so no finding can be filed
-under Part 328 — every check here keys exclusively on LEX:FDIC matches
-in the asset plus the coverage record, never on product routing, and all
-register universally ("*").
+insurance and HOW; Reg DD governs deposit terms. schema.Framework.FDIC
+now exists (added in the 2026-07-10 bump), so findings can be filed under
+Part 328. These checks still register universally ("*") and key
+exclusively on LEX:FDIC matches in the asset plus the coverage record,
+never on product routing — insured-status wording ("Member FDIC") appears
+on brand ads, hybrid ads, and misrepresentations alike, so wording-keyed
+triggering is intentional and broader than any single routed framework.
 One function per check_id; docstring = taxonomy row.
 """
 
@@ -146,8 +148,8 @@ def fdic328_con_001_regdd_only_treatment(ctx: CheckContext) -> CheckResult:
     Trigger: LEX:FDIC matches segment S AND >=1 finding cites S.
     Fail: every finding citing S has framework = Reg_DD — insured-status
     treated purely as a deposit-terms issue (mirror of REGDD-CON-001;
-    advisory until Framework.FDIC exists; expected interim frameworks:
-    CFPB or FTC).
+    now that Framework.FDIC exists, findings on insured-status wording
+    should cite FDIC — or at least CFPB/FTC — not Reg_DD alone).
     Evidence: finding ids + frameworks, S id.
     """
     hits = _fdic_segments(ctx)

@@ -197,7 +197,9 @@ python3 eval/test_rule_engine.py       # mutation matrix; exits 0 iff catch rate
 | `core.py` | CheckResult/CheckContext/EngineReport, registry, `run_checks` |
 | `checks_universal.py` | 15 `ALL-*` checks (run on every asset) |
 | `checks_ftc5.py` / `checks_regz.py` / `checks_regdd.py` / `checks_fdic328.py` / `checks_regb.py` | 30 framework checks (FTC §5, Reg Z/TILA, Reg DD, FDIC Part 328, ECOA/Reg B) |
+| `checks_state_udap.py` | 4 STATE_UDAP checks, parameterized per state (taxonomy §6) |
 | `lexicons.py` | versioned lexicons + thresholds (taxonomy Appendices A/B) |
+| `state_udap_table.py` | compiled per-state statute metadata (taxonomy Appendix D) |
 | `version.py` | `RULESET_VERSION`, `ruleset_hash()` |
 | `orchestrator.py` | `evaluate_with_retry`, `build_retry_payload`, `FinalResult` |
 | `../docs/check_taxonomy.md` | the check definitions this package implements |
@@ -205,13 +207,16 @@ python3 eval/test_rule_engine.py       # mutation matrix; exits 0 iff catch rate
 
 ## Known gaps (tracked in the taxonomy's change-request list)
 
-- `schema.Framework` now has `FDIC` (added 2026-07-10), but the router does
-  not emit it yet, so FDIC checks still key on wording, not routing.
-  `STATE_UDAP` also exists as an umbrella framework value; state checks are
-  a future phase gated on `AssetRepresentation.target_jurisdictions`
-  (user-supplied ad-targeting codes; empty = state checks don't run).
-- The router never emits `ECOA`, so ECOA routing-coverage checks are vacuous
-  until it does; Reg B checks gate on product type + lexicon instead.
-- FDIC-insured-status wording currently influences deposit routing (the
-  REGDD-CON-001 / FDIC328-CON-001 mirror pair polices the resulting
-  conflation from both sides).
+- All three original change requests are implemented as of 2026-07-10: the
+  router emits `FDIC` on insured-status wording (no longer conflated with
+  deposit routing), `ECOA` on credit products, and `STATE_UDAP` when
+  `target_jurisdictions` contains a US state code. FDIC checks still key on
+  wording (correct — who-insures wording is independent of product), and the
+  REGDD-CON-001 / FDIC328-CON-001 mirror pair still polices misfiled findings.
+- Gold/silver routing labels predate the FDIC/ECOA/STATE_UDAP policy and need
+  a refresh before routing exact-match metrics are meaningful again.
+- State (`STATE_UDAP`) checks exist (taxonomy §6, `checks_state_udap.py`),
+  gated on `target_jurisdictions` routing. Before relying on per-state
+  `credit_exempt` gating, work the VERIFY list in `state_udap_table.py`
+  against the NCLC 50-state report; statute-level per-state checks beyond
+  the Utah Truth in Advertising Act remain future work.

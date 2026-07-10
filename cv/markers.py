@@ -21,6 +21,17 @@ _MARKER_PATTERNS = [
 
 _METHOD = "regex_marker_v1"
 
+# Footnote markers: a leading asterisk/dagger flags text as a footnote
+# whose referent must carry a matching disclosure. Gold labels this as
+# marker_presence via an "asterisk_footnote_detector"; detecting it here
+# lets the pipeline emit comparable findings (e.g. "*72% Savings...").
+_FOOTNOTE_RE = re.compile(r"^\s*[*†‡]\S")
+_FOOTNOTE_METHOD = "asterisk_footnote_detector"
+
+
+def has_footnote_marker(text: str) -> bool:
+    return bool(_FOOTNOTE_RE.match(text or ""))
+
 
 def _line_text(line) -> str:
     if isinstance(line, str):

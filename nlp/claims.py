@@ -58,7 +58,10 @@ _KEYWORD_CLAIMS = {
         re.IGNORECASE),
     "pricing": re.compile(
         r"\b(?:no|zero|0\$?) (?:\w+\s)?fees?\b|\bfree\b|\blow(?:er|est)? "
-        r"(?:rates?|price|cost)\b|\bcash back\b|\b\$\d|\d+(?:\.\d+)?%",
+        # \$\d (not \b\$\d): "$" is non-word, so a \b before it never
+        # matches after a space or at string start — "Get $500 today"
+        # would silently miss. A negative lookbehind still blocks "US$5".
+        r"(?:rates?|price|cost)\b|\bcash back\b|(?<!\w)\$\d|\d+(?:\.\d+)?%",
         re.IGNORECASE),
 }
 
@@ -84,13 +87,31 @@ _SEMANTIC_REFERENCES = {
 }
 
 
+def _worth_semantic(text: str) -> bool:
+    """Gate the (expensive, model-backed) fallback to real prose.
+
+    OCR junk segments ("M", "yes", "BMO") would each cost a full set of
+    encodes for a near-random score, so require at least a few words and
+    a minimum of alphabetic content before consulting the embeddings.
+    """
+    stripped = text.strip()
+    if len(stripped) < 12 or len(stripped.split()) < 3:
+        return False
+    return sum(c.isalpha() for c in stripped) >= 8
+
+
 def _semantic_claims(text: str) -> list[tuple[str, float]]:
     """(claim_type, score) for every reference the text clears the
-    threshold against."""
-    from nlp.embeddings import semantic_similarity
+    threshold against. Returns [] (never raises) if the embedding
+    backend is unavailable — offline/cold-cache degrades to rules-only.
+    """
+    try:
+        from nlp.embeddings import semantic_similarity
 
-    return [(ctype, score) for ctype, ref in _SEMANTIC_REFERENCES.items()
-            if (score := semantic_similarity(text, ref)) >= SEMANTIC_CLAIM_THRESHOLD]
+        return [(ctype, score) for ctype, ref in _SEMANTIC_REFERENCES.items()
+                if (score := semantic_similarity(text, ref)) >= SEMANTIC_CLAIM_THRESHOLD]
+    except Exception:  # noqa: BLE001 — a missing model must not crash the pipeline
+        return []
 
 
 def _get(obj, key):
@@ -127,7 +148,7 @@ def detect_claims(segments: list, entities: list) -> list[dict]:
         # Rules produced nothing for this segment -> semantic fallback.
         # pattern_id 'sem_<type>:<score>' marks these as similarity hits,
         # not pattern matches.
-        if not triggers:
+        if not triggers and _worth_semantic(text):
             for ctype, score in _semantic_claims(text):
                 triggers[ctype] = f"sem_{ctype}:{score:.2f}"
 

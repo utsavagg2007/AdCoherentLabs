@@ -154,8 +154,10 @@ def all_grd_004_quotes_verbatim(ctx: CheckContext) -> CheckResult:
 def all_grd_005_reviewed_clear_resolves(ctx: CheckContext) -> CheckResult:
     """ALL-GRD-005 (grounding, ALL, medium).
     Trigger: L.reviewed_clear non-empty.
-    Fail: some entry resolves to neither a segment_id nor a claim_id in A.
-    Evidence: unresolved entries.
+    Fail: some entry resolves to neither a segment_id nor a claim_id in A
+    — grounding-flavored coverage: an LLM cannot claim to have reviewed
+    something that doesn't exist.
+    Evidence: the unresolvable entries plus counts of valid ids.
     """
     unresolved = [e for e in ctx.llm.reviewed_clear
                   if e not in ctx.segment_by_id and e not in ctx.claim_by_id]
@@ -163,12 +165,16 @@ def all_grd_005_reviewed_clear_resolves(ctx: CheckContext) -> CheckResult:
         return CheckResult(
             check_id="ALL-GRD-005", passed=False, severity="medium",
             message="reviewed_clear lists ids that do not exist in the asset",
-            evidence={"unresolved_entries": unresolved},
+            evidence={"unresolved_entries": unresolved,
+                      "valid_segment_ids": len(ctx.segment_by_id),
+                      "valid_claim_ids": len(ctx.claim_by_id)},
         )
     return CheckResult(
         check_id="ALL-GRD-005", passed=True, severity="medium",
         message="all reviewed_clear entries resolve",
-        evidence={"entries_checked": len(ctx.llm.reviewed_clear)},
+        evidence={"entries_checked": len(ctx.llm.reviewed_clear),
+                  "valid_segment_ids": len(ctx.segment_by_id),
+                  "valid_claim_ids": len(ctx.claim_by_id)},
     )
 
 

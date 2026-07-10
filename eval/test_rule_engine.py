@@ -40,29 +40,31 @@ _CREDIT = {"credit_card", "personal_loan", "mortgage", "auto_loan", "bnpl"}
 _CLOSED_END = {"personal_loan", "mortgage", "auto_loan", "bnpl"}
 _NUM_RE = re.compile(r"\$\d[\d,]*(?:\.\d+)?|\d+(?:\.\d+)?%")
 
-#: Output-sensitive framework checks that no gold asset can exercise via
-#: an LLMOutput mutation — their triggers are asset-gated and absent from
-#: this corpus. All have synthetic-fixture coverage (framework check
-#: fixtures built alongside the check modules).
-NOT_EXERCISABLE = {
-    "FTC5-COV-003": "no gold credit asset carries guaranteed-approval language",
-    "REGZ-SEV-001": "requires a trigger-terms-without-APR asset; all TILA gold assets disclose APR",
-    "REGDD-COV-002": "no gold deposit asset has rate/free/bonus deposit-terms triggers",
-    "REGDD-SEV-001": "requires a free-claim + positive-fee contradiction in the asset",
-    "FDIC328-SEV-001": "requires FDIC wording on an uninsurable product (investment/crypto/insurance)",
-    "REGB-COV-001": "router never emits ECOA (taxonomy change request #3)",
-    "REGB-COV-002": "no prohibited-basis wording in gold credit assets",
-    "REGB-SEV-001": "no prohibited-basis wording in gold credit assets",
-}
-
 MUTATIONS: list = []
 
+#: Mutation names added in the full-coverage extension (every check in
+#: the registry now has >= 1 mutation); used for the new-only summary.
+NEW_MUTATION_NAMES: set[str] = set()
 
-def mutation(name: str, intended: list[str], allowed: list[str] = []):
-    """Register fn(asset, output) -> mutated output dict, or None if the
-    mutation is structurally inapplicable to this asset."""
+
+def mutation(name: str, intended: list[str], allowed: list[str] = [],
+             base: str | None = None, new: bool = False):
+    """Register a mutation.
+
+    fn(asset, output) may return: a mutated output dict (output-only
+    corruption), an (asset, output) tuple (asset-side corruption — the
+    route for STR checks), or None (inapplicable to this base).
+
+    ``base=None`` runs the mutation against every gold reference pair;
+    ``base="fx_<name>"`` runs it once against that fixture base pair.
+    Intended checks are asserted in the bucket their registered scope
+    dictates: review-scope in failed_checks, asset-scope in
+    asset_defects.
+    """
     def decorator(fn):
-        MUTATIONS.append((name, tuple(intended), tuple(allowed), fn))
+        MUTATIONS.append((name, tuple(intended), tuple(allowed), fn, base))
+        if new:
+            NEW_MUTATION_NAMES.add(name)
         return fn
     return decorator
 
@@ -148,6 +150,15 @@ def drop_framework_from_evaluated(asset, out):
     if not out["frameworks_evaluated"]:
         return None
     out["frameworks_evaluated"] = out["frameworks_evaluated"][1:]
+    return out
+
+
+@mutation("clear_nonexistent_id", intended=["ALL-GRD-005"])
+def clear_nonexistent_id(asset, out):
+    """Add an id to reviewed_clear that exists nowhere in the asset —
+    the LLM claims to have reviewed something that doesn't exist."""
+    out = copy.deepcopy(out)
+    out["reviewed_clear"].append("clm_does_not_exist")
     return out
 
 
@@ -361,35 +372,619 @@ def file_ecoa_finding_on_noncredit(asset, out):
 
 
 # ---------------------------------------------------------------------------
+# Fixture base pairs — minimal (asset, output) pairs that pass baseline,
+# for checks whose triggers don't exist in the gold corpus. Mutations
+# against these corrupt asset and/or output.
+# ---------------------------------------------------------------------------
+
+def _seg(i, text, role="body", bbox=None):
+    d = {"segment_id": f"seg_{i}", "text": text, "role": role,
+         "source": "text"}
+    if bbox:
+        d["bbox"] = {"x": bbox[0], "y": bbox[1],
+                     "width": bbox[2], "height": bbox[3]}
+    return d
+
+
+def _ent(i, etype, raw, segd, value=None):
+    start = segd["text"].index(raw)
+    return {"entity_id": f"ent_{i}", "entity_type": etype, "raw_text": raw,
+            "normalized_value": value, "segment_id": segd["segment_id"],
+            "char_span": {"start": start, "end": start + len(raw)}}
+
+
+def _clm(i, ctype, segd, text, ents=()):
+    start = segd["text"].index(text)
+    return {"claim_id": f"clm_{i}", "claim_type": ctype, "text": text,
+            "segment_id": segd["segment_id"],
+            "char_span": {"start": start, "end": start + len(text)},
+            "entity_ids": list(ents), "pattern_id": "fx"}
+
+
+def _cvf(fid, meas, val, sid, rel=None):
+    return {"finding_id": fid, "measurement": meas, "value": val,
+            "segment_id": sid, "related_segment_id": rel, "method": "fx"}
+
+
+def _asset(segs, product, fws, ents=(), clms=(), cv=(), juris=(),
+           aid="fx"):
+    return {"asset_id": aid, "segments": list(segs), "entities": list(ents),
+            "claim_candidates": list(clms), "cv_findings": list(cv),
+            "routing": {"product_type": product, "frameworks": list(fws),
+                        "signal": "fixture"},
+            "target_jurisdictions": list(juris),
+            "provenance": {"cv_version": "fx", "nlp_version": "fx",
+                           "ruleset_hash": "fx",
+                           "timestamp": "2026-07-10T00:00:00Z"}}
+
+
+def _fnd(fid, fw, verdict, sev, segs=(), ents=(), quote=None, claim=None,
+         reasoning="fixture review"):
+    return {"finding_id": fid, "framework": fw, "severity": sev,
+            "verdict": verdict, "cited_segment_ids": list(segs),
+            "cited_entity_ids": list(ents), "quoted_evidence": quote,
+            "claim_candidate_id": claim, "reasoning": reasoning}
+
+
+def _out(findings=(), clear=(), ev=(), aid="fx"):
+    return {"asset_id": aid, "findings": list(findings),
+            "reviewed_clear": list(clear),
+            "frameworks_evaluated": list(ev),
+            "llm_meta": {"model": "fx", "prompt_version": "fx-v0"}}
+
+
+def _fx_credit():
+    s1 = _seg(1, "Only $199 per month for 36 months", "headline",
+              (0.1, 0.1, 0.8, 0.06))
+    s2 = _seg(2, "17.5% APR. Terms and conditions apply.", "fine_print",
+              (0.1, 0.9, 0.5, 0.02))
+    a = _asset([s1, s2], "personal_loan", ["FTC", "TILA", "CFPB", "ECOA"],
+               ents=[_ent(1, "amount", "$199", s1, 199.0),
+                     _ent(2, "time_period", "36 months", s1, 1095.75),
+                     _ent(3, "apr", "17.5% APR", s2, 17.5)],
+               clms=[_clm(1, "pricing", s1, "Only $199 per month",
+                          ["ent_1"])],
+               cv=[_cvf("cvf_h1", "text_height_percent", 6.0, "seg_1"),
+                   _cvf("cvf_h2", "text_height_percent", 2.0, "seg_2"),
+                   _cvf("cvf_p1", "disclosure_proximity", 0.30,
+                        "seg_1", "seg_2")])
+    o = _out(findings=[
+        _fnd("f1", "FTC", "compliant", "low", ["seg_1"], ["ent_1"],
+             quote="Only $199 per month", claim="clm_1"),
+        _fnd("f2", "TILA", "compliant", "low", ["seg_2"], ["ent_3"],
+             quote="17.5% APR")],
+        ev=["FTC", "TILA", "CFPB", "ECOA"])
+    return a, o
+
+
+def _fx_openend():
+    s1 = _seg(1, "Annual fee $95 on the Platinum credit card")
+    s2 = _seg(2, "19.9% APR applies after the intro period.", "fine_print")
+    a = _asset([s1, s2], "credit_card", ["FTC", "TILA", "CFPB", "ECOA"],
+               ents=[_ent(1, "fee", "$95", s1, 95.0),
+                     _ent(2, "apr", "19.9% APR", s2, 19.9)])
+    o = _out(findings=[_fnd("f1", "TILA", "compliant", "low",
+                            ["seg_1", "seg_2"], ["ent_1", "ent_2"],
+                            quote="19.9% APR")],
+             clear=["seg_1"], ev=["FTC", "TILA", "CFPB", "ECOA"])
+    return a, o
+
+
+def _fx_deposit():
+    s1 = _seg(1, "Earn 4.50% APY on your savings account", "headline")
+    s2 = _seg(2, "Member FDIC. Terms and conditions apply.", "legal")
+    a = _asset([s1, s2], "deposit_account",
+               ["FTC", "Reg_DD", "CFPB", "FDIC"],
+               ents=[_ent(1, "rate", "4.50%", s1, 4.5)])
+    o = _out(findings=[_fnd("f1", "Reg_DD", "compliant", "low",
+                            ["seg_1"], ["ent_1"],
+                            quote="Earn 4.50% APY on your savings account")],
+             clear=["seg_2"], ev=["FTC", "Reg_DD", "CFPB", "FDIC"])
+    return a, o
+
+
+def _fx_crypto():
+    s1 = _seg(1, "Trade Bitcoin with confidence on our platform")
+    a = _asset([s1], "crypto", ["FTC", "SEC", "FINRA"])
+    o = _out(clear=["seg_1"], ev=["FTC", "SEC", "FINRA"])
+    return a, o
+
+
+def _fx_state():
+    s1 = _seg(1, "Personal loans from 5.99% APR — season's lowest price",
+              "headline")
+    s2 = _seg(2, "Rates for qualified borrowers. Terms and conditions "
+                 "apply.", "disclosure")
+    a = _asset([s1, s2], "personal_loan",
+               ["FTC", "TILA", "CFPB", "ECOA", "STATE_UDAP"],
+               ents=[_ent(1, "apr", "5.99% APR", s1, 5.99)],
+               clms=[_clm(1, "pricing", s1,
+                          "Personal loans from 5.99% APR", ["ent_1"])],
+               juris=["US-CA", "US-UT"])
+    o = _out(findings=[
+        _fnd("f_fed", "FTC", "compliant", "low", ["seg_1", "seg_2"],
+             ["ent_1"], quote="Personal loans from 5.99% APR",
+             claim="clm_1"),
+        _fnd("f_state", "STATE_UDAP", "compliant", "low", ["seg_1"],
+             reasoning="Reviewed under US-CA (Cal. Bus. & Prof. Code "
+                       "§ 17500) and US-UT (§ 13-11a): claim qualified.")],
+        clear=["seg_2"],
+        ev=["FTC", "TILA", "CFPB", "ECOA", "STATE_UDAP"])
+    return a, o
+
+
+FIXTURE_BASES = {"fx_credit": _fx_credit, "fx_openend": _fx_openend,
+                 "fx_deposit": _fx_deposit, "fx_crypto": _fx_crypto,
+                 "fx_state": _fx_state}
+
+
+# ---------------------------------------------------------------------------
+# Full-coverage mutations: one per previously-unmutated check
+# ---------------------------------------------------------------------------
+
+# ---- universal (gold-based, output-side) ----------------------------------
+
+@mutation("cite_nonexistent_entity", intended=["ALL-GRD-002"], new=True)
+def cite_nonexistent_entity(asset, out):
+    """Cite an entity id that does not exist in the asset."""
+    out = copy.deepcopy(out)
+    if not out["findings"]:
+        return None
+    out["findings"][0]["cited_entity_ids"].append("ent_does_not_exist")
+    return out
+
+
+@mutation("reference_nonexistent_claim", intended=["ALL-GRD-003"], new=True)
+def reference_nonexistent_claim(asset, out):
+    """Point a finding with no claim reference at a claim that does not
+    exist (choosing a null one avoids un-addressing a real claim)."""
+    out = copy.deepcopy(out)
+    for f in out["findings"]:
+        if f.get("claim_candidate_id") is None:
+            f["claim_candidate_id"] = "clm_does_not_exist"
+            return out
+    return None
+
+
+@mutation("adverse_finding_cites_nothing", intended=["ALL-GRD-006"],
+          new=True)
+def adverse_finding_cites_nothing(asset, out):
+    """Add an adverse finding with zero citations of any kind."""
+    out = copy.deepcopy(out)
+    out["findings"].append(_fnd("f_mut_uncited", "FTC",
+                                "potential_violation", "medium",
+                                reasoning="mutation: free-floating"))
+    return out
+
+
+@mutation("wrong_asset_id", intended=["ALL-CON-001"], new=True)
+def wrong_asset_id(asset, out):
+    """The output claims to review a different asset."""
+    out = copy.deepcopy(out)
+    out["asset_id"] = "a_completely_different_asset"
+    return out
+
+
+@mutation("invalid_framework_value", intended=["ALL-CON-003"], new=True)
+def invalid_framework_value(asset, out):
+    """frameworks_evaluated contains a value outside the Framework enum."""
+    out = copy.deepcopy(out)
+    out["frameworks_evaluated"] = out["frameworks_evaluated"] + ["NOT_A_FRAMEWORK"]
+    return out
+
+
+@mutation("compliant_rated_high", intended=["ALL-CON-004"], new=True)
+def compliant_rated_high(asset, out):
+    """A compliant verdict carrying high severity is incoherent."""
+    out = copy.deepcopy(out)
+    for f in out["findings"]:
+        if f["verdict"] == "compliant":
+            f["severity"] = "high"
+            return out
+    return None
+
+
+@mutation("orphan_framework_finding", intended=["ALL-CON-005"], new=True)
+def orphan_framework_finding(asset, out):
+    """File a finding under a framework the LLM never evaluated."""
+    out = copy.deepcopy(out)
+    out["findings"].append(_fnd("f_mut_orphan", "FCRA", "compliant", "low",
+                                [asset["segments"][0]["segment_id"]],
+                                reasoning="mutation: orphan framework"))
+    return out
+
+
+@mutation("missing_meta_key", intended=["ALL-STR-001"], new=True)
+def missing_meta_key(asset, out):
+    """Drop an audit-chain key from llm_meta."""
+    out = copy.deepcopy(out)
+    if "prompt_version" not in out["llm_meta"]:
+        return None
+    del out["llm_meta"]["prompt_version"]
+    return out
+
+
+# ---- FTC5 ------------------------------------------------------------------
+
+@mutation("uncovered_guarantee_language", intended=["FTC5-COV-003"],
+          new=True)
+def uncovered_guarantee_language(asset, out):
+    """Asset-side: inject guaranteed-approval language into a credit ad;
+    the output covers none of it."""
+    if asset["routing"]["product_type"] not in _CREDIT:
+        return None
+    asset = copy.deepcopy(asset)
+    s = _seg(90, "Guaranteed approval — no credit check!")
+    asset["segments"].append(s)
+    asset["entities"].append(
+        _ent(90, "guarantee_term", "Guaranteed approval", s))
+    return asset, copy.deepcopy(out)
+
+
+@mutation("absolute_claim_no_qualifier", intended=["FTC5-STR-001"],
+          base="fx_credit", new=True)
+def absolute_claim_no_qualifier(asset, out):
+    """Asset-side: add a superlative and demote the only disclosure-role
+    segment — absolute claim with no qualifying text anywhere."""
+    asset = copy.deepcopy(asset)
+    s = _seg(90, "America's best loan, hands down")
+    asset["segments"].append(s)
+    asset["entities"].append(_ent(90, "superlative", "best", s))
+    asset["segments"][1]["role"] = "body"
+    return asset, copy.deepcopy(out)
+
+
+@mutation("disclosure_pushed_away", intended=["FTC5-STR-002"],
+          allowed=["REGZ-STR-004"], base="fx_credit", new=True)
+def disclosure_pushed_away(asset, out):
+    """Asset-side: the measured claim->disclosure distance exceeds
+    PROX_MAX. REGZ-STR-004's proximity clause shares the same geometry
+    and fails alongside by design."""
+    asset = copy.deepcopy(asset)
+    for f in asset["cv_findings"]:
+        if f["measurement"] == "disclosure_proximity":
+            f["value"] = 0.90
+    return asset, copy.deepcopy(out)
+
+
+# ---- Reg Z ------------------------------------------------------------------
+
+@mutation("trigger_terms_without_apr", intended=["REGZ-STR-001"],
+          base="fx_credit", new=True)
+def trigger_terms_without_apr(asset, out):
+    """Asset-side: strip the APR disclosure while trigger terms remain."""
+    asset, out = copy.deepcopy(asset), copy.deepcopy(out)
+    asset["entities"] = [e for e in asset["entities"]
+                         if e["entity_type"] != "apr"]
+    asset["segments"][1]["text"] = ("Great terms for qualified borrowers. "
+                                    "Conditions apply.")
+    out["findings"][1]["quoted_evidence"] = "Great terms"
+    out["findings"][1]["cited_entity_ids"] = []
+    return asset, out
+
+
+@mutation("rate_never_stated_as_apr", intended=["REGZ-STR-002"],
+          allowed=["REGZ-STR-001"], base="fx_credit", new=True)
+def rate_never_stated_as_apr(asset, out):
+    """Asset-side: the APR becomes a bare rate with no APR wording.
+    REGZ-STR-001 also fails by design: removing the APR disclosure trips
+    the trigger-term rule too."""
+    asset, out = copy.deepcopy(asset), copy.deepcopy(out)
+    asset["segments"][1]["text"] = ("Low fixed rate of 17.5% for "
+                                    "qualified borrowers.")
+    asset["entities"] = [e for e in asset["entities"]
+                         if e["entity_type"] != "apr"]
+    s2 = asset["segments"][1]
+    asset["entities"].append(_ent(3, "rate", "17.5%", s2, 17.5))
+    out["findings"][1]["quoted_evidence"] = "Low fixed rate of 17.5%"
+    return asset, out
+
+
+@mutation("open_end_fee_without_apr", intended=["REGZ-STR-003"],
+          base="fx_openend", new=True)
+def open_end_fee_without_apr(asset, out):
+    """Asset-side: credit-card fee advertised, APR disclosure stripped."""
+    asset, out = copy.deepcopy(asset), copy.deepcopy(out)
+    asset["entities"] = [e for e in asset["entities"]
+                         if e["entity_type"] != "apr"]
+    asset["segments"][1]["text"] = "Terms apply after the intro period."
+    out["findings"][0]["quoted_evidence"] = None
+    out["findings"][0]["cited_entity_ids"] = ["ent_1"]
+    return asset, out
+
+
+@mutation("apr_disclosure_shrunk", intended=["REGZ-STR-004"],
+          allowed=["FTC5-STR-002"], base="fx_credit", new=True)
+def apr_disclosure_shrunk(asset, out):
+    """Asset-side: the APR fine print's measured height falls below the
+    ratio floor. FTC5-STR-002's height clause shares the measurement and
+    fails alongside by design."""
+    asset = copy.deepcopy(asset)
+    for f in asset["cv_findings"]:
+        if f["finding_id"] == "cvf_h2":
+            f["value"] = 0.5
+    return asset, copy.deepcopy(out)
+
+
+@mutation("missing_apr_violation_rated_low", intended=["REGZ-SEV-001"],
+          allowed=["REGZ-STR-001"], base="fx_credit", new=True)
+def missing_apr_violation_rated_low(asset, out):
+    """Asset+output: mandatory APR disclosure missing (REGZ-STR-001
+    precondition, by design) AND the TILA violation is waved off as low."""
+    asset, out = copy.deepcopy(asset), copy.deepcopy(out)
+    asset["entities"] = [e for e in asset["entities"]
+                         if e["entity_type"] != "apr"]
+    asset["segments"][1]["text"] = ("Great terms for qualified borrowers. "
+                                    "Conditions apply.")
+    f2 = out["findings"][1]
+    f2["verdict"], f2["severity"] = "violation", "low"
+    f2["quoted_evidence"], f2["cited_entity_ids"] = "Great terms", []
+    return asset, out
+
+
+# ---- Reg DD -----------------------------------------------------------------
+
+@mutation("rate_never_stated_as_apy", intended=["REGDD-STR-001"],
+          base="fx_deposit", new=True)
+def rate_never_stated_as_apy(asset, out):
+    """Asset-side: deposit return stated as 'interest', APY wording gone."""
+    asset, out = copy.deepcopy(asset), copy.deepcopy(out)
+    asset["segments"][0]["text"] = ("Earn 4.50% interest on your savings "
+                                    "account")
+    asset["entities"][0]["char_span"]["start"] = \
+        asset["segments"][0]["text"].index("4.50%")
+    asset["entities"][0]["char_span"]["end"] = \
+        asset["entities"][0]["char_span"]["start"] + 5
+    out["findings"][0]["quoted_evidence"] = asset["segments"][0]["text"]
+    return asset, out
+
+
+@mutation("free_account_with_fee", intended=["REGDD-STR-002"],
+          base="fx_deposit", new=True)
+def free_account_with_fee(asset, out):
+    """Asset-side: 'free checking' plus a positive fee in the same ad."""
+    asset, out = copy.deepcopy(asset), copy.deepcopy(out)
+    asset["segments"][0]["text"] = ("Free checking plus 4.50% APY on your "
+                                    "savings account")
+    asset["entities"][0]["char_span"]["start"] = \
+        asset["segments"][0]["text"].index("4.50%")
+    asset["entities"][0]["char_span"]["end"] = \
+        asset["entities"][0]["char_span"]["start"] + 5
+    s3 = _seg(3, "A $5 monthly maintenance charge applies", "fine_print")
+    asset["segments"].append(s3)
+    asset["entities"].append(_ent(2, "fee", "$5", s3, 5.0))
+    out["findings"][0]["quoted_evidence"] = asset["segments"][0]["text"]
+    out["reviewed_clear"].append("seg_3")
+    return asset, out
+
+
+@mutation("bonus_without_conditions", intended=["REGDD-STR-003"],
+          base="fx_deposit", new=True)
+def bonus_without_conditions(asset, out):
+    """Asset-side: a bonus advertised with zero quantified conditions."""
+    asset, out = copy.deepcopy(asset), copy.deepcopy(out)
+    asset["segments"][0]["text"] = ("Welcome bonus when you open a savings "
+                                    "account today")
+    asset["entities"] = []
+    out["findings"][0]["quoted_evidence"] = asset["segments"][0]["text"]
+    out["findings"][0]["cited_entity_ids"] = []
+    return asset, out
+
+
+@mutation("deposit_triggers_never_engaged", intended=["REGDD-COV-002"],
+          base="fx_deposit", new=True)
+def deposit_triggers_never_engaged(asset, out):
+    """Output-side: drop the only Reg DD finding; the rate-bearing
+    segment is covered by nothing."""
+    out = copy.deepcopy(out)
+    out["findings"] = []
+    return out
+
+
+@mutation("free_fee_violation_rated_low", intended=["REGDD-SEV-001"],
+          allowed=["REGDD-STR-002"], base="fx_deposit", new=True)
+def free_fee_violation_rated_low(asset, out):
+    """Asset+output: free-with-fees contradiction (REGDD-STR-002
+    precondition, by design) AND the Reg DD violation is rated low."""
+    mutated = free_account_with_fee(asset, out)
+    asset, out = mutated
+    f1 = out["findings"][0]
+    f1["verdict"], f1["severity"] = "violation", "low"
+    return asset, out
+
+
+# ---- FDIC Part 328 ----------------------------------------------------------
+
+@mutation("fdic_wording_on_crypto", intended=["FDIC328-STR-001"],
+          allowed=["FDIC328-STR-002"], base="fx_crypto", new=True)
+def fdic_wording_on_crypto(asset, out):
+    """Asset-side: insured-status wording lands on a crypto product.
+    The hybrid-disclaimer check fails alongside by design ('Bitcoin' is
+    investment lexicon and no disclaimer exists)."""
+    asset, out = copy.deepcopy(asset), copy.deepcopy(out)
+    asset["segments"].append(_seg(2, "FDIC insured up to $250,000"))
+    out["reviewed_clear"].append("seg_2")
+    return asset, out
+
+
+@mutation("hybrid_ad_without_disclaimer", intended=["FDIC328-STR-002"],
+          base="fx_deposit", new=True)
+def hybrid_ad_without_disclaimer(asset, out):
+    """Asset-side: Member-FDIC deposit ad gains investment content with
+    no non-deposit disclaimer."""
+    asset, out = copy.deepcopy(asset), copy.deepcopy(out)
+    asset["segments"].append(
+        _seg(3, "Grow your investment portfolio with us"))
+    out["reviewed_clear"].append("seg_3")
+    return asset, out
+
+
+@mutation("fdic_misrep_rated_low", intended=["FDIC328-SEV-001"],
+          allowed=["FDIC328-STR-001", "FDIC328-STR-002"],
+          base="fx_crypto", new=True)
+def fdic_misrep_rated_low(asset, out):
+    """Asset+output: FDIC wording on an uninsurable product (both STR
+    checks fail by design) with the violation rated low."""
+    asset, out = copy.deepcopy(asset), copy.deepcopy(out)
+    asset["segments"].append(_seg(2, "FDIC insured up to $250,000"))
+    out["findings"].append(_fnd("f_mut", "SEC", "violation", "low",
+                                ["seg_2"],
+                                reasoning="mutation: waved-off misrep"))
+    return asset, out
+
+
+# ---- ECOA / Reg B -----------------------------------------------------------
+
+@mutation("ecoa_routed_not_evaluated", intended=["REGB-COV-001"],
+          allowed=["ALL-COV-001"], base="fx_credit", new=True)
+def ecoa_routed_not_evaluated(asset, out):
+    """Output-side: ECOA routed but missing from frameworks_evaluated
+    (ALL-COV-001 is the generic companion of any framework drop)."""
+    out = copy.deepcopy(out)
+    out["frameworks_evaluated"] = [f for f in out["frameworks_evaluated"]
+                                   if f != "ECOA"]
+    return out
+
+
+@mutation("uncovered_prohibited_basis", intended=["REGB-COV-002"],
+          base="fx_credit", new=True)
+def uncovered_prohibited_basis(asset, out):
+    """Asset-side: prohibited-basis wording appears in a credit ad and
+    the output covers none of it."""
+    asset = copy.deepcopy(asset)
+    asset["segments"].append(
+        _seg(90, "No public assistance recipients need apply"))
+    return asset, copy.deepcopy(out)
+
+
+@mutation("basis_violation_rated_low", intended=["REGB-SEV-001"],
+          base="fx_credit", new=True)
+def basis_violation_rated_low(asset, out):
+    """Asset+output: an affirmed prohibited-basis ECOA violation rated
+    low."""
+    asset, out = copy.deepcopy(asset), copy.deepcopy(out)
+    asset["segments"].append(
+        _seg(90, "No public assistance recipients need apply"))
+    out["findings"].append(_fnd("f_mut", "ECOA", "violation", "low",
+                                ["seg_90"],
+                                reasoning="mutation: waved-off basis hit"))
+    return asset, out
+
+
+# ---- STATE_UDAP -------------------------------------------------------------
+
+@mutation("state_udap_never_evaluated", intended=["STATE-COV-001"],
+          allowed=["ALL-COV-001", "STATE-COV-002"], base="fx_state",
+          new=True)
+def state_udap_never_evaluated(asset, out):
+    """Output-side: state law routed, but no STATE_UDAP finding and no
+    frameworks_evaluated entry. STATE-COV-002 fails alongside by design
+    (with no state findings, no state is individually considered)."""
+    out = copy.deepcopy(out)
+    out["findings"] = [f for f in out["findings"]
+                       if f["framework"] != "STATE_UDAP"]
+    out["frameworks_evaluated"] = [f for f in out["frameworks_evaluated"]
+                                   if f != "STATE_UDAP"]
+    return out
+
+
+@mutation("state_never_individually_considered",
+          intended=["STATE-COV-002"], base="fx_state", new=True)
+def state_never_individually_considered(asset, out):
+    """Output-side: the state finding names only US-CA; US-UT vanishes."""
+    out = copy.deepcopy(out)
+    for f in out["findings"]:
+        if f["framework"] == "STATE_UDAP":
+            f["reasoning"] = ("Reviewed under US-CA (Cal. Bus. & Prof. "
+                              "Code § 17500): claim qualified.")
+    return out
+
+
+@mutation("federal_hit_state_compliant_unreconciled",
+          intended=["STATE-SEV-001"], base="fx_state", new=True)
+def federal_hit_state_compliant_unreconciled(asset, out):
+    """Output-side: the federal finding becomes a high-severity deception
+    hit while the state-compliant verdict never engages it. The flipped
+    finding cites only the claim segment — citing the cleared disclosure
+    would create an unrelated ALL-CON-002 contradiction."""
+    out = copy.deepcopy(out)
+    f_fed = next(f for f in out["findings"] if f["framework"] == "FTC")
+    f_fed["verdict"], f_fed["severity"] = "potential_violation", "high"
+    f_fed["cited_segment_ids"] = ["seg_1"]
+    return out
+
+
+@mutation("utah_price_claims_no_qualifier", intended=["STATE-STR-001"],
+          base="fx_state", new=True)
+def utah_price_claims_no_qualifier(asset, out):
+    """Asset-side: demote the disclosure segment — Utah-targeted pricing
+    claims with no qualifying text anywhere."""
+    asset = copy.deepcopy(asset)
+    asset["segments"][1]["role"] = "body"
+    return asset, copy.deepcopy(out)
+
+
+# ---------------------------------------------------------------------------
 # Matrix runner
 # ---------------------------------------------------------------------------
 
 def run_matrix():
-    pairs = []
+    from rule_engine import CHECK_REGISTRY
+
+    def baseline(asset, out, label):
+        rep = run_checks(asset, out)
+        assert rep.passed, (f"base pair {label} no longer passes review "
+                            f"checks — fix that before mutating: "
+                            f"{[(r.check_id, r.evidence) for r in rep.failed_checks]}")
+        return {r.check_id for r in rep.asset_defects}
+
+    gold_pairs = []
     for out_path in sorted(OUT_DIR.glob("*.json")):
         out = json.loads(out_path.read_text())
         asset = next(json.loads(p.read_text()) for p in GOLD_DIR.glob("*.json")
                      if json.loads(p.read_text())["asset_id"] == out["asset_id"])
-        base = run_checks(asset, out, ruleset_version="taxonomy-v1.1")
-        assert base.passed, (f"reference output for {out['asset_id']} no "
-                             f"longer passes — fix that before mutating")
-        pairs.append((asset, out))
+        defects = baseline(asset, out, out["asset_id"])
+        gold_pairs.append((asset, out, defects))
+
+    fixture_pairs = {}
+    for name, builder in FIXTURE_BASES.items():
+        asset, out = builder()
+        defects = baseline(asset, out, name)
+        assert not defects, f"fixture base {name} has baseline defects: {defects}"
+        fixture_pairs[name] = (asset, out, defects)
 
     rows = []
-    for name, intended, allowed, fn in MUTATIONS:
-        for asset, out in pairs:
+    for name, intended, allowed, fn, base in MUTATIONS:
+        if base is None:
+            bases = gold_pairs
+        else:
+            bases = [fixture_pairs[base]]
+        for asset, out, base_defects in bases:
             mutated = fn(asset, out)
             if mutated is None:
                 continue
-            report = run_checks(asset, mutated,
-                                ruleset_version="taxonomy-v1.1")
+            if isinstance(mutated, tuple):
+                m_asset, m_out = mutated
+            else:
+                m_asset, m_out = asset, mutated
+            report = run_checks(m_asset, m_out)
             failed = {r.check_id for r in report.failed_checks}
-            caught = set(intended) <= failed
-            companions = sorted(failed & set(allowed))
-            cross = sorted(failed - set(intended) - set(allowed))
-            rows.append({"mutation": name, "asset": asset["asset_id"],
+            defects = {r.check_id for r in report.asset_defects}
+            # each intended check must land in the bucket its registered
+            # scope dictates
+            caught = all(
+                (cid in defects) if CHECK_REGISTRY[cid].scope == "asset"
+                else (cid in failed)
+                for cid in intended)
+            all_fired = failed | defects
+            companions = sorted(all_fired & set(allowed))
+            cross = sorted(all_fired - set(intended) - set(allowed)
+                           - base_defects)
+            rows.append({"mutation": name,
+                         "asset": base or m_asset["asset_id"],
                          "intended": list(intended), "caught": caught,
-                         "companions": companions, "cross_fires": cross})
+                         "companions": companions, "cross_fires": cross,
+                         "new": name in NEW_MUTATION_NAMES})
     return rows
 
 
@@ -426,21 +1021,32 @@ def main() -> int:
     total = len(rows)
     caught = sum(r["caught"] for r in rows)
     cross_total = sum(len(r["cross_fires"]) for r in rows)
-    print(f"\napplicable (asset, mutation) pairs: {total}")
+    new_rows = [r for r in rows if r["new"]]
+    new_caught = sum(r["caught"] for r in new_rows)
+    new_cross = sum(len(r["cross_fires"]) for r in new_rows)
+    print(f"\nNEW mutations only: {new_caught}/{len(new_rows)} caught "
+          f"({100.0 * new_caught / len(new_rows):.1f}%), "
+          f"{new_cross} cross-fires" if new_rows else "\nno new mutations")
+    print(f"applicable (base, mutation) pairs: {total}")
     print(f"catch rate: {caught}/{total} "
           f"({100.0 * caught / total:.1f}%) — must be 100%")
     print(f"total cross-fires: {cross_total}")
     for r in rows:
         for c in r["cross_fires"]:
             print(f"  CROSS-FIRE to investigate: {c} "
-                  f"(mutation={r['mutation']}, asset={r['asset']})")
+                  f"(mutation={r['mutation']}, base={r['asset']})")
 
-    print("\nchecks not exercisable by LLMOutput mutation on the gold "
-          "corpus (synthetic-fixture coverage only):")
-    for cid, why in NOT_EXERCISABLE.items():
-        print(f"  {cid}: {why}")
+    # full-coverage guarantee: every registered check has >= 1 mutation
+    from rule_engine import CHECK_REGISTRY
+    covered = set()
+    for _, intended, _, _, _ in MUTATIONS:
+        covered |= set(intended)
+    uncovered = sorted(set(CHECK_REGISTRY) - covered)
+    print(f"\ncheck coverage: {len(covered & set(CHECK_REGISTRY))}/"
+          f"{len(CHECK_REGISTRY)} registered checks have a mutation"
+          + (f" — UNCOVERED: {uncovered}" if uncovered else ""))
 
-    return 0 if caught == total else 1
+    return 0 if caught == total and not uncovered else 1
 
 
 if __name__ == "__main__":

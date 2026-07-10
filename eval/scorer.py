@@ -17,6 +17,7 @@ per-asset results can be summed across a corpus and re-derived with
 
 from __future__ import annotations
 
+import difflib
 import math
 from collections import defaultdict
 from typing import Any, Iterable, Optional
@@ -56,6 +57,96 @@ def _span(item: dict) -> tuple[int, int]:
 
 def _spans_overlap(a: tuple[int, int], b: tuple[int, int]) -> bool:
     return a[0] < b[1] and b[0] < a[1]
+
+
+def _norm_text(text: str) -> str:
+    return " ".join((text or "").split()).lower()
+
+
+def _bbox_iou(a: Any, b: Any) -> float:
+    """IoU of two bbox dicts ({x, y, width, height}), 0.0 if either missing."""
+    if not a or not b:
+        return 0.0
+    a, b = _as_dict(a), _as_dict(b)
+    ax0, ay0 = a.get("x", 0.0), a.get("y", 0.0)
+    ax1, ay1 = ax0 + a.get("width", 0.0), ay0 + a.get("height", 0.0)
+    bx0, by0 = b.get("x", 0.0), b.get("y", 0.0)
+    bx1, by1 = bx0 + b.get("width", 0.0), by0 + b.get("height", 0.0)
+    ix = max(0.0, min(ax1, bx1) - max(ax0, bx0))
+    iy = max(0.0, min(ay1, by1) - max(ay0, by0))
+    inter = ix * iy
+    union = (ax1 - ax0) * (ay1 - ay0) + (bx1 - bx0) * (by1 - by0) - inter
+    return inter / union if union > 0 else 0.0
+
+
+def align_segment_ids(
+    gold_segments: Iterable[Any],
+    pred_segments: Iterable[Any],
+    min_score: float = 0.30,
+) -> dict:
+    """Map predicted segment_ids -> gold segment_ids by content overlap.
+
+    The pipeline re-segments every asset from scratch, so predicted
+    segment ids ("seg_3", "seg_c2_1") never line up with the hand-labeled
+    gold ids even when the extraction is correct. Scoring entities /
+    claims / CV findings by raw id therefore measures segmentation drift,
+    not extraction quality. This aligns the two segmentations first:
+
+      * text similarity (difflib ratio on whitespace-normalized text),
+        blended with bbox IoU when both sides carry boxes;
+      * greedy one-to-one assignment above ``min_score``.
+
+    Returns ``{pred_id: gold_id}`` for matched pairs only; unmatched
+    predicted ids are left out (they stay themselves and score as false
+    positives, which is correct).
+    """
+    gold = _as_dicts(gold_segments)
+    pred = _as_dicts(pred_segments)
+
+    scored: list[tuple[float, int, int]] = []
+    for gi, g in enumerate(gold):
+        gt, gb = _norm_text(g.get("text", "")), g.get("bbox")
+        for pi, p in enumerate(pred):
+            ts = difflib.SequenceMatcher(None, gt, _norm_text(p.get("text", ""))).ratio()
+            pb = p.get("bbox")
+            score = 0.6 * ts + 0.4 * _bbox_iou(gb, pb) if (gb and pb) else ts
+            scored.append((score, gi, pi))
+
+    scored.sort(key=lambda s: s[0], reverse=True)
+    used_g: set[int] = set()
+    used_p: set[int] = set()
+    mapping: dict = {}
+    for score, gi, pi in scored:
+        if score < min_score:
+            break
+        if gi in used_g or pi in used_p:
+            continue
+        used_g.add(gi)
+        used_p.add(pi)
+        mapping[pred[pi].get("segment_id")] = gold[gi].get("segment_id")
+    return mapping
+
+
+def remap_segment_ids(pred: dict, mapping: dict) -> dict:
+    """Return a deep-ish copy of a predicted AssetRepresentation dict with
+    every ``segment_id`` / ``related_segment_id`` rewritten through
+    ``mapping`` (unmapped ids are left unchanged). Only the id fields are
+    touched; values, spans, and text are preserved for scoring.
+    """
+    import copy
+
+    out = copy.deepcopy(pred)
+    for seg in out.get("segments", []):
+        seg["segment_id"] = mapping.get(seg.get("segment_id"), seg.get("segment_id"))
+    for lst in ("entities", "claim_candidates", "cv_findings"):
+        for item in out.get(lst, []):
+            if "segment_id" in item:
+                item["segment_id"] = mapping.get(item.get("segment_id"), item.get("segment_id"))
+            if item.get("related_segment_id") is not None:
+                item["related_segment_id"] = mapping.get(
+                    item["related_segment_id"], item["related_segment_id"]
+                )
+    return out
 
 
 def prf(tp: int, fp: int, fn: int) -> dict:

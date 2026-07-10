@@ -7,39 +7,29 @@ on:
     branches: [main]
 
 jobs:
-  build:
+  test:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - name: Setup Python
+        uses: actions/setup-python@v5
         with:
-          node-version: 20
-          cache: pnpm
-
-      - name: Enable Corepack
-        run: corepack enable
+          python-version: "3.12"
+          cache: pip
 
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-      - name: Lint
-        run: pnpm lint
+      - name: Unit tests (CV + NLP + rule engine)
+        # The pytest suite runs fully offline: OCR falls back to the blank
+        # spaCy pipeline and the embedding fallback degrades gracefully, so
+        # no model downloads or asset images are needed here.
+        run: python -m pytest -q
 
-      - name: Typecheck
-        run: pnpm typecheck
-
-      - name: Test
-        run: pnpm test
-
-      - name: Rule Engine Evals
-        run: pnpm eval:rules
-
-      - name: Offline LLM Evals
-        run: pnpm eval:llm
-
-      - name: Build
-        run: pnpm build
+      - name: Rule-engine determinism + mutation matrix
+        run: python -m pytest eval/test_rule_engine.py -q

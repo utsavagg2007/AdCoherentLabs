@@ -25,6 +25,7 @@ from rule_engine import checks_regz  # noqa: E402,F401
 from rule_engine import checks_regdd  # noqa: E402,F401
 from rule_engine import checks_fdic328  # noqa: E402,F401
 from rule_engine import checks_regb  # noqa: E402,F401
+from rule_engine import checks_state_udap  # noqa: E402,F401
 
 __all__ = [
     "CHECK_REGISTRY",

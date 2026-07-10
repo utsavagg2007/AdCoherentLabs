@@ -1,10 +1,10 @@
 """ECOA / Reg B checks — §5 of docs/check_taxonomy.md (12 CFR Part 1002).
 
 The mechanizable slice is narrow and honest: make sure prohibited-basis
-vocabulary in a credit ad was at least looked at. The router never emits
-ECOA today (taxonomy change request #3), so all checks register
-universally ("*") and gate on their own trigger conditions instead of
-routing.
+vocabulary in a credit ad was at least looked at. The router now emits
+ECOA for credit-extension products (2026-07-10 change), so REGB-COV-001
+can genuinely trigger; the remaining checks still register universally
+("*") and gate on their own trigger conditions rather than on routing.
 One function per check_id; docstring = taxonomy row.
 """
 
@@ -24,7 +24,8 @@ from rule_engine.lexicons import (
 @register_check("REGB-COV-001", families=["coverage"], frameworks=["*"])
 def regb_cov_001_ecoa_evaluated(ctx: CheckContext) -> CheckResult:
     """REGB-COV-001 (coverage, ECOA, high).
-    Trigger: "ECOA" in A.routing.frameworks (currently never — router gap).
+    Trigger: "ECOA" in A.routing.frameworks (now emitted for credit-
+    extension products).
     Fail: "ECOA" not in L.frameworks_evaluated.
     Evidence: routing.frameworks, frameworks_evaluated.
     """

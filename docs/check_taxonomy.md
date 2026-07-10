@@ -84,7 +84,7 @@ below do not repeat them.
 | ALL-GRD-002 | ALL | any finding | some `cited_entity_ids` entry ∉ `A.entities[*].entity_id` | finding_id, unresolved id(s) | high |
 | ALL-GRD-003 | ALL | any finding with `claim_candidate_id` set | id ∉ `A.claim_candidates[*].claim_id` | finding_id, unresolved id | high |
 | ALL-GRD-004 | ALL | any finding with `quoted_evidence` set | whitespace-normalized quote is not a substring of any cited segment's normalized text (of all segments if no segments cited) | finding_id, quote, texts of cited segments | high |
-| ALL-GRD-005 | ALL | `L.reviewed_clear` non-empty | some entry resolves to neither a `segment_id` nor a `claim_id` in `A` | unresolved entries | medium |
+| ALL-GRD-005 | ALL | `L.reviewed_clear` non-empty | some entry resolves to neither a `segment_id` nor a `claim_id` in `A` — grounding-flavored coverage: an LLM cannot claim to have reviewed something that doesn't exist (proposed once as ALL-COV-003; implemented under this grounding id — same semantics, one check) | the unresolvable entries plus counts of valid ids | medium |
 | ALL-GRD-006 | ALL | any finding with `adverse(f)` | `cited_segment_ids` empty AND `cited_entity_ids` empty AND `claim_candidate_id` null | finding_id, verdict, framework | high |
 | ALL-GRD-007 | ALL | any finding whose `quoted_evidence` contains money- or percent-shaped numeric tokens (`$X[,XXX][.XX]`, `X[.X]%` — deliberately excludes bare counts/years like "8.3 times" or "Forbes 2025", which the entity layer does not extract) | some such token, after unit normalization ($ stripped, % kept as the number), matches no entity's non-null `normalized_value` within `NUM_TOL` — either the LLM misquoted a regulated figure or the deterministic extractor missed it; both must surface | finding_id, unmatched token(s) + parsed value, nearest entity normalized_value(s), `NUM_TOL` version | medium |
 | ALL-CON-001 | ALL | always | `L.asset_id ≠ A.asset_id` | both ids | critical |
@@ -274,7 +274,36 @@ lexemes are deliberately **excluded** from the v1 prohibited-basis lexicon
 
 ---
 
-## Appendix A — Versioned lexicons (v1)
+## 6. State UDAP — "little FTC acts" (STATE_UDAP umbrella framework)
+
+**Source:** tier-2 `state_udap` manifest entries (51 jurisdictions), compiled
+into the versioned metadata table `rule_engine/state_udap_table.py`
+(**Appendix D**). State consumer-protection statutes are predominantly FTC §5
+analogues, so these checks mirror the FTC5 logic **once**, parameterized per
+state — never 50 near-copies. They gate on `STATE_UDAP` routing, which the
+router emits only when user-supplied `A.target_jurisdictions` contains a US
+state code; every failure's evidence carries the state's own statute citation
+from the table — that citation is the downstream audit-trail payload. States
+whose table entry has `credit_exempt=True` are skipped on credit-product
+assets with the exemption cited (see Appendix D's VERIFY discipline).
+
+| check_id | framework | trigger condition | fail condition | evidence to include | severity |
+|---|---|---|---|---|---|
+| STATE-COV-001 | STATE_UDAP | `"STATE_UDAP" ∈ A.routing.frameworks` | `"STATE_UDAP" ∉ L.frameworks_evaluated` AND no finding with `framework = STATE_UDAP` | targeted states + statutes, frameworks_evaluated | high |
+| STATE-COV-002 | STATE_UDAP | routed AND targeted state codes present (skip `credit_exempt=True` states on CREDIT assets, citing the exemption) | some non-exempt targeted state's code appears in no STATE_UDAP finding's `reasoning`/`quoted_evidence` — each state must be individually considered, not "states generally" | unmentioned states + statutes; exempt-skipped states + exemption note | medium |
+| STATE-SEV-001 | STATE_UDAP | adverse FTC finding with `severity ∈ {critical, high}` exists AND a `STATE_UDAP` finding with `verdict = compliant` exists | the compliant state finding's reasoning does not name the adverse federal `finding_id` (v1 deterministic proxy for "explicit reasoning") — little-FTC acts track the federal standard; a federal deception hit almost always implies state exposure | federal finding ids, unreconciled state finding ids, per-state statutes covered | medium |
+| STATE-STR-001 | STATE_UDAP (scope=asset) | `"US-UT" ∈ target_jurisdictions` AND claims with `claim_type ∈ {pricing, comparative}` (Utah Truth in Advertising Act, § 13-11a — manifest: rare among states, warrants its own rules) | zero segments with `role ∈ {disclosure, fine_print, legal}` — price/comparison claims aimed at Utah with no qualifying text anywhere | triggering claim ids + the Utah statute citation, role census | medium |
+
+**NOT MECHANIZABLE — stays with LLM layer:** per-state remedy and penalty
+differences (statutory vs. treble damages, per-violation fines); private
+right-of-action analysis (standing, ascertainable-loss and reliance elements,
+e.g. NJ CFA / MA 93A demand-letter prerequisites); state-specific case-law
+standards diverging from FTC interpretation; AG enforcement posture; whether
+a specific state exemption applies to this advertiser's charter/licensing
+(the table's `credit_exempt` is a product-category gate, not an
+advertiser-level determination).
+
+---
 
 Compiled constants in the engine; case-insensitive, word-boundary regex over
 whitespace-normalized segment text. The lexicon set and version are part of the
@@ -328,14 +357,28 @@ non-deposit "free" claims wait for this source), `ftc-telemarketing-sales-rule`
 SR-FINRA-2026-004 in flight), `fcc-tcpa-rules` (47 CFR § 64.1200),
 `hud-fair-housing-advertising` (24 CFR 100).
 
-**Tier 2 — all state UDAP / state finreg sources** (51 entries, `us-al-udap`
-through `us-wy-udap`, plus `us-ca-dfpi-ccfpl` and `us-ny-dfs-crypto-ads`):
-deferred to later phase.
+**Tier 2 — state UDAP / state finreg sources**: the 51 `state_udap` entries
+now back the §6 STATE_UDAP checks via the Appendix D metadata table
+(statute-level checks per state remain future work); `us-ca-dfpi-ccfpl` and
+`us-ny-dfs-crypto-ads` (state finreg) stay deferred.
 
 **Tier 3 — secondary references** (`ref-nclc-50-state-report`,
 `ref-nclc-state-summaries`, `ref-cozen-50-state-chart`,
 `ref-justia-50-state-survey`): deferred; per manifest these are routing/metadata
 aids and are **never** check sources or citable legal text.
+
+## Appendix D — State UDAP metadata table
+
+Compiled constant: `rule_engine/state_udap_table.py` (`STATE_TABLE_VERSION`,
+hashed into `ruleset_hash` like the lexicons). One entry per tier-2 manifest
+jurisdiction (51): statute citation, statute name, `credit_exempt`, scope
+notes. `credit_exempt=True` silently disables credit-ad state checks for that
+state, so it is set only for textbook broad regulated-industry exemptions
+(MI, RI, GA, OH, VA) and **every** True entry sits on the module's VERIFY
+list; all uncertain states are conservatively `credit_exempt=False` with
+VERIFY in notes. Verification reference: the NCLC 50-state UDAP report
+(tier-3 `ref-nclc-50-state-report`) — routing metadata, never citable legal
+text.
 
 ## Change requests surfaced by this authoring pass (not checks)
 
@@ -346,5 +389,12 @@ aids and are **never** check sources or citable legal text.
    router-side half of this request remains open (#2).
 2. **nlp/routing.py:** stop letting FDIC-insured-status wording contribute to
    `deposit_account` routing; route `LEX:FDIC` matches to the new FDIC framework.
+   — **DONE 2026-07-10**: `fdic` removed from the deposit product rule (and bare
+   `savings` tightened to `savings account` — cost-savings marketing is not a
+   deposit signal); insured-status wording routes FDIC on every path, including
+   the semantic fallback.
 3. **nlp/routing.py:** emit `ECOA` for `CREDIT` products so REGB-COV-001 stops
-   being vacuous.
+   being vacuous. — **DONE 2026-07-10** (credit_card/personal_loan/mortgage/
+   auto_loan/bnpl; credit_repair excluded — a service, not an extension of
+   credit). Router also emits `STATE_UDAP` when user-supplied
+   `target_jurisdictions` contains a US state code.

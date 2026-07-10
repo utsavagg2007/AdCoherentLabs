@@ -18,7 +18,11 @@ import re
 from html.parser import HTMLParser
 
 _DISCLOSURE_RE = re.compile(
-    r"terms apply|rates? (?:from|as low as|may (?:change|vary))|"
+    # "rates from / as low as" is marketing voice, not a disclosure — it
+    # was misrouting headlines like "Rates from 8.99% APR" to disclosure,
+    # which suppressed their claims. Only genuine disclaimer phrasing
+    # ("rates may change/vary") belongs here.
+    r"terms apply|rates? may (?:change|vary)|"
     r"accurate as of|subject to (?:change|approval|credit)|"
     r"conditions apply|see terms|results (?:may|not) |"
     r"not a (?:commitment|guarantee)|apr(?:s)? (?:range|vary)|"
@@ -40,10 +44,14 @@ _CTA_RE = re.compile(
 
 def _keyword_role(text: str) -> str | None:
     """Role from wording alone, or None if wording is neutral."""
-    if _LEGAL_RE.search(text):
-        return "legal"
+    # Disclosure before legal: a mixed segment carrying regulatory
+    # disclosure language *and* a legal boilerplate token (e.g. "APY
+    # accurate as of ... Member FDIC.") is a disclosure. Pure legal
+    # boilerplate ("Member FDIC" alone) still falls through to legal.
     if _DISCLOSURE_RE.search(text):
         return "disclosure"
+    if _LEGAL_RE.search(text):
+        return "legal"
     stripped = text.strip()
     if _CTA_RE.search(stripped) and len(stripped.split()) <= 6:
         return "cta"
@@ -219,6 +227,13 @@ def _from_ocr(ocr_lines: list) -> list[dict]:
         return []
 
     blocks = _merge_ocr_lines(lines)
+    # Drop single-character OCR noise ("M", "V", "_") that would otherwise
+    # become standalone unknown segments polluting claims, routing
+    # full-text, and marker findings. Two-plus-char tokens ("#1", "$5",
+    # "*") that carry meaning are kept.
+    blocks = [b for b in blocks if len(b[0].strip()) > 1]
+    if not blocks:
+        return []
     heights = sorted(b[3] for b in blocks)
     max_h = heights[-1]
     median_h = heights[len(heights) // 2]

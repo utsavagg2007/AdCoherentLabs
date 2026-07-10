@@ -42,7 +42,10 @@ _MATCHER_PATTERNS: dict[str, list] = {
         [{"LOWER": "apr"}, _ANY(2), _NUM, _PCT],
     ],
     "rate": [
-        [_NUM, _PCT, {"LOWER": "apy"}],
+        # Explicit "rate of X%" only. APY-stated yields are a percentage
+        # per the gold labeling guide (gold labels "4.50% APY" as
+        # percentage, span-including "APY"); see the percentage patterns
+        # below. REGDD-STR-001 keys on LEX:APY text, not a rate entity.
         [{"LOWER": {"IN": ["rate", "rates"]}}, {"LOWER": "of"}, _NUM, _PCT],
     ],
     "fee": [
@@ -52,12 +55,20 @@ _MATCHER_PATTERNS: dict[str, list] = {
     ],
     "time_period": [
         [_NUM, {"LOWER": {"IN": _TIME_UNIT_TOKENS}}],
+        # Hyphenated form: spaCy splits "60-month" into ["60", "-",
+        # "month"], so neither the spaced pattern above nor a single-token
+        # regex fires — match the three-token sequence explicitly.
+        [_NUM, {"TEXT": "-"}, {"LOWER": {"IN": _TIME_UNIT_TOKENS}}],
         [{"TEXT": {"REGEX": r"^\d+-(minute|hour|day|week|month|year)s?$"}}],
     ],
     "amount": [
         [{"TEXT": "$"}, _NUM],
     ],
     "percentage": [
+        # Longer APY span wins over the bare "N %" span in overlap
+        # resolution, so "4.50% APY" is one percentage entity whose
+        # raw_text includes "APY" (matches the gold labeling convention).
+        [_NUM, _PCT, {"LOWER": "apy"}],
         [_NUM, _PCT],
     ],
 }
@@ -177,7 +188,11 @@ def extract_entities(segments: list) -> list[dict]:
 
         for start, end, label in kept:
             raw = text[start:end]
-            assert text[start:end] == raw  # span-integrity invariant
+            # Span-integrity invariant: the half-open char_span we emit
+            # must be well-formed and non-empty within the segment text,
+            # so downstream re-slicing text[start:end] always reproduces
+            # raw_text. (A degenerate or out-of-bounds span is a bug.)
+            assert 0 <= start < end <= len(text), (start, end, len(text))
             n += 1
             entities.append({
                 "entity_id": f"ent_{n}",
@@ -199,7 +214,7 @@ if __name__ == "__main__":
 
     tests = [
         ("apr", "Rates from 8.99% APR with autopay discount."),
-        ("rate", "Earn 4.50% APY on every dollar."),
+        ("percentage", "Earn 4.50% APY on every dollar."),  # APY -> percentage
         ("fee", "No annual fee, and a late fee of $29."),
         ("amount", "Borrow up to $40,000 today."),
         ("percentage", "Members save 72% on interest."),
@@ -207,7 +222,7 @@ if __name__ == "__main__":
         ("endorsement_marker", "#ad Paid partnership with FinCo."),
         ("optout_marker", "Reply STOP to unsubscribe."),
         ("guarantee_term", "Guaranteed approval, completely risk-free."),
-        ("time_period", "Approved in 5 minutes with a 60 month term."),
+        ("time_period", "Approved in 5 minutes with a 60-month term."),
     ]
     segments = [{"segment_id": f"seg_{i}", "text": t}
                 for i, (_, t) in enumerate(tests, start=1)]

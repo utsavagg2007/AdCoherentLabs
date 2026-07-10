@@ -18,8 +18,8 @@ the rule engine, never a compliance verdict.
 from __future__ import annotations
 
 import schema
-from cv.markers import detect_markers
-from cv.measure import proximity
+from cv.markers import has_footnote_marker, has_marker
+from cv.measure import estimate_region_contrast, proximity
 from cv.ocr import run_ocr
 from nlp.claims import detect_claims
 from nlp.entities import extract_entities
@@ -35,15 +35,43 @@ def _bbox_tuple(seg: dict):
     return (b["x"], b["y"], b["width"], b["height"]) if b else None
 
 
-def _cv_findings(segments: list[dict], claims: list[dict]) -> list[dict]:
+def _read_image(path: str):
+    """Load a BGR image array, or None if it can't be read (never raises)."""
+    try:
+        import cv2
+
+        return cv2.imread(path)
+    except Exception:  # noqa: BLE001 — contrast is best-effort, degrade quietly
+        return None
+
+
+def _cv_findings(segments: list[dict], claims: list[dict],
+                 seg_images: dict | None = None) -> list[dict]:
     """Visual measurements over OCR-built segments. Numbers only."""
     findings: list[dict] = []
+    seg_images = seg_images or {}
 
-    # Ad/sponsorship marker presence, one finding per segment.
-    for seg, f in zip(segments, detect_markers(segments)):
-        f["finding_id"] = f"cvf_marker_{seg['segment_id']}"
-        f["segment_id"] = seg["segment_id"]
-        findings.append(f)
+    # Marker presence is reported only where a marker actually occurs —
+    # sponsorship wording (#ad / sponsored / paid partnership) or a
+    # leading asterisk/dagger footnote. Emitting one finding per segment
+    # (present or not) floods the metric with absence rows the gold labels
+    # never carry.
+    for seg in segments:
+        text = seg["text"]
+        if has_marker(text):
+            method = "regex_marker_v1"
+        elif has_footnote_marker(text):
+            method = "asterisk_footnote_detector"
+        else:
+            continue
+        findings.append({
+            "finding_id": f"cvf_marker_{seg['segment_id']}",
+            "measurement": "marker_presence",
+            "value": 1.0,
+            "segment_id": seg["segment_id"],
+            "related_segment_id": None,
+            "method": method,
+        })
 
     # Rendered text height (bbox is normalized, so height% = h * 100).
     for seg in segments:
@@ -56,6 +84,25 @@ def _cv_findings(segments: list[dict], claims: list[dict]) -> list[dict]:
                 "segment_id": seg["segment_id"],
                 "related_segment_id": None,
                 "method": "ocr_bbox_height",
+            })
+
+    # Text/background contrast, estimated from the rendered pixels behind
+    # each segment's box. Best-effort (see estimate_region_contrast) and
+    # only when the source image is available; emits nothing otherwise.
+    for seg in segments:
+        img = seg_images.get(seg["segment_id"])
+        box = _bbox_tuple(seg)
+        if img is None or not box:
+            continue
+        ratio = estimate_region_contrast(img, box)
+        if ratio is not None:
+            findings.append({
+                "finding_id": f"cvf_contrast_{seg['segment_id']}",
+                "measurement": "contrast_ratio",
+                "value": ratio,
+                "segment_id": seg["segment_id"],
+                "related_segment_id": None,
+                "method": "wcag2_otsu_estimate",
             })
 
     # Claim-to-disclosure distance for every (claim seg, disclosure seg)
@@ -109,6 +156,7 @@ def analyze_asset(asset_id: str, *, image_path: str | list[str] = None,
     """
     cv_findings: list[dict] = []
     semantic_signals: list[dict] = []
+    seg_images: dict = {}
     if image_path is not None:
         paths = [image_path] if isinstance(image_path, str) else list(image_path)
         segments = []
@@ -119,15 +167,33 @@ def analyze_asset(asset_id: str, *, image_path: str | list[str] = None,
             if len(paths) > 1:
                 for seg in card_segments:
                     seg["segment_id"] = f"seg_c{card}_{seg['segment_id'][4:]}"
+            card_img = _read_image(p)
+            if card_img is not None:
+                for seg in card_segments:
+                    seg_images[seg["segment_id"]] = card_img
             segments += card_segments
+        source = "ocr"
     else:
         segments = segment_text(text=text, html=html)
+        source = "html" if html is not None else "text"
+
+    # Graceful degradation: a blank/unreadable image (or empty text/html)
+    # yields no segments, but AssetRepresentation requires at least one
+    # (it is the addressing base for every other list). Emit a single
+    # empty placeholder so the asset validates and flows through as
+    # "nothing extracted" instead of raising a ValidationError.
+    if not segments:
+        segments = [{
+            "segment_id": "seg_1", "text": "", "role": "unknown",
+            "source": source, "bbox": None, "ocr_confidence": None,
+        }]
 
     entities = extract_entities(segments)
     claims = detect_claims(segments, entities)
-    routing = route(segments, entities)
+    routing = route(segments, entities,
+                    target_jurisdictions=target_jurisdictions)
     if image_path is not None:
-        cv_findings = _cv_findings(segments, claims)
+        cv_findings = _cv_findings(segments, claims, seg_images)
 
     # Provenance must name the embedding model whenever a semantic
     # fallback (routing or claims) contributed to this output.
