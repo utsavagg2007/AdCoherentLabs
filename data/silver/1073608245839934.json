@@ -1,0 +1,115 @@
+{
+  "asset_id": "1073608245839934",
+  "segments": [
+    {
+      "segment_id": "seg_1",
+      "text": "We do the research for you. Find the best products on Amazon at unbeatable prices.",
+      "role": "body",
+      "source": "ocr",
+      "bbox": null,
+      "ocr_confidence": 0.99
+    },
+    {
+      "segment_id": "seg_2",
+      "text": "{{product.name}}",
+      "role": "headline",
+      "source": "ocr",
+      "bbox": null,
+      "ocr_confidence": 0.99
+    },
+    {
+      "segment_id": "seg_3",
+      "text": "RA003 Active Fuel Management Disabler Device, AFM/DFM Disabler Device Compatible with most GM V6 and V8 Vehicles We do the research for you. Find the best products on Amazon at unbeatable prices. top5best.com 1.AFM/DFM Disabler Device RA003 Compatible with most GM V6 and V8 vehicles.. 2.AFM RA003 keeps the vehicle in the V8 mode all the time\uff0chelp your car get super power.. 3. Plug and play, install without any tools.Please unplug the product,when you do not use this for a long time.. 4. Keep the factory ECU, not programming the ECU of the vehicle, and does not affect other functions of the vehicle, but the modified vehicle is cautious to buy.. 5. Please note: V8 mode will keep all the cylinder running, the water temperature may increase during driving. The product currently not compatible with 2019+ 5.3L 10-Speed or 6.2L 10-SPEED models..",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.05,
+        "width": 0.9,
+        "height": 0.9
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_4",
+      "text": "PGI-280 XL/CLI-281 BKCMY 5 Color Value Pack We do the research for you. Find the best products on Amazon at unbeatable prices. top5best.com Print sharp documents with the bold results using this Canon black/color ink tank combo pack.. Maximize your page yield while you save.. Comes in five cartridges per pack to save your money.. This package includes five ink cartridges, one high yield black cartridge and one of each standard yield color cartridge (photo black, cyan, magenta, and yellow).. Original Canon ink tanks deliver long-lasting quality to all your photos and documents.",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.05,
+        "width": 0.9,
+        "height": 0.9
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_5",
+      "text": "Furniture Clinic Teak Oil | Wood Oil Protects and Cleans Outdoor and Indoor Furniture | Restores & Protects Wood, Prevents Drying & Other Damage | Natural Matte Finish | Safe for Daily Use, 17oz/500ml We do the research for you. Find the best products on Amazon at unbeatable prices. top5best.com PROTECT: Our high quality teak oil will protect and restore your indoor and outdoor teak wood products from sun rays and other causes of aging or wear and tear.. EASY APPLICATION: Easy to use and apply with the added benefit of being fast drying. Our teak oil dries to a beautiful matte finish.. PREVENTION: Helps to prevent further drying, warping, and splitting by reversing any signs of deterioration in their tracks. This highly refined teak oil conditions for a long lasting, golden brown, natural finish.. USES: Recommended for all teak wood products such as garden furniture, boats, pool decks, and more. Is also suitable for use on other hard, fine, and exotic woods in addition to teak.. RESTORES: Replaces oils lost through fading, sun damage, weathering, and other forms of deterioration..",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.05,
+        "width": 0.9,
+        "height": 0.9
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_6",
+      "text": "2024 Upgraded Version Ultrasonic Pest & Insect Repeller, Ultrasonic Repellent for Roach, Rodent, Mouse, Bugs, Mosquito, Mice, Spider, Ant,Electronic Plug in Pest Control,3 Mode Switching,6 Packs We do the research for you. Find the best products on Amazon at unbeatable prices. top5best.com 2026's Top 5 Best Ultrasonic Pest Repeller Indoor Top Rated and Reviewed. Easily choose and compare the Best Ultrasonic Pest Repeller Indoor for you all in one place. (Recent Reviews)",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.05,
+        "width": 0.9,
+        "height": 0.9
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_7",
+      "text": "Honeywell Home RTH7600D 7-Day Programmable Touchscreen Thermostat We do the research for you. Find the best products on Amazon at unbeatable prices. top5best.com 2026's Top 5 Best Auto Changeover Thermostat Top Rated and Reviewed. Easily choose and compare the Best Auto Changeover Thermostat for you all in one place. (Smart Buys (2026))",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.05,
+        "width": 0.9,
+        "height": 0.9
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_8",
+      "text": "Honeywell TH8321WF1001 Touchscreen Thermostat WiFi Vision Pro 8000 with Stages Upto 3 Heat / 2 Cool We do the research for you. Find the best products on Amazon at unbeatable prices. top5best.com With a large touchscreen display, the VisionPRO 8000 WiFi Programmable Thermostat makes it easy to control your home comfort.. Program a schedule for every day of the week or control the temperature remotely anytime from the Total Connect Comfort app.. Adaptive Intelligent Recovery. Schedule for Energy Savings. Set the same schedule each day, adjust it on weekends, or customize it by the day..",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.05,
+        "width": 0.9,
+        "height": 0.9
+      },
+      "ocr_confidence": 0.98
+    }
+  ],
+  "entities": [],
+  "claim_candidates": [],
+  "cv_findings": [],
+  "routing": {
+    "product_type": "unknown",
+    "frameworks": [
+      "FTC"
+    ],
+    "signal": "Fintech brand marketing ad (Top5Best) -> FTC baseline review"
+  },
+  "provenance": {
+    "cv_version": "silver",
+    "nlp_version": "silver",
+    "ruleset_hash": "silver",
+    "timestamp": "2026-07-05T18:42:14Z"
+  }
+}

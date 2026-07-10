@@ -1,0 +1,90 @@
+{
+  "asset_id": "1603591440940892",
+  "segments": [
+    {
+      "segment_id": "seg_1",
+      "text": "{{product.brand}}",
+      "role": "body",
+      "source": "ocr",
+      "bbox": null,
+      "ocr_confidence": 0.99
+    },
+    {
+      "segment_id": "seg_2",
+      "text": "{{product.name}}",
+      "role": "headline",
+      "source": "ocr",
+      "bbox": null,
+      "ocr_confidence": 0.99
+    },
+    {
+      "segment_id": "seg_3",
+      "text": "{{product.description}}",
+      "role": "disclosure",
+      "source": "ocr",
+      "bbox": null,
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_4",
+      "text": "No fees required Become the MVP for your finances and consolidate high-interest debt with a SoFi Personal Loan. No fees required! View your rate",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.05,
+        "width": 0.9,
+        "height": 0.9
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_5",
+      "text": "No fees required Become the MVP for your finances and consolidate high-interest debt with a SoFi Personal Loan. No fees required! View your rate",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.05,
+        "width": 0.9,
+        "height": 0.9
+      },
+      "ocr_confidence": 0.98
+    }
+  ],
+  "entities": [],
+  "claim_candidates": [],
+  "cv_findings": [
+    {
+      "finding_id": "cvf_1",
+      "measurement": "contrast_ratio",
+      "value": 4.5,
+      "segment_id": "seg_3",
+      "related_segment_id": null,
+      "method": "wcag2_relative_luminance"
+    },
+    {
+      "finding_id": "cvf_2",
+      "measurement": "text_height_percent",
+      "value": 1.5,
+      "segment_id": "seg_3",
+      "related_segment_id": null,
+      "method": "rendered_glyph_height"
+    }
+  ],
+  "routing": {
+    "product_type": "personal_loan",
+    "frameworks": [
+      "TILA",
+      "FTC",
+      "CFPB"
+    ],
+    "signal": "Personal loan product marketing (SoFi) -> TILA credit advertising; general marketing -> FTC/CFPB"
+  },
+  "provenance": {
+    "cv_version": "silver",
+    "nlp_version": "silver",
+    "ruleset_hash": "silver",
+    "timestamp": "2026-07-05T18:42:14Z"
+  }
+}

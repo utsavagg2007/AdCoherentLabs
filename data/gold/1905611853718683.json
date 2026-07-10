@@ -1,0 +1,197 @@
+{
+  "asset_id": "1905611853718683",
+  "segments": [
+    {
+      "segment_id": "seg_1",
+      "text": "Overdraft protection up to $300",
+      "role": "headline",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.03,
+        "y": 0.36,
+        "width": 0.42,
+        "height": 0.3
+      },
+      "ocr_confidence": 0.99
+    },
+    {
+      "segment_id": "seg_2",
+      "text": "with eligible direct deposits and opt-in",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.04,
+        "y": 0.69,
+        "width": 0.35,
+        "height": 0.09
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_3",
+      "text": "Green Dot Bank Member FDIC",
+      "role": "legal",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.03,
+        "y": 0.88,
+        "width": 0.13,
+        "height": 0.08
+      },
+      "ocr_confidence": 0.97
+    },
+    {
+      "segment_id": "seg_4",
+      "text": "Fees, terms and conditions apply. Learn more at www.go2bank.com/features/overdraft-protection. GO2bank™ cards are issued by Green Dot Bank, Member FDIC, pursuant to a license from Visa U.S.A., Inc. Visa is a registered trademark of Visa International Service Association.",
+      "role": "fine_print",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.17,
+        "y": 0.9,
+        "width": 0.79,
+        "height": 0.08
+      },
+      "ocr_confidence": 0.95
+    },
+    {
+      "segment_id": "seg_5",
+      "text": "Bank account *4578 $2,345.21 Available balance Add money Savings account $1,278.32 Total savings Save money",
+      "role": "unknown",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.6,
+        "y": 0.17,
+        "width": 0.29,
+        "height": 0.36
+      },
+      "ocr_confidence": 0.9
+    }
+  ],
+  "entities": [
+    {
+      "entity_id": "ent_1",
+      "entity_type": "amount",
+      "raw_text": "$300",
+      "normalized_value": 300.0,
+      "segment_id": "seg_1",
+      "char_span": {
+        "start": 27,
+        "end": 31
+      }
+    },
+    {
+      "entity_id": "ent_2",
+      "entity_type": "fee",
+      "raw_text": "Fees",
+      "normalized_value": null,
+      "segment_id": "seg_4",
+      "char_span": {
+        "start": 0,
+        "end": 4
+      }
+    },
+    {
+      "entity_id": "ent_3",
+      "entity_type": "amount",
+      "raw_text": "$2,345.21",
+      "normalized_value": 2345.21,
+      "segment_id": "seg_5",
+      "char_span": {
+        "start": 19,
+        "end": 28
+      }
+    },
+    {
+      "entity_id": "ent_4",
+      "entity_type": "amount",
+      "raw_text": "$1,278.32",
+      "normalized_value": 1278.32,
+      "segment_id": "seg_5",
+      "char_span": {
+        "start": 73,
+        "end": 82
+      }
+    }
+  ],
+  "claim_candidates": [
+    {
+      "claim_id": "clm_1",
+      "claim_type": "pricing",
+      "text": "Overdraft protection up to $300",
+      "segment_id": "seg_1",
+      "char_span": {
+        "start": 0,
+        "end": 31
+      },
+      "entity_ids": [
+        "ent_1"
+      ],
+      "pattern_id": null
+    }
+  ],
+  "cv_findings": [
+    {
+      "finding_id": "cvf_1",
+      "measurement": "contrast_ratio",
+      "value": 14.2,
+      "segment_id": "seg_1",
+      "related_segment_id": null,
+      "method": "wcag2_relative_luminance"
+    },
+    {
+      "finding_id": "cvf_2",
+      "measurement": "contrast_ratio",
+      "value": 11.8,
+      "segment_id": "seg_4",
+      "related_segment_id": null,
+      "method": "wcag2_relative_luminance"
+    },
+    {
+      "finding_id": "cvf_3",
+      "measurement": "text_height_percent",
+      "value": 1.2,
+      "segment_id": "seg_4",
+      "related_segment_id": null,
+      "method": "rendered_glyph_height"
+    },
+    {
+      "finding_id": "cvf_4",
+      "measurement": "disclosure_proximity",
+      "value": 0.12,
+      "segment_id": "seg_1",
+      "related_segment_id": "seg_2",
+      "method": "bbox_center_distance"
+    },
+    {
+      "finding_id": "cvf_5",
+      "measurement": "disclosure_proximity",
+      "value": 0.55,
+      "segment_id": "seg_1",
+      "related_segment_id": "seg_4",
+      "method": "bbox_center_distance"
+    },
+    {
+      "finding_id": "cvf_6",
+      "measurement": "marker_presence",
+      "value": 1.0,
+      "segment_id": "seg_3",
+      "related_segment_id": null,
+      "method": "fdic_member_marker_detector"
+    }
+  ],
+  "routing": {
+    "product_type": "deposit_account",
+    "frameworks": [
+      "Reg_DD",
+      "FTC",
+      "CFPB"
+    ],
+    "signal": "Deposit account (GO2bank/Green Dot Bank, Member FDIC) advertising overdraft coverage 'up to $300' -> Reg DD/1030.11 overdraft advertising disclosures; eligibility conditions (direct deposit + opt-in) qualify the headline benefit -> FTC clear-and-conspicuous review; overdraft program marketing -> CFPB UDAAP"
+  },
+  "provenance": {
+    "cv_version": "gold",
+    "nlp_version": "gold",
+    "ruleset_hash": "gold",
+    "timestamp": "2026-07-05T14:21:44.967090+00:00"
+  }
+}

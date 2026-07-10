@@ -1,0 +1,247 @@
+{
+  "asset_id": "795628683491121",
+  "segments": [
+    {
+      "segment_id": "seg_1",
+      "text": "Get Debt Relief",
+      "role": "headline",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.07,
+        "y": 0.06,
+        "width": 0.86,
+        "height": 0.1
+      },
+      "ocr_confidence": 0.99
+    },
+    {
+      "segment_id": "seg_2",
+      "text": "freedom DEBT RELIEF",
+      "role": "unknown",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.3,
+        "y": 0.22,
+        "width": 0.4,
+        "height": 0.19
+      },
+      "ocr_confidence": 0.97
+    },
+    {
+      "segment_id": "seg_3",
+      "text": "1 monthly payment",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.51,
+        "width": 0.2,
+        "height": 0.08
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_4",
+      "text": "No loan qualification needed",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.18,
+        "y": 0.62,
+        "width": 0.24,
+        "height": 0.12
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_5",
+      "text": "Tackles credit card debt, personal loan debt, medical debt",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.51,
+        "y": 0.6,
+        "width": 0.37,
+        "height": 0.17
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_6",
+      "text": "No max debt amount",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.69,
+        "y": 0.48,
+        "width": 0.26,
+        "height": 0.09
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_7",
+      "text": "Check eligibility",
+      "role": "cta",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.07,
+        "y": 0.83,
+        "width": 0.86,
+        "height": 0.1
+      },
+      "ocr_confidence": 0.99
+    }
+  ],
+  "entities": [
+    {
+      "entity_id": "ent_1",
+      "entity_type": "guarantee_term",
+      "raw_text": "No loan qualification needed",
+      "normalized_value": null,
+      "segment_id": "seg_4",
+      "char_span": {
+        "start": 0,
+        "end": 28
+      }
+    },
+    {
+      "entity_id": "ent_2",
+      "entity_type": "guarantee_term",
+      "raw_text": "No max debt amount",
+      "normalized_value": null,
+      "segment_id": "seg_6",
+      "char_span": {
+        "start": 0,
+        "end": 18
+      }
+    },
+    {
+      "entity_id": "ent_3",
+      "entity_type": "time_period",
+      "raw_text": "1 monthly payment",
+      "normalized_value": null,
+      "segment_id": "seg_3",
+      "char_span": {
+        "start": 0,
+        "end": 17
+      }
+    }
+  ],
+  "claim_candidates": [
+    {
+      "claim_id": "clm_1",
+      "claim_type": "performance",
+      "text": "Get Debt Relief",
+      "segment_id": "seg_1",
+      "char_span": {
+        "start": 0,
+        "end": 15
+      },
+      "entity_ids": [],
+      "pattern_id": null
+    },
+    {
+      "claim_id": "clm_2",
+      "claim_type": "performance",
+      "text": "1 monthly payment",
+      "segment_id": "seg_3",
+      "char_span": {
+        "start": 0,
+        "end": 17
+      },
+      "entity_ids": [
+        "ent_3"
+      ],
+      "pattern_id": null
+    },
+    {
+      "claim_id": "clm_3",
+      "claim_type": "guarantee",
+      "text": "No loan qualification needed",
+      "segment_id": "seg_4",
+      "char_span": {
+        "start": 0,
+        "end": 28
+      },
+      "entity_ids": [
+        "ent_1"
+      ],
+      "pattern_id": null
+    },
+    {
+      "claim_id": "clm_4",
+      "claim_type": "guarantee",
+      "text": "No max debt amount",
+      "segment_id": "seg_6",
+      "char_span": {
+        "start": 0,
+        "end": 18
+      },
+      "entity_ids": [
+        "ent_2"
+      ],
+      "pattern_id": null
+    },
+    {
+      "claim_id": "clm_5",
+      "claim_type": "performance",
+      "text": "Tackles credit card debt, personal loan debt, medical debt",
+      "segment_id": "seg_5",
+      "char_span": {
+        "start": 0,
+        "end": 58
+      },
+      "entity_ids": [],
+      "pattern_id": null
+    }
+  ],
+  "cv_findings": [
+    {
+      "finding_id": "cvf_1",
+      "measurement": "contrast_ratio",
+      "value": 12.5,
+      "segment_id": "seg_1",
+      "related_segment_id": null,
+      "method": "wcag2_relative_luminance"
+    },
+    {
+      "finding_id": "cvf_2",
+      "measurement": "contrast_ratio",
+      "value": 5.2,
+      "segment_id": "seg_7",
+      "related_segment_id": null,
+      "method": "wcag2_relative_luminance"
+    },
+    {
+      "finding_id": "cvf_3",
+      "measurement": "text_height_percent",
+      "value": 7.4,
+      "segment_id": "seg_1",
+      "related_segment_id": null,
+      "method": "rendered_glyph_height"
+    },
+    {
+      "finding_id": "cvf_4",
+      "measurement": "marker_presence",
+      "value": 0.0,
+      "segment_id": null,
+      "related_segment_id": null,
+      "method": "disclosure_block_detector"
+    }
+  ],
+  "routing": {
+    "product_type": "credit_repair",
+    "frameworks": [
+      "FTC",
+      "CFPB"
+    ],
+    "signal": "Debt-settlement/debt-relief service marketing outcome ('Get Debt Relief'), absolute eligibility claims ('No loan qualification needed', 'No max debt amount'), and no disclosure block anywhere on the asset -> FTC Telemarketing Sales Rule debt-relief provisions and deception review; debt-relief consumer product -> CFPB UDAAP"
+  },
+  "provenance": {
+    "cv_version": "gold",
+    "nlp_version": "gold",
+    "ruleset_hash": "gold",
+    "timestamp": "2026-07-05T14:21:44.967090+00:00"
+  }
+}

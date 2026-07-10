@@ -1,0 +1,115 @@
+{
+  "asset_id": "813393588117483",
+  "segments": [
+    {
+      "segment_id": "seg_1",
+      "text": "BMO combines experienced bankers with flexible accounts and digital tools to help your business stay organized and run smoothly.",
+      "role": "body",
+      "source": "ocr",
+      "bbox": null,
+      "ocr_confidence": 0.99
+    },
+    {
+      "segment_id": "seg_2",
+      "text": "BMO U.S.",
+      "role": "headline",
+      "source": "ocr",
+      "bbox": null,
+      "ocr_confidence": 0.99
+    },
+    {
+      "segment_id": "seg_3",
+      "text": "BMO Business Banking Open an account today. bmo.com/businessbanking Open an account today.",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.05,
+        "width": 0.9,
+        "height": 0.9
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_4",
+      "text": "BMO Business Banking Open an account today. bmo.com/businessbanking Open an account today.",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.05,
+        "width": 0.9,
+        "height": 0.9
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_5",
+      "text": "BMO Business Banking Open an account today. bmo.com/businessbanking Open an account today.",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.05,
+        "width": 0.9,
+        "height": 0.9
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_6",
+      "text": "BMO Business Banking   bmo.com/businessbanking  ",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.05,
+        "width": 0.9,
+        "height": 0.9
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_7",
+      "text": "BMO Business Banking   bmo.com/businessbanking  ",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.05,
+        "width": 0.9,
+        "height": 0.9
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_8",
+      "text": "BMO Business Banking Open an account today. bmo.com/businessbanking Open an account today.",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.05,
+        "width": 0.9,
+        "height": 0.9
+      },
+      "ocr_confidence": 0.98
+    }
+  ],
+  "entities": [],
+  "claim_candidates": [],
+  "cv_findings": [],
+  "routing": {
+    "product_type": "unknown",
+    "frameworks": [
+      "FTC"
+    ],
+    "signal": "Fintech brand marketing ad (BMO U.S.) -> FTC baseline review"
+  },
+  "provenance": {
+    "cv_version": "silver",
+    "nlp_version": "silver",
+    "ruleset_hash": "silver",
+    "timestamp": "2026-07-05T18:42:14Z"
+  }
+}

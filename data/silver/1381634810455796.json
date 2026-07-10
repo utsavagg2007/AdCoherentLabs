@@ -1,0 +1,379 @@
+{
+  "asset_id": "1381634810455796",
+  "segments": [
+    {
+      "segment_id": "seg_1",
+      "text": "Rupee on time",
+      "role": "unknown",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.79,
+        "y": 0.08,
+        "width": 0.18,
+        "height": 0.02
+      },
+      "ocr_confidence": 0.99
+    },
+    {
+      "segment_id": "seg_2",
+      "text": "Cush. Fast. Sorted.",
+      "role": "unknown",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.83,
+        "y": 0.1,
+        "width": 0.1,
+        "height": 0.015
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_3",
+      "text": "Low",
+      "role": "unknown",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.24,
+        "y": 0.13,
+        "width": 0.14,
+        "height": 0.05
+      },
+      "ocr_confidence": 0.99
+    },
+    {
+      "segment_id": "seg_4",
+      "text": "300 (Poor)",
+      "role": "unknown",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.23,
+        "y": 0.27,
+        "width": 0.08,
+        "height": 0.06
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_5",
+      "text": "850 (Excellent)",
+      "role": "unknown",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.69,
+        "y": 0.27,
+        "width": 0.11,
+        "height": 0.06
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_6",
+      "text": "Low Cibil Score",
+      "role": "headline",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.19,
+        "y": 0.38,
+        "width": 0.62,
+        "height": 0.08
+      },
+      "ocr_confidence": 0.99
+    },
+    {
+      "segment_id": "seg_7",
+      "text": "Instant Personal Loan",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.23,
+        "y": 0.47,
+        "width": 0.54,
+        "height": 0.05
+      },
+      "ocr_confidence": 0.99
+    },
+    {
+      "segment_id": "seg_8",
+      "text": "\u20b95K TO \u20b91.5 LAKH",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.21,
+        "y": 0.56,
+        "width": 0.58,
+        "height": 0.09
+      },
+      "ocr_confidence": 0.99
+    },
+    {
+      "segment_id": "seg_9",
+      "text": "Easy Apply with 3 Documents",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.11,
+        "y": 0.84,
+        "width": 0.21,
+        "height": 0.07
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_10",
+      "text": "100% Digital Journey",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.41,
+        "y": 0.84,
+        "width": 0.17,
+        "height": 0.07
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_11",
+      "text": "Instant Approval",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.72,
+        "y": 0.84,
+        "width": 0.17,
+        "height": 0.07
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_12",
+      "text": "RBI Regletered NBFC",
+      "role": "legal",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.02,
+        "y": 0.96,
+        "width": 0.14,
+        "height": 0.02
+      },
+      "ocr_confidence": 0.95
+    },
+    {
+      "segment_id": "seg_13",
+      "text": "*T&C Apply",
+      "role": "disclosure",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.85,
+        "y": 0.96,
+        "width": 0.13,
+        "height": 0.02
+      },
+      "ocr_confidence": 0.96
+    }
+  ],
+  "entities": [
+    {
+      "entity_id": "ent_1",
+      "entity_type": "amount",
+      "raw_text": "\u20b95K",
+      "normalized_value": 5000.0,
+      "segment_id": "seg_8",
+      "char_span": {
+        "start": 0,
+        "end": 3
+      }
+    },
+    {
+      "entity_id": "ent_2",
+      "entity_type": "amount",
+      "raw_text": "\u20b91.5 LAKH",
+      "normalized_value": 150000.0,
+      "segment_id": "seg_8",
+      "char_span": {
+        "start": 7,
+        "end": 16
+      }
+    },
+    {
+      "entity_id": "ent_3",
+      "entity_type": "percentage",
+      "raw_text": "100%",
+      "normalized_value": 100.0,
+      "segment_id": "seg_10",
+      "char_span": {
+        "start": 0,
+        "end": 4
+      }
+    },
+    {
+      "entity_id": "ent_4",
+      "entity_type": "time_period",
+      "raw_text": "Instant",
+      "normalized_value": null,
+      "segment_id": "seg_7",
+      "char_span": {
+        "start": 0,
+        "end": 7
+      }
+    },
+    {
+      "entity_id": "ent_5",
+      "entity_type": "time_period",
+      "raw_text": "Instant",
+      "normalized_value": null,
+      "segment_id": "seg_11",
+      "char_span": {
+        "start": 0,
+        "end": 7
+      }
+    }
+  ],
+  "claim_candidates": [
+    {
+      "claim_id": "clm_1",
+      "claim_type": "performance",
+      "text": "Instant Personal Loan",
+      "segment_id": "seg_7",
+      "char_span": {
+        "start": 0,
+        "end": 21
+      },
+      "entity_ids": [
+        "ent_4"
+      ],
+      "pattern_id": null
+    },
+    {
+      "claim_id": "clm_2",
+      "claim_type": "pricing",
+      "text": "\u20b95K TO \u20b91.5 LAKH",
+      "segment_id": "seg_8",
+      "char_span": {
+        "start": 0,
+        "end": 16
+      },
+      "entity_ids": [
+        "ent_1",
+        "ent_2"
+      ],
+      "pattern_id": null
+    },
+    {
+      "claim_id": "clm_3",
+      "claim_type": "performance",
+      "text": "Easy Apply with 3 Documents",
+      "segment_id": "seg_9",
+      "char_span": {
+        "start": 0,
+        "end": 27
+      },
+      "entity_ids": [],
+      "pattern_id": null
+    },
+    {
+      "claim_id": "clm_4",
+      "claim_type": "performance",
+      "text": "100% Digital Journey",
+      "segment_id": "seg_10",
+      "char_span": {
+        "start": 0,
+        "end": 20
+      },
+      "entity_ids": [
+        "ent_3"
+      ],
+      "pattern_id": null
+    },
+    {
+      "claim_id": "clm_5",
+      "claim_type": "performance",
+      "text": "Instant Approval",
+      "segment_id": "seg_11",
+      "char_span": {
+        "start": 0,
+        "end": 16
+      },
+      "entity_ids": [
+        "ent_5"
+      ],
+      "pattern_id": null
+    },
+    {
+      "claim_id": "clm_6",
+      "claim_type": "performance",
+      "text": "Low Cibil Score",
+      "segment_id": "seg_6",
+      "char_span": {
+        "start": 0,
+        "end": 15
+      },
+      "entity_ids": [],
+      "pattern_id": null
+    }
+  ],
+  "cv_findings": [
+    {
+      "finding_id": "cvf_1",
+      "measurement": "contrast_ratio",
+      "value": 14.5,
+      "segment_id": "seg_13",
+      "related_segment_id": null,
+      "method": "wcag2_relative_luminance"
+    },
+    {
+      "finding_id": "cvf_2",
+      "measurement": "text_height_percent",
+      "value": 1.8,
+      "segment_id": "seg_13",
+      "related_segment_id": null,
+      "method": "rendered_glyph_height"
+    },
+    {
+      "finding_id": "cvf_3",
+      "measurement": "contrast_ratio",
+      "value": 14.5,
+      "segment_id": "seg_12",
+      "related_segment_id": null,
+      "method": "wcag2_relative_luminance"
+    },
+    {
+      "finding_id": "cvf_4",
+      "measurement": "text_height_percent",
+      "value": 1.8,
+      "segment_id": "seg_12",
+      "related_segment_id": null,
+      "method": "rendered_glyph_height"
+    },
+    {
+      "finding_id": "cvf_5",
+      "measurement": "text_height_percent",
+      "value": 7.2,
+      "segment_id": "seg_6",
+      "related_segment_id": null,
+      "method": "rendered_glyph_height"
+    },
+    {
+      "finding_id": "cvf_6",
+      "measurement": "disclosure_proximity",
+      "value": 0.42,
+      "segment_id": "seg_8",
+      "related_segment_id": "seg_13",
+      "method": "bbox_center_distance"
+    }
+  ],
+  "routing": {
+    "product_type": "personal_loan",
+    "frameworks": [
+      "TILA",
+      "FTC",
+      "CFPB"
+    ],
+    "signal": "Personal loan advertising credit amount range (\u20b95K to \u20b91.5 Lakh) and low credit score eligibility ('Low Cibil Score') -> TILA/Reg Z credit advertising rules; speed and convenience claims ('Instant Approval', '100% Digital Journey') without APR or repayment terms disclosures -> FTC deception and CFPB UDAAP prominence review."
+  },
+  "provenance": {
+    "cv_version": "silver",
+    "nlp_version": "silver",
+    "ruleset_hash": "silver",
+    "timestamp": "2026-07-05T18:42:14Z"
+  }
+}

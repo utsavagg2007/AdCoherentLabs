@@ -1,0 +1,112 @@
+{
+  "asset_id": "1291568653069566",
+  "segments": [
+    {
+      "segment_id": "seg_1",
+      "text": "THIS WAY",
+      "role": "unknown",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.03,
+        "y": 0.47,
+        "width": 0.37,
+        "height": 0.11
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_2",
+      "text": "THAT WAY",
+      "role": "unknown",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.5,
+        "y": 0.52,
+        "width": 0.3,
+        "height": 0.1
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_3",
+      "text": "THE OTHER WAY",
+      "role": "unknown",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.46,
+        "y": 0.24,
+        "width": 0.44,
+        "height": 0.14
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_4",
+      "text": "synchrony",
+      "role": "unknown",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.06,
+        "y": 0.9,
+        "width": 0.25,
+        "height": 0.05
+      },
+      "ocr_confidence": 0.99
+    },
+    {
+      "segment_id": "seg_5",
+      "text": "Member FDIC",
+      "role": "legal",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.84,
+        "y": 0.9,
+        "width": 0.11,
+        "height": 0.05
+      },
+      "ocr_confidence": 0.97
+    }
+  ],
+  "entities": [],
+  "claim_candidates": [],
+  "cv_findings": [
+    {
+      "finding_id": "cvf_1",
+      "measurement": "contrast_ratio",
+      "value": 3.9,
+      "segment_id": "seg_5",
+      "related_segment_id": null,
+      "method": "wcag2_relative_luminance"
+    },
+    {
+      "finding_id": "cvf_2",
+      "measurement": "text_height_percent",
+      "value": 2.1,
+      "segment_id": "seg_5",
+      "related_segment_id": null,
+      "method": "rendered_glyph_height"
+    },
+    {
+      "finding_id": "cvf_3",
+      "measurement": "marker_presence",
+      "value": 1.0,
+      "segment_id": "seg_5",
+      "related_segment_id": null,
+      "method": "fdic_member_marker_detector"
+    }
+  ],
+  "routing": {
+    "product_type": "deposit_account",
+    "frameworks": [
+      "FTC",
+      "Reg_DD"
+    ],
+    "signal": "Brand awareness ad for Synchrony (FDIC-member bank) with no product terms, rates, or claims; Member FDIC marker present -> Reg DD/FDIC advertising-statement review; general marketing -> FTC baseline"
+  },
+  "provenance": {
+    "cv_version": "gold",
+    "nlp_version": "gold",
+    "ruleset_hash": "gold",
+    "timestamp": "2026-07-05T14:21:44.967090+00:00"
+  }
+}

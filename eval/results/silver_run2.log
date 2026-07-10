@@ -1,0 +1,65 @@
+[32mCreating model: ('PP-OCRv6_medium_det', None, None)[0m
+[32mModel files already exist. Using cached files. To redownload, please delete the directory manually: `/home/shadowxlord/.paddlex/official_models/PP-OCRv6_medium_det`.[0m
+/home/shadowxlord/AdCoherentLabs/.venv/lib/python3.12/site-packages/paddle/utils/cpp_extension/extension_utils.py:712: UserWarning: No ccache found. Please be aware that recompiling all source files may be required. You can download and install ccache from: https://github.com/ccache/ccache/blob/master/doc/INSTALL.md
+  warnings.warn(warning_message)
+[32mCreating model: ('PP-OCRv6_medium_rec', None, None)[0m
+[32mModel files already exist. Using cached files. To redownload, please delete the directory manually: `/home/shadowxlord/.paddlex/official_models/PP-OCRv6_medium_rec`.[0m
+[cv.ocr] backend: PaddleOCR (cpu)
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|██████████| 103/103 [00:00<00:00, 7684.33it/s]
+libpng warning: iCCP: known incorrect sRGB profile
+libpng warning: iCCP: known incorrect sRGB profile
+
+=== AdCoherentLabs Eval Report — 30 asset(s) ===
+
+Component metrics
+┌───────────┬──────────────────────┬───────────────────────┬──────┬──────┬───────────┬────────┬───────┐
+│ Component │ Detail               │ Metric                │ Gold │ Pred │ Precision │ Recall │ F1    │
+├───────────┼──────────────────────┼───────────────────────┼──────┼──────┼───────────┼────────┼───────┤
+│ entities  │ amount               │ f1=0.000              │ 18   │ 62   │ 0.000     │ 0.000  │ 0.000 │
+│ entities  │ apr                  │ f1=0.000              │ 12   │ 2    │ 0.000     │ 0.000  │ 0.000 │
+│ entities  │ fee                  │ f1=0.000              │ 1    │ 10   │ 0.000     │ 0.000  │ 0.000 │
+│ entities  │ guarantee_term       │ f1=0.000              │ 2    │ 4    │ 0.000     │ 0.000  │ 0.000 │
+│ entities  │ percentage           │ f1=0.000              │ 5    │ 38   │ 0.000     │ 0.000  │ 0.000 │
+│ entities  │ rate                 │ f1=0.000              │ 0    │ 2    │ 0.000     │ 0.000  │ 0.000 │
+│ entities  │ superlative          │ f1=0.000              │ 0    │ 1    │ 0.000     │ 0.000  │ 0.000 │
+│ entities  │ time_period          │ f1=0.000              │ 7    │ 8    │ 0.000     │ 0.000  │ 0.000 │
+│ entities  │ overall              │ f1=0.000              │ 45   │ 127  │ 0.000     │ 0.000  │ 0.000 │
+│ segments  │ body                 │ accuracy=0.037        │ 136  │ 136  │ —         │ —      │ —     │
+│ segments  │ cta                  │ accuracy=0.000        │ 1    │ 1    │ —         │ —      │ —     │
+│ segments  │ disclosure           │ accuracy=0.053        │ 19   │ 19   │ —         │ —      │ —     │
+│ segments  │ fine_print           │ accuracy=0.000        │ 1    │ 1    │ —         │ —      │ —     │
+│ segments  │ headline             │ accuracy=0.103        │ 29   │ 29   │ —         │ —      │ —     │
+│ segments  │ legal                │ accuracy=0.333        │ 3    │ 3    │ —         │ —      │ —     │
+│ segments  │ unknown              │ accuracy=0.417        │ 12   │ 12   │ —         │ —      │ —     │
+│ segments  │ overall              │ accuracy=0.075        │ 201  │ 587  │ —         │ —      │ —     │
+│ claims    │ overall              │ recall=0.097          │ 31   │ 142  │ 0.021     │ 0.097  │ 0.035 │
+│ claims    │ overall              │ exact_span_rate=0.000 │ 31   │ 142  │ —         │ —      │ —     │
+│ routing   │ CFPB                 │ f1=0.744              │ 18   │ 25   │ 0.640     │ 0.889  │ 0.744 │
+│ routing   │ ECOA                 │ f1=0.000              │ 3    │ 0    │ 0.000     │ 0.000  │ 0.000 │
+│ routing   │ FINRA                │ f1=0.000              │ 1    │ 0    │ 0.000     │ 0.000  │ 0.000 │
+│ routing   │ FTC                  │ f1=1.000              │ 30   │ 30   │ 1.000     │ 1.000  │ 1.000 │
+│ routing   │ Reg_DD               │ f1=0.444              │ 4    │ 14   │ 0.286     │ 1.000  │ 0.444 │
+│ routing   │ SEC                  │ f1=0.000              │ 1    │ 0    │ 0.000     │ 0.000  │ 0.000 │
+│ routing   │ TILA                 │ f1=0.571              │ 10   │ 11   │ 0.545     │ 0.600  │ 0.571 │
+│ routing   │ overall              │ f1=0.762              │ 67   │ 80   │ 0.700     │ 0.836  │ 0.762 │
+│ routing   │ product_type         │ accuracy=0.433        │ 30   │ 30   │ —         │ —      │ —     │
+│ cv        │ contrast_ratio       │ mae=—                 │ 25   │ 0    │ —         │ —      │ —     │
+│ cv        │ disclosure_proximity │ mae=—                 │ 5    │ 380  │ —         │ —      │ —     │
+│ cv        │ marker_presence      │ mae=1.000             │ 5    │ 587  │ —         │ —      │ —     │
+│ cv        │ text_height_percent  │ mae=3.375             │ 26   │ 587  │ —         │ —      │ —     │
+│ cv        │ overall              │ mae=2.697             │ 61   │ 1554 │ —         │ —      │ —     │
+└───────────┴──────────────────────┴───────────────────────┴──────┴──────┴───────────┴────────┴───────┘
+
+V1 target bars
+┌────────────────────┬─────────┬────────┬──────────────────────┬────────┐
+│ Target             │ Bar     │ Actual │                      │ Status │
+├────────────────────┼─────────┼────────┼──────────────────────┼────────┤
+│ entities.recall    │ >= 0.90 │ 0.000  │ ░░░░░░░░░░░░░░░░░░░░ │ FAIL ✗ │
+│ entities.precision │ >= 0.95 │ 0.000  │ ░░░░░░░░░░░░░░░░░░░░ │ FAIL ✗ │
+│ claims.recall      │ >= 0.85 │ 0.097  │ ██░░░░░░░░░░░░░░░░░░ │ FAIL ✗ │
+│ routing.f1         │ >= 0.80 │ 0.762  │ ███████████████░░░░░ │ FAIL ✗ │
+│ segments.accuracy  │ >= 0.80 │ 0.075  │ █░░░░░░░░░░░░░░░░░░░ │ FAIL ✗ │
+└────────────────────┴─────────┴────────┴──────────────────────┴────────┘
+
+Overall: 0/5 bars met — 5 BAR(S) FAILING
+CSV report written to /home/shadowxlord/AdCoherentLabs/eval/results/eval_20260706T191402Z.csv

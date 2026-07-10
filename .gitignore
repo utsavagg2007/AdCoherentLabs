@@ -1,0 +1,20 @@
+.next/
+node_modules/
+dist/
+coverage/
+.env
+.env.local
+.env.*.local
+pnpm-debug.log*
+*.tsbuildinfo
+
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Claude/IDE settings
+.claude/
+
+# Large files
+data/unlabeled/765302462623542.mp4

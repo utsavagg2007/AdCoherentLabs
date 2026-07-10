@@ -1,0 +1,101 @@
+{
+  "asset_id": "1474827564042555",
+  "segments": [
+    {
+      "segment_id": "seg_1",
+      "text": "{{product.brand}}",
+      "role": "body",
+      "source": "ocr",
+      "bbox": null,
+      "ocr_confidence": 0.99
+    },
+    {
+      "segment_id": "seg_2",
+      "text": "{{product.name}}",
+      "role": "headline",
+      "source": "ocr",
+      "bbox": null,
+      "ocr_confidence": 0.99
+    },
+    {
+      "segment_id": "seg_3",
+      "text": "{{product.description}}",
+      "role": "disclosure",
+      "source": "ocr",
+      "bbox": null,
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_4",
+      "text": "Take control of your credit \u2b50 \u2b50 \u2b50 \u2b50 \u2b50  We\u2019re rated 4.6 stars on the App Store from 100K+ reviews. \nCheck your eligibility faster than your phone dies at 1%. web.meetcleo.com",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.05,
+        "width": 0.9,
+        "height": 0.9
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_5",
+      "text": "Take control of your credit \u2b50 \u2b50 \u2b50 \u2b50 \u2b50  We\u2019re rated 4.6 stars on the App Store from 100K+ reviews. \nCheck your eligibility faster than your phone dies at 1%. web.meetcleo.com",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.05,
+        "width": 0.9,
+        "height": 0.9
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_6",
+      "text": "Take control of your credit \ud83d\ude80 Build credit* with every spend \u2705 No credit check \ud83d\ude4c No interest \ud83e\udd1d Your data is fully protected 100K \u2b50\ufe0f \u2b50\ufe0f\u2b50\ufe0f\u2b50\ufe0f\u2b50\ufe0f reviews.\n*The Credit Builder Card is issued by WebBank, Member FDIC pursuant to a license from Visa USA web.meetcleo.com",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.05,
+        "width": 0.9,
+        "height": 0.9
+      },
+      "ocr_confidence": 0.98
+    }
+  ],
+  "entities": [],
+  "claim_candidates": [],
+  "cv_findings": [
+    {
+      "finding_id": "cvf_1",
+      "measurement": "contrast_ratio",
+      "value": 4.5,
+      "segment_id": "seg_3",
+      "related_segment_id": null,
+      "method": "wcag2_relative_luminance"
+    },
+    {
+      "finding_id": "cvf_2",
+      "measurement": "text_height_percent",
+      "value": 1.5,
+      "segment_id": "seg_3",
+      "related_segment_id": null,
+      "method": "rendered_glyph_height"
+    }
+  ],
+  "routing": {
+    "product_type": "unknown",
+    "frameworks": [
+      "FTC"
+    ],
+    "signal": "Fintech brand marketing ad (Cleo) -> FTC baseline review"
+  },
+  "provenance": {
+    "cv_version": "silver",
+    "nlp_version": "silver",
+    "ruleset_hash": "silver",
+    "timestamp": "2026-07-05T18:42:14Z"
+  }
+}

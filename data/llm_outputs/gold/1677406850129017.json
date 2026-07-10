@@ -1,0 +1,58 @@
+{
+  "asset_id": "1677406850129017",
+  "findings": [
+    {
+      "finding_id": "llmf_001",
+      "framework": "TILA",
+      "severity": "low",
+      "verdict": "compliant",
+      "cited_segment_ids": ["seg_2", "seg_3", "seg_7"],
+      "cited_entity_ids": ["ent_2"],
+      "quoted_evidence": "Aven 5.99%² Minutes 2% Cash Back²",
+      "claim_candidate_id": "clm_3",
+      "reasoning": "The 5.99% figure is presented under a STARTING APR column header, so the rate is stated as an annual percentage rate as § 1026.16(b)(2) requires for HELOC advertising. No payment amounts, downpayment, or repayment-period terms appear, so § 1026.24(d) triggering-term disclosures are not implicated. The footnote marker resolves to the terms pointer in the disclosure segment."
+    },
+    {
+      "finding_id": "llmf_002",
+      "framework": "FTC",
+      "severity": "low",
+      "verdict": "compliant",
+      "cited_segment_ids": ["seg_3", "seg_4", "seg_5", "seg_6"],
+      "cited_entity_ids": ["ent_2", "ent_5", "ent_6", "ent_7"],
+      "quoted_evidence": "U.S. Bank 7.20% Weeks None",
+      "claim_candidate_id": "clm_2",
+      "reasoning": "The comparison table names each competitor and states specific, checkable starting APRs (7.20%, 8.15%, 6.30%) rather than generalized superiority language. Competitor rates of this kind are publicly verifiable, and each comparative cell carries the footnote marker pointing to the conditions disclosure. The comparison is adequately grounded for an ad of this format."
+    },
+    {
+      "finding_id": "llmf_003",
+      "framework": "FTC",
+      "severity": "low",
+      "verdict": "compliant",
+      "cited_segment_ids": ["seg_2"],
+      "cited_entity_ids": ["ent_1"],
+      "quoted_evidence": "STARTING APR SPEED REWARDS 100% DIGITAL PROCESS¹",
+      "claim_candidate_id": "clm_5",
+      "reasoning": "The 100% DIGITAL PROCESS claim describes the application channel, is objectively verifiable by the advertiser's own product, and carries a footnote qualifier. It is not a performance outcome promise to consumers."
+    },
+    {
+      "finding_id": "llmf_004",
+      "framework": "CFPB",
+      "severity": "low",
+      "verdict": "compliant",
+      "cited_segment_ids": ["seg_1", "seg_7"],
+      "cited_entity_ids": [],
+      "quoted_evidence": "Conditions apply. Visit aven.com for terms.",
+      "claim_candidate_id": "clm_1",
+      "reasoning": "The headline promise of lower HELOC payments is comparative framing supported by the rate table in the same creative, and the conditions disclosure directs to full terms. No UDAAP concern beyond the FTC and TILA items separately reviewed."
+    }
+  ],
+  "reviewed_clear": ["clm_4", "clm_6"],
+  "frameworks_evaluated": ["TILA", "FTC", "CFPB"],
+  "llm_meta": {
+    "model": "claude-fable-5",
+    "prompt_version": "compliance-review-v1.3",
+    "rag_corpus_hash": "9c41d2ab77e01f45",
+    "reviewed_at": "2026-07-07T12:00:00Z",
+    "latency_ms": 12940
+  }
+}

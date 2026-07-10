@@ -1,0 +1,25 @@
+{
+  "asset_id": "asset_0001",
+  "findings": [
+    {
+      "finding_id": "llmf_001",
+      "framework": "Reg_DD",
+      "severity": "low",
+      "verdict": "compliant",
+      "cited_segment_ids": ["seg_1"],
+      "cited_entity_ids": ["ent_1"],
+      "quoted_evidence": "Earn 4.50% APY on every dollar",
+      "claim_candidate_id": "clm_1",
+      "reasoning": "The rate of return is stated as an annual percentage yield exactly as § 1030.8(b) requires, the accuracy date and rate-change caveat required for advertised yields appear in the adjacent disclosure, and no minimum-balance tiering is claimed that would demand further qualification."
+    }
+  ],
+  "reviewed_clear": ["seg_2"],
+  "frameworks_evaluated": ["Reg_DD", "FTC"],
+  "llm_meta": {
+    "model": "claude-fable-5",
+    "prompt_version": "compliance-review-v1.3",
+    "rag_corpus_hash": "9c41d2ab77e01f45",
+    "reviewed_at": "2026-07-07T12:00:00Z",
+    "latency_ms": 7350
+  }
+}

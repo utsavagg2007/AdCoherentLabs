@@ -1,0 +1,115 @@
+{
+  "asset_id": "1579155903039683",
+  "segments": [
+    {
+      "segment_id": "seg_1",
+      "text": "Enhance your facilities with a new scoreboard at a fraction of the cost\ud83d\udc4d",
+      "role": "body",
+      "source": "ocr",
+      "bbox": null,
+      "ocr_confidence": 0.99
+    },
+    {
+      "segment_id": "seg_2",
+      "text": "Power Ad Company",
+      "role": "headline",
+      "source": "ocr",
+      "bbox": null,
+      "ocr_confidence": 0.99
+    },
+    {
+      "segment_id": "seg_3",
+      "text": "Scoreboards At No Cost   fb.me  ",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.05,
+        "width": 0.9,
+        "height": 0.9
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_4",
+      "text": "    fb.me  ",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.05,
+        "width": 0.9,
+        "height": 0.9
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_5",
+      "text": "Enhance Your Stadium or Gym   fb.me  ",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.05,
+        "width": 0.9,
+        "height": 0.9
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_6",
+      "text": "Fundraising Scoreboards   fb.me  ",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.05,
+        "width": 0.9,
+        "height": 0.9
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_7",
+      "text": "Free Digital Scoreboards   fb.me  ",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.05,
+        "width": 0.9,
+        "height": 0.9
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_8",
+      "text": "Custom LED Scoreboards   fb.me  ",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.05,
+        "width": 0.9,
+        "height": 0.9
+      },
+      "ocr_confidence": 0.98
+    }
+  ],
+  "entities": [],
+  "claim_candidates": [],
+  "cv_findings": [],
+  "routing": {
+    "product_type": "unknown",
+    "frameworks": [
+      "FTC"
+    ],
+    "signal": "Fintech brand marketing ad (Power Ad Company) -> FTC baseline review"
+  },
+  "provenance": {
+    "cv_version": "silver",
+    "nlp_version": "silver",
+    "ruleset_hash": "silver",
+    "timestamp": "2026-07-05T18:42:14Z"
+  }
+}

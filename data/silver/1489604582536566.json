@@ -1,0 +1,218 @@
+{
+  "asset_id": "1489604582536566",
+  "segments": [
+    {
+      "segment_id": "seg_1",
+      "text": "Get a new perk with your Robinhood Gold membership ($5/mo.)",
+      "role": "body",
+      "source": "ocr",
+      "bbox": null,
+      "ocr_confidence": 0.99
+    },
+    {
+      "segment_id": "seg_2",
+      "text": "Robinhood",
+      "role": "headline",
+      "source": "ocr",
+      "bbox": null,
+      "ocr_confidence": 0.99
+    },
+    {
+      "segment_id": "seg_3",
+      "text": "Make Your Money Work Harder Earn 3.35% APY on uninvested cash with Robinhood Gold. $5/month subscription & terms apply. robinhood.com Earn 3.35% APY on uninvested cash with Robinhood Gold. $5/month subscription & terms apply.",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.05,
+        "width": 0.9,
+        "height": 0.9
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_4",
+      "text": "    robinhood.com  ",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.05,
+        "width": 0.9,
+        "height": 0.9
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_5",
+      "text": "    robinhood.com  ",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.05,
+        "width": 0.9,
+        "height": 0.9
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_6",
+      "text": "    robinhood.com  ",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.05,
+        "width": 0.9,
+        "height": 0.9
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_7",
+      "text": "    robinhood.com  ",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.05,
+        "width": 0.9,
+        "height": 0.9
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_8",
+      "text": "    robinhood.com  ",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.05,
+        "width": 0.9,
+        "height": 0.9
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_9",
+      "text": "    robinhood.com  ",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.05,
+        "width": 0.9,
+        "height": 0.9
+      },
+      "ocr_confidence": 0.98
+    }
+  ],
+  "entities": [
+    {
+      "entity_id": "ent_1",
+      "entity_type": "amount",
+      "raw_text": "$5",
+      "normalized_value": 5.0,
+      "segment_id": "seg_1",
+      "char_span": {
+        "start": 52,
+        "end": 54
+      }
+    },
+    {
+      "entity_id": "ent_2",
+      "entity_type": "apr",
+      "raw_text": "3.35% APY",
+      "normalized_value": 3.35,
+      "segment_id": "seg_3",
+      "char_span": {
+        "start": 33,
+        "end": 42
+      }
+    },
+    {
+      "entity_id": "ent_3",
+      "entity_type": "apr",
+      "raw_text": "3.35% APY",
+      "normalized_value": 3.35,
+      "segment_id": "seg_3",
+      "char_span": {
+        "start": 139,
+        "end": 148
+      }
+    },
+    {
+      "entity_id": "ent_4",
+      "entity_type": "amount",
+      "raw_text": "$5",
+      "normalized_value": 5.0,
+      "segment_id": "seg_3",
+      "char_span": {
+        "start": 83,
+        "end": 85
+      }
+    },
+    {
+      "entity_id": "ent_5",
+      "entity_type": "amount",
+      "raw_text": "$5",
+      "normalized_value": 5.0,
+      "segment_id": "seg_3",
+      "char_span": {
+        "start": 189,
+        "end": 191
+      }
+    }
+  ],
+  "claim_candidates": [
+    {
+      "claim_id": "clm_1",
+      "claim_type": "pricing",
+      "text": "Get a new perk with your Robinhood Gold membership ($5/mo.)",
+      "segment_id": "seg_1",
+      "char_span": {
+        "start": 0,
+        "end": 59
+      },
+      "entity_ids": [
+        "ent_1"
+      ],
+      "pattern_id": null
+    },
+    {
+      "claim_id": "clm_2",
+      "claim_type": "pricing",
+      "text": "Make Your Money Work Harder Earn 3.35% APY on uninvested cash with Robinhood Gold. $5/month subscription & terms apply. robinhood.com Earn 3.35% APY on uninvested cash with Robinhood Gold. $5/month subscription & terms apply.",
+      "segment_id": "seg_3",
+      "char_span": {
+        "start": 0,
+        "end": 225
+      },
+      "entity_ids": [
+        "ent_2",
+        "ent_3",
+        "ent_4",
+        "ent_5"
+      ],
+      "pattern_id": null
+    }
+  ],
+  "cv_findings": [],
+  "routing": {
+    "product_type": "investment",
+    "frameworks": [
+      "SEC",
+      "FINRA",
+      "FTC"
+    ],
+    "signal": "Investment brokerage product (Robinhood) -> SEC suitability and FINRA communications rules"
+  },
+  "provenance": {
+    "cv_version": "silver",
+    "nlp_version": "silver",
+    "ruleset_hash": "silver",
+    "timestamp": "2026-07-05T18:42:14Z"
+  }
+}

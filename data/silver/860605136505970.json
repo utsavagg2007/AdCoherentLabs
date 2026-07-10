@@ -1,0 +1,118 @@
+{
+  "asset_id": "860605136505970",
+  "segments": [
+    {
+      "segment_id": "seg_1",
+      "text": "Delivering big savings on tech and more. It\u2019s kind of our thing.",
+      "role": "body",
+      "source": "ocr",
+      "bbox": null,
+      "ocr_confidence": 0.99
+    },
+    {
+      "segment_id": "seg_2",
+      "text": "{{product.name}}",
+      "role": "headline",
+      "source": "ocr",
+      "bbox": null,
+      "ocr_confidence": 0.99
+    },
+    {
+      "segment_id": "seg_3",
+      "text": "INIU - Portable Charger, Compact 10000mAh PD 45W Power Bank with Lanyard USB-C Cable for iPhone, Samsung, Pixel, iPad etc - Black Delivering big savings on tech and more. It\u2019s kind of our thing. bestbuy.com You\u2019re not going to want to miss these deals.",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.05,
+        "width": 0.9,
+        "height": 0.9
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_4",
+      "text": "INIU - Portable Charger, Compact 10000mAh PD 22.5W Power Bank for iPhone, Samsung etc - Black Delivering big savings on tech and more. It\u2019s kind of our thing. bestbuy.com You\u2019re not going to want to miss these deals.",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.05,
+        "width": 0.9,
+        "height": 0.9
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_5",
+      "text": "INIU - 22.5W Fast Charging 20000 mAh Power Bank, USB C in & out Portable Charger with LED Display for iPhone, Samsung, and More - Black Delivering big savings on tech and more. It\u2019s kind of our thing. bestbuy.com You\u2019re not going to want to miss these deals.",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.05,
+        "width": 0.9,
+        "height": 0.9
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_6",
+      "text": "INIU - Portable Charger, Compact 10000mAh PD 45W Power Bank with Built-in Cable & Digital Display for iPhone, Samsung etc - Black Delivering big savings on tech and more. It\u2019s kind of our thing. bestbuy.com You\u2019re not going to want to miss these deals.",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.05,
+        "width": 0.9,
+        "height": 0.9
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_7",
+      "text": "INIU - Pocket Power 10K Power Bank with Built-In USB C Cable, Compact 10000mAh PD 20W (IN&OUT) for iPhone, Samsung etc - Black Delivering big savings on tech and more. It\u2019s kind of our thing. bestbuy.com You\u2019re not going to want to miss these deals.",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.05,
+        "width": 0.9,
+        "height": 0.9
+      },
+      "ocr_confidence": 0.98
+    },
+    {
+      "segment_id": "seg_8",
+      "text": "INIU - MagPro 10K Qi2 Magnetic Power Bank 15W, Ultra Compact 10000mAh 30W Portable Charger with Foldable Stand - Black Delivering big savings on tech and more. It\u2019s kind of our thing. bestbuy.com You\u2019re not going to want to miss these deals.",
+      "role": "body",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.05,
+        "width": 0.9,
+        "height": 0.9
+      },
+      "ocr_confidence": 0.98
+    }
+  ],
+  "entities": [],
+  "claim_candidates": [],
+  "cv_findings": [],
+  "routing": {
+    "product_type": "credit_card",
+    "frameworks": [
+      "TILA",
+      "FTC",
+      "CFPB",
+      "ECOA"
+    ],
+    "signal": "Credit card marketing (Best Buy) -> TILA disclosures and ECOA advertising rules; FTC baseline"
+  },
+  "provenance": {
+    "cv_version": "silver",
+    "nlp_version": "silver",
+    "ruleset_hash": "silver",
+    "timestamp": "2026-07-05T18:42:14Z"
+  }
+}
