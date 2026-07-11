@@ -1,0 +1,863 @@
+﻿
+	<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+	
+	<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+	<head>
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+	    <meta name="robots" content="noimageindex">
+	    <meta charset="iso-8859-1">
+	    <META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=ISO-8859-1">
+	    	    <title>Code of Laws - Title 39 - Chapter 5- - TRADE AND COMMERCE</title>
+	    <link rel="SHORTCUT ICON" href="/images/stateflagsmall.ico" />
+		<link rel="icon" href="/images/stateflagsmall.ico" type="image/ico" />
+		<link rel="SHORTCUT ICON" href="/images/South-Carolina-Flag2.ico" />
+
+		<link type="text/css" rel="stylesheet" href="/css/main.css" media="all" />
+				
+		<!--[if lte IE 7]>
+		<link type="text/css" rel="stylesheet" href="/css/ie7main.css" media="all" />
+		<![endif]-->
+		<!--[if gte IE 7]>
+		<link type="text/css" rel="stylesheet" href="/css/iemain.css" media="all" />
+		<![endif]-->
+		<link type="text/css" rel="stylesheet" href="/css/print.css" media="print" />
+		<link type="text/css" rel="stylesheet" href="/css/supplement.css" media="screen" />
+		<!--<link type="text/css" rel="stylesheet" href="/css/zipsearch.css" media="screen" />
+		<link type="text/css" rel="stylesheet" href="/css/vote.css" media="screen" />
+		<link type="text/css" rel="stylesheet" href="/css/contact.css" media="screen" />
+		<link type="text/css" rel="stylesheet" href="/css/navwrap.css" media="screen" />
+		<link type="text/css" rel="stylesheet" href="/css/linkbar.css" media="screen" />-->
+	
+		<!--<script type="text/javascript" src="/js/jquery-1.10.1.min.js"></script>
+		<script type="text/javascript" src="/js/jquery-1.12.4.min.js"></script>-->
+		<script type="text/javascript" src="/js/jquery-3.5.1.min.js"></script>
+				<script type="text/javascript" src="/js/main_linux.js"></script>
+		
+
+		
+
+
+
+		<!--<script type="text/javascript" src="/js/common.js"></script>
+		<script type="text/javascript" src="/js/utils.js"></script>
+		<script type="text/javascript" src="/js/date.js"></script>
+		<script type="text/javascript" src="/js/lightbox.js"></script>
+		<script type="text/javascript" src="/js/legislation.js"></script>
+		<script type="text/javascript" src="/js/logon_lits.js"></script>
+		<script type="text/javascript" src="/js/message.js"></script>
+		<script type="text/javascript" src="/js/comm_meeting.js"></script>-->
+		<script type="text/vbscript" src="/vbs/comm_meeting.vbs"></script>
+		<!--<script type="text/javascript" src="/js/regs.js"></script>-->
+				
+	   	<script type="text/javascript">
+	    //document.onclick = function () { document.getElementById('transbox').style.display= 'none' };
+	    	var xmlhttp=false;
+			xmlhttp = create_xml_object();
+	
+			function getElement(ele)
+			{
+				var theobj = false;
+				if(typeof ele == 'string')
+					theobj = (document.getElementById)?document.getElementById(ele):document.all[ele];
+				else
+					theobj = ele;
+			
+				return theobj;
+			}
+		
+			function checkreader(friendlyalert)
+			{
+			 	/*friendlyalert=friendlyalert||false;
+			 	
+			 	var browser_info = perform_acrobat_detection();
+				if (!browser_info.acrobat)
+				{
+				 	loadadobebox('adobebox', '/adobe.php');
+					return false;
+				}
+				else if (friendlyalert)
+				{
+			 		alert(friendlyalert);
+				}*/
+				return true;
+			}
+				
+			function loadadobebox(boxname, url)
+			{
+				var response = false;
+	
+				doRequest(xmlhttp, "GET", url, false, null, null);
+				if (xmlhttp.status == 200)
+				{
+		         	response = xmlhttp.responseText;
+				}
+	
+				if(response)
+				{
+			 		var ele = document.getElementById(boxname);
+				 	if (ele)
+				 	{
+				 		ele.style.visibility = 'hidden';
+		 				ele.style.display = 'block';
+	
+		 				positionElement(ele, 'center', 'center', true);
+	
+						ele.innerHTML = response;
+					    ele.style.visibility = 'visible';
+					    ele.style.display = 'block';
+	//				    ele.scrollIntoView(true);
+					}
+				}
+				return response;
+			}
+	
+	
+			function init()
+			{
+		 		var ld=document.getElementById("loading");
+				if(ld)
+				{
+					ld.style.display = 'none';
+				}
+			}
+			
+			function openmore()
+			{
+			 	var id = document.getElementById('quicksearch');
+			 	if (id)
+			 	{
+				 	var pos = findPos(id);
+				 	id.style.zIndex = 10;
+		//		 	id.style.left = pos[0]+'px';
+		//		  	id.style.top = pos[1]+'px';
+				  	id.style.height = '295px';
+				  	id.style.position = 'absolute';
+				  	id.style.backgroundColor = '#f7f4ec';
+				  	var id2 = document.getElementById('searchmore');
+				  	if (id2)
+				  	{
+				  	 	id2.style.display = 'none';
+				  	}
+				  	var id3 = document.getElementById('contactlegislatordiv');
+				  	if (id3)
+				  	{
+				  	 	id3.style.display = 'none';
+				  	}
+				}
+			}
+		
+			function closemore()
+			{
+			 	var id = document.getElementById('quicksearch');
+			 	if (id)
+			 	{
+				  	id.style.height = '135px';
+				  	id.style.position = '';
+				  	id.style.backgroundColor = 'transparent';
+				  	var id2 = document.getElementById('searchmore');
+				  	if (id2)
+				  	{
+				  	 	id2.style.display = 'block';
+				  	}
+				  	var id3 = document.getElementById('contactlegislatordiv');
+				  	if (id3)
+				  	{
+				  	 	id3.style.display = '';
+				  	}
+				}		 	
+			}
+		
+		<!-- This script and many more are available free online at -->
+		<!-- The JavaScript Source!! http://javascript.internet.com -->
+		
+		<!-- Begin
+		function right(e) {
+		var msg = "Use of this image is strictly prohibited unless express written permission is given to the user by South Carolina Legislative Services Agency.";
+		if (navigator.appName == 'Netscape' && e.which == 3) {
+		alert(msg);
+		return false;
+		stopEvent(e);
+		}
+		if (navigator.appName == 'Microsoft Internet Explorer' && event.button==2) {
+		alert(msg);
+		return false;
+			stopEvent(event);
+		}
+		else return true;
+		}
+		
+	function trap() 
+	{
+		if(document.images)
+		{
+			for(i=0;i<document.images.length;i++)
+			{
+				if(document.images[i].className == 'allowcontextmenu')
+				{
+					// this should have no scripting
+				}
+				else
+				{
+				 	document.images[i].onmousedown = right;
+					document.images[i].oncontextmenu = function(){ return false; };
+					//document.images[i].onmouseup = right;
+				}
+			}
+		}
+	}
+
+	function findfwtext(texttofind) 
+	{
+	 	var fwtextele = document.getElementById('fwtext');
+		if(fwtextele)
+		{
+			fwtextele.value = texttofind;
+		}
+	}	
+		// End -->
+		</script>
+
+		<!-- ADDED FOR V4 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-LJY6FMNQKH"></script>
+
+
+<script type="text/javascript">
+
+//ADDED FOR V4
+//Google tag (gtag.js) 
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-LJY6FMNQKH');
+
+ 
+ /* COMMENTING OUT UPGRADING TO V4 -A
+  var _gaq = _gaq || [];
+  _gaq.push(['_setAccount', 'UA-36207109-1']);
+  _gaq.push(['_setDomainName', 'scstatehouse.gov']);
+  _gaq.push(['_setAllowLinker', true]);
+  _gaq.push(['_trackPageview']);
+ 
+  (function() {
+    var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+    ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+  })();
+*/
+  
+      $(document).ready(function(){
+        // COMMENTING THIS OUT NO LONGER BEING ACTIVELY USED TO MONITOR FOR TRAFFIC TO SPECIFIC LINKS - A
+        /*
+          var anchors = $('div#contentsection a');
+
+          //console.log('anchors...'+anchors.length);
+          if(anchors.length > 0){
+            //console.log('setting up event handler...');
+            anchors.click(function(){
+              var a = $(this).attr('href');
+              if(_gaq && (a.substr(-3) == 'htm' || a.substr(-4) == 'html' || a.substr(-3) == 'doc' || a.substr(-4) == 'docx' || a.substr(-3) == 'pdf' || a.substr(-3) == 'xls' || a.substr(-4) == 'xlsx')) {
+                //console.log(a);
+                _gaq.push(['_trackPageview', $(this).attr('href')]);
+              }
+              
+              var aText = $(this).text().toLowerCase();
+              if (a.indexOf('getfile.php') > -1 && aText === 'word'){
+                    _gaq.push(['_trackEvent', 'Word Doc', 'Download', ('from page: ' + document.location + ' - href: ' + a)]);
+              }
+
+            });
+          }
+          */
+      });
+
+</script>
+	</head>
+	
+		
+	<body class="home"  onload="init(); trap();">
+	<noscript>Your browser does not support JavaScript!  This page will not render correctly.</noscript> 
+
+
+	
+	<div id="adobebox" style="position:absolute; width:400px; height:150px; border:2px solid #555555; background-color:#cccccc; display:none;"></div>
+	<div id="container" >	
+				<div id="header" class="nodisplay" style="text-align:center; height:100px;" >
+									<img id="headerimg" class="nodisplay" alt="South Carolina Legislature" title="South Carolina Legislature" src="/images/header8.png" />
+								
+							<!--	<div class="award"><span style="color:#831224; font-weight:bold; font-size:1.5em;">*</span> Recipient of<br>the Notable State Documents Award<br>by the<br>South Carolina<br>State Library.</div>-->
+				
+				
+			</div>
+			<div class="printdisplay"><img border="0" src="/images/titleprint.jpg" alt="South Carolina Legislature" title="South Carolina Legislature" alt="South Carolina Legislature" title="South Carolina State Legislature" /><br /><hr /><br /></div>
+	
+			<div id="pagebody" >
+	
+	
+<!--<div id="topmessage">
+<br style="display:block; margin-top:10px;">
+Searches and data queries will be unavailable beginning Friday, August 19, 2016, from 8:00 PM until Saturday, August 20th at 8:00 AM<br>due to scheduled maintenance.</div>-->
+				<!-- Prompt IE 8/7/6 users to upgrade to a newer browser. -->
+				<!--[if lte IE 8]>
+				<div class="oldframe">In order to improve your experience using this website, please <a href="http://browsehappy.com/">upgrade your browser</a>.</div>
+				<![endif]-->
+			
+			
+			
+			<div id="menu" class="nodisplay">
+				<ul class="nodisplay">
+				<li><a href="/index.php">Home</a></li>
+<li><a href="/senate.php">Senate</a></li>
+<li><a href="/house.php">House</a></li>
+<li><a href="/committeeinfo.php">Committee&nbsp;Postings&nbsp;and&nbsp;Reports</a></li>
+<li><a href="/council.php">Legislative Council</a></li>
+<li><a href="/citizens.php">Citizens&#39; Interest</a></li>
+<li><a href="/publications.php">Publications</a></li>
+		    	</ul>
+			</div>
+			<div id="search" class="nodisplay" style="height: 28px;"><div class="nodisplay" style="float:right; margin:6px 20px 0px 0;">
+							<!--<a style="color:#f7f4ec; height:15px;" href="#" onClick="rsswindow();"><img border=0 src="/images/lock.png" style="vertical-align: middle; width: 15px; height: 15px;">&nbsp;Staff&nbsp;Portal</a>-->
+<!--				<a style="color:#f7f4ec; height:15px;" href="/splashpage/splashpage.html"><img border=0 src="/images/lock.png" style="vertical-align: middle; width: 15px; height: 15px;">&nbsp;Staff&nbsp;Portal</a> -->
+				<a style="color:#f7f4ec; height:15px;" href="/onlineservices/index.php"><img border="0" src="/images/lock.png" style="vertical-align: middle; width: 15px; height: 15px;">&nbsp;Staff&nbsp;Portal</a>
+			<!--	<a style="color:#f7f4ec; height:15px;" href="/maintenance_portal.php"><img border=0 src="/images/lock.png" style="vertical-align: middle; width: 15px; height: 15px;">&nbsp;Staff&nbsp;Portal</a>-->
+						</div></div>
+			
+	
+					<div id="sidebar" class="nodisplay">
+	<div id="vidlinks" style="height: 50px;">
+						<!--<img src="/images/videobutton12d.png">-->
+											<ul id="vidsidemenu">
+	<li id="vidinnermenu" style="font-size:16px; margin: 0 0 5px 0;">Chamber Video</li>
+<li id="sbroadcast" style="float: left; width:50%;">
+<a id="liveS" style="width: 100%; text-decoration:underline;" href="javascript:void(0);" onClick="live_stream('S', false, false, '0')">Senate</a><br><a id="liveaudioS" style="margin:-3px 0 0 0; text-decoration:underline; width: 100%; font-size: 8px;" href="javascript:void(0);" onClick="live_stream('S', false, false, '1');">(Audio Only)</a>
+</li>
+<li id="hbroadcast" style="float: left; width:50%;">
+<a id="liveH" style="width: 100%; text-decoration:underline;" href="javascript:void(0);" onClick="live_stream('H', false, false, '0')">House</a><br><a id="liveaudioH" style="margin:-3px 0 0 0; text-decoration:underline; width: 100%; font-size: 8px;" href="javascript:void(0);" onClick="live_stream('H', false, false, '1');">(Audio Only)</a>
+</li>
+						</ul>
+					</div>
+					<div id="commvidlinks"><a href="/video/schedule.php">Video&nbsp;Schedule</a><a style="border-top:1px solid #fff; padding-top:12px;" href="/video/archives.php">Video Archives</a></div>
+										<div id="sidemenu">
+						<ul id="innermenu">
+		
+							<li><a href="/howdoi.php">How do I...</a></li>
+										
+							
+								<li class="nolink" onMouseOver="var ele=document.getElementById('sidesearch'); if(ele){ele.style.display='block'; document.sidesearchform.searchtext.focus();}" onMouseOut="var ele=document.getElementById('sidesearch'); if(ele){ele.style.display='none';}"><div class="nolinkdiv">Quick Search</div>
+								<div id="sidesearch" class="sidesubmenu">
+									<form id="sidesearchform" name="sidesearchform" method="POST" action="/search.php">
+									<input type="hidden" name="search" value="side" />
+									<div class="topelement"><label for="searchtext"><span class="label">Search for:</span></label><input id="searchtext" name="searchtext" type="text"/><a id="searchlink2" href="javascript:void(0);" onClick="document.sidesearchform.submit();"><img id="searchicon" src="/images/searchbutton.png" alt="Search" title="Search"/></a></div>
+			<!--						<div><input type="checkbox" id="searchchoice_all" name="searchchoice_all" value="all" /><label for="searchchoice_all">All</label></div>-->
+									<div style="padding-left:20px;"><input type="radio" id="searchchoice_fullsite" name="category" value="FULLSITE" /><label for="searchchoice_fullsite">&nbsp;Full Site Search</label></div>
+									<div style="padding-left:20px;"><input type="radio" id="searchchoice_billnumber" name="category" value="BILL" /><label for="searchchoice_billnumber">&nbsp;Bill Number</label></div>
+									<div style="padding-left:20px;"><input type="radio" id="searchchoice_legislation" name="category" value="LEGISLATION" CHECKED /><label for="searchchoice_legislation">&nbsp;Legislation</label></div>
+									<div style="padding-left:20px;"><input type="radio" id="searchchoice_budget" name="category" value="BUDGET" /><label for="searchchoice_budget">&nbsp;Budget</label></div>
+									<div style="padding-left:20px;"><input type="radio" id="searchchoice_codeoflaws" name="category" value="CODEOFLAWS" /><label for="searchchoice_codeoflaws">&nbsp;Code of Laws</label></div>
+									<div style="padding-left:20px;"><input type="radio" id="searchchoice_codeofregs" name="category" value="CODEOFREGS" /><label for="searchchoice_codeofregs">&nbsp;Code of Regulations</label></div>
+									<div style="padding-left:20px;"><input type="radio" id="searchchoice_constitution" name="category" value="CONSTITUTION" /><label for="searchchoice_constitution">&nbsp;Constitution</label></div>
+									<div style="padding-left:20px;"><input type="radio" id="searchchoice_housejournals" name="category" value="HOUSEJOURNALS" /><label for="searchchoice_housejournals">&nbsp;House Journals</label></div>
+									<div style="padding-left:20px;"><input type="radio" id="searchchoice_senatejournals" name="category" value="SENATEJOURNALS" /><label for="searchchoice_senatejournals">&nbsp;Senate Journals</label></div>
+									<div class="bottomelement" style="padding-left:20px;"><input type="radio" id="searchchoice_billsummary" name="category" value="SUMMARY" /><label for="searchchoice_billsummary">&nbsp;LSA Bill Summary</label></div>
+								</form>
+									
+								</div>
+							</li>
+							<li><a href="/legislatorssearch.php">Find Your Legislators</a></li>
+							<li id="contactLegislatorLink"><a href="/email.php?chamber=B">Contact Your Legislator</a></li>
+									
+							<li><a href="/legislation.php">Legislation</a></li>
+							<li><a href="/listtracking/main.php" target="LTS">Track Legislation</a></li>
+							<li><a href="/multicriteria2/search.php" target="MCS">Multi-Criteria Search</a></li>
+									<!--<li><a href="#" onclick="multisearchwindow('INTROBOTH');">Multi-Criteria Search</a></li>-->
+									<!--<li><a href="#" onclick="multisearchwindow('INTROMANUAL');">Multi-Criteria Search</a></li>-->
+									<li><a href="/research.php">Research</a></li>
+	
+								<li class="nolink" onMouseOver="var ele=document.getElementById('law'); if(ele){ele.style.display='block';}" onMouseOut="var ele=document.getElementById('law'); if(ele){ele.style.display='none';}"><div class="nolinkdiv">South Carolina Law</div> 
+								<div id="law" class="sidesubmenu">
+									<div class="sidediv topelement"><a href="/newlaws.php">Ratifications &amp; Acts</a></div>
+									<div class="sidediv"><a href="/code/statmast.php">Code of Laws</a></div>
+									<div class="sidediv"><a href="/coderegs/statmast.php">Code of Regulations</a></div>
+									<div class="sidediv"><a href="/scconstitution/scconst.php">Constitution</a></div>
+									<div class="sidediv bottomelement"><a href="/state_register.php">State Register</a></div>
+								</div>
+							</li>
+										<li class="nolink" onMouseOver="var ele=document.getElementById('manual'); if(ele){ele.style.display='block';}" onMouseOut="var ele=document.getElementById('manual'); if(ele){ele.style.display='none';}"><div class="nolinkdiv">Legislative Manual</div>
+								<div id="manual" class="sidesubmenu">
+								
+<!--									<div class="sidediv topelement"><a href="https://web.sc.gov/LSAShoppingcart/Default.aspx" target="_blank">Purchase Manual</a></div>-->
+								
+<!--									<div class="sidediv topelement"><a href="https://secure.scstatehouse.gov/cgi-bin/webstore.exe" target="_blank">Purchase Manual</a></div>-->
+									<div class="sidediv topelement"><a href="javascript:#" onClick="alert('We are sorry, but we are unable to process online transactions at this time.\n\nIf you would still like to make a purchase, please contact us directly at (803) 212-4490 during normal business hours (8:30am - 5:00pm EST).');">Purchase Manual</a></div>
+									<div class="sidediv bottomelement"><a href="/man25/manual25.php">View Manual Online</a></div>
+								</div>
+							</li>
+							<li><a href="http://www.studentconnection.scstatehouse.gov">Student Connection</a></li>
+							<li><a href="/visit.php">Visiting the State House</a></li>
+							<li><a href="/archives.php">Archives</a></li>
+							<li><a href="http://www.sc.gov/Agency-Listing" target="_blank">State Agency Websites</a></li>
+							<!--<li><a href="/stateagencysites.php">State Agency Websites</a></li>-->
+							<li><a href="/citizensinterestpage/media.php">Media Links</a></li>
+				 		</ul>
+			    	</div>
+	
+					<div id="side_ad">
+						<A href="http://www.sc.gov/" target="_blank"><img border=0 src="/images/scgov3.jpg" alt="SC.gov" title="SC.gov" /></a>
+													<A href="http://www.statelibrary.sc.gov" target="_blank"><img border=0 src="/images/scsl_logo_rgb_web.png" alt="StateLibrary.SC.gov" title="StateLibrary.SC.gov" /></a>
+											</div>	    	
+			</div>
+
+	
+	<script type="text/javascript"> 
+		if ( '' === '1'){
+		 	
+			var link = document.getElementById('contactLegislatorLink');
+			if (link != 'undefined' && link != null){
+				link.style.display = 'none'; 
+				link.style.visibility = 'hidden';
+			}
+		}
+		if ( '' === '1'){
+		 	setTimeout(function(){
+				var link2 = document.getElementById('sendMsgLink');
+				if (link2 != 'undefined' && link2 != null){
+					link2.style.display = 'none'; 
+					link2.style.visibility = 'hidden';
+				};
+			}, 20);
+			
+		}  
+	</script>
+<div class="mainwidepanel">
+
+				<div id="breadcrumbs">
+						South Carolina Law &gt; <a href="/code/statmast.php">Code of Laws</a> &gt; <a href="/code/title39.php">Title 39</a>
+				</div>
+
+					<h2 class="barheader">South Carolina Code of Laws<br />
+									Unannotated<br />
+					</h2>
+
+				<div id="contentsection">
+<div style="font-weight: bold; text-align: center;">Title 39 - TRADE AND COMMERCE</div>
+<br />
+
+<div style="text-align: center;">CHAPTER 5</div>
+<div style="text-align: center;">Unfair Trade Practices</div><br />
+<div style="text-align: center;">ARTICLE 1</div>
+<div style="text-align: center;">General Provisions</div><br />
+<span style="font-weight: bold;"> SECTION 39-5-10.</span> Short title; definitions.<br /><br />
+	This article may be cited as the &quot;South Carolina Unfair Trade Practices Act.&quot;<br /><br />
+	As used in this article,<br /><br />
+	(a) &quot;Person&quot; shall include natural persons, corporations, trusts, partnerships, incorporated or unincorporated associations and any other legal entity.<br /><br />
+	(b) &quot;Trade&quot; and &quot;commerce&quot; shall include the advertising, offering for sale, sale or distribution of any services and any property, tangible or intangible, real, personal or mixed, and any other article, commodity or thing of value wherever situate, and shall include any trade or commerce directly or indirectly affecting the people of this State.<br /><br />
+	(c) &quot;Documentary material&quot; shall include the original or a copy of any book, record, report, memorandum, paper, communication, tabulation, map, chart, photograph, mechanical transcription or other tangible document or recording, wherever situate.<br /><br />
+	(d) &quot;Examination&quot; of documentary material shall include the inspection, study or copying of any such material, and the taking of testimony under oath or acknowledgment in respect of any such documentary material or copy thereof.<br /><br />
+HISTORY: 1962 Code SECTION 66-71; 1971 (57) 369.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-20.</span> Unfair methods of competition and unfair or deceptive acts or practices unlawful; application of federal act.<br /><br />
+	(a) Unfair methods of competition and unfair or deceptive acts or practices in the conduct of any trade or commerce are hereby declared unlawful.<br /><br />
+	(b) It is the intent of the legislature that in construing paragraph (a) of this section the courts will be guided by the interpretations given by the Federal Trade Commission and the Federal Courts to Section 5(a) (1) of the Federal Trade Commission Act (15 U.S.C. 45(a)(1)), as from time to time amended.<br /><br />
+HISTORY: 1962 Code SECTION 66-71.1; 1971 (57) 369.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-35.</span> Requiring certain insurance coverage as unfair trade practice.<br /><br />
+	It shall be an unlawful trade practice under Section 39-5-20 for any person engaged in the business of lending money to make it a condition of obtaining a loan for the purchase of an automobile that the borrower carry full coverage comprehensive or fifty dollars collision coverage.<br /><br />
+HISTORY: 1979 Act No. 121 SECTION 5.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-36.</span> Resale of tickets for more than original price.<br /><br />
+	(A) A person or firm who knowingly purchases a quantity of tickets for admission to an event which exceeds the maximum quantity posted by or on behalf of the original ticket seller at the point of original sale or printed on the tickets and intends to resell the tickets in excess of one dollar above the price charged by the original ticket seller violates the South Carolina Unfair Trade Practices Act and is subject to its provisions, penalties, and damages.<br /><br />
+	(B) A person or firm who violates the provisions of Section 16-17-710(A) is subject to the provisions, penalties, and damages of the South Carolina Unfair Trade Practices Act.<br /><br />
+	(C) A person or firm is not liable pursuant to this section with respect to tickets for which the person or firm is the original ticket seller.<br /><br />
+	(D) For purposes of this section, the term &quot;original ticket seller&quot; means the issuer of the tickets or a person or firm who provides ticket distribution services or ticket sales service under a contract with the issuer.<br /><br />
+HISTORY: 2006 Act No. 367, SECTION 1, eff June 9, 2006.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-37.</span> Use of assumed or fictitious name to misrepresent business is unfair trade practice.<br /><br />
+	It shall be an unlawful trade practice under Section 39-5-20 to use an assumed or fictitious name in the conduct of a business to intentionally misrepresent the geographic origin, ownership of manufacturing facilities, or location of such business.<br /><br />
+HISTORY: 1998 Act No. 438, SECTION 2, eff upon approval (became law without the Governor&#39;s signature on June 17, 1998).<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-38.</span> Deceptive or misleading advertisement of live musical performance; injunction; penalty.<br /><br />
+	(A) For purposes of this section:<br /><br />
+	(1) &quot;performing person or group&quot; means a vocal or instrumental performer seeking to use the name of another person or group that has previously produced or released, or both, a commercial recording;<br /><br />
+	(2) &quot;recording person or group&quot; means a vocal or instrumental performer that has previously produced or released, or both, a commercial recording; and<br /><br />
+	(3) &quot;sound recording&quot; means the fixation of a series of musical, spoken, or other sounds on a material object such as a disk, tape, or other phono-record on which the sounds are embodied.<br /><br />
+	(B) It is an unlawful trade practice pursuant to Section 39-5-20 to advertise a live musical performance or production in South Carolina through the use of a false, deceptive, or misleading affiliation, connection, or association between the performing person or group with a recording person or group.<br /><br />
+	(C) The advertisement of a live musical performance does not violate subsection (B) if the:<br /><br />
+	(1) performing person or at least one member of the performing group was a member of the recording person or group and has a legal right by virtue of use or operation under the group name without having abandoned the name of affiliation with the group;<br /><br />
+	(2) live musical performance or production is identified as a &quot;salute&quot; or &quot;tribute&quot; to, and is otherwise unaffiliated with, the recording person or group;<br /><br />
+	(3) advertising does not relate to a live musical performance taking place in South Carolina;<br /><br />
+	(4) performance is expressly authorized in the advertising by the recording person or group; or<br /><br />
+	(5) performing group is the authorized registrant and owner of a federal service mark for that group and registered in the United States Patent and Trademark Office.<br /><br />
+	(D)(1) A court of this State may issue a temporary or permanent injunction for a violation or attempted violation of this chapter where the court believes an injunction would best serve the public interest.<br /><br />
+	(2) A court that issues a permanent injunction to restrain and prevent a violation of this section may order the enjoined party to restore to its legal owner money or property acquired by the enjoined party through a violation of this section.<br /><br />
+	(E) A person who violates the provisions of this section is subject to a penalty of at least five thousand dollars and not more than fifteen thousand dollars for each violation.<br /><br />
+HISTORY: 2004 Act No. 204, SECTION 1, eff April 26, 2004; 2011 Act No. 60, SECTION 1, eff June 14, 2011.<br /><br />
+Editor&#39;s Note<br /><br />
+	2004 Act No. 204, SECTION 2, provides as follows:<br /><br />
+	&quot;The penalties and remedies provided in this act are cumulative of and in addition to other provisions of law.&quot;<br /><br />
+Effect of Amendment<br /><br />
+	The 2011 amendment inserted subsection (A)(3), &quot;sound recording&quot; defined; in subsection (C)(1) added the text following &quot;person or group&quot; relating to the legal right; and added the remaining subsections (C)(5), relating to service mark, (D), relating to injunction, and (E), relating to penalty.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-39.</span> Attorney advertising in false, deceptive, or misleading manner.<br /><br />
+	Notwithstanding another provision of law, it is an unlawful trade practice, pursuant to Section 39-5-20, for an attorney to advertise his services in this State in a false, deceptive, or misleading manner including, but not limited to, the use of a nickname that creates an unreasonable expectation of results.<br /><br />
+HISTORY: 2005 Act No. 27, SECTION 9, eff March 21, 2005, applicable to advertisements appearing after that date.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-40.</span> Article inapplicable to certain practices and transactions.<br /><br />
+	Nothing in this article shall apply to:<br /><br />
+	(a) Actions or transactions permitted under laws administered by any regulatory body or officer acting under statutory authority of this State or the United States or actions or transactions permitted by any other South Carolina State law.<br /><br />
+	(b) Acts done by the publisher, owner, agent or employee of a newspaper, periodical or radio or television station in the publication or dissemination of an advertisement, when the owner, agent or employee did not have knowledge of the false, misleading or deceptive character of the advertisement and did not have a direct financial interest in the sale or distribution of the advertised product or service.<br /><br />
+	(c) This article does not supersede or apply to unfair trade practices covered and regulated under Title 38, Chapter 57, Sections 38-57-10 through 38-55-320.<br /><br />
+	(d) Any challenged practices that are subject to, and comply with, statutes administered by the Federal Trade Commission and the rules, regulations and decisions interpreting such statutes.<br /><br />
+	For the purpose of this section, the burden of proving exemption from the provisions of this article shall be upon the person claiming the exemption.<br /><br />
+HISTORY: 1962 Code SECTION 66-71.3; 1971 (57) 369.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-42.</span> Misrepresenting food or food products as product of South Carolina.<br /><br />
+	(A) For purposes of this section &quot;food&quot; or &quot;food product&quot; is an article that is produced, raised, caught, or harvested for human consumption.<br /><br />
+	(B) It is an unfair trade practice pursuant to Section 39-5-20 knowingly and wilfully to misrepresent food or a food product if the food or food product purports to be or is represented to be a product of South Carolina but is the product of another state, country, or territory.<br /><br />
+	(C) A provision in this section is not intended to conflict with the enforcement of criminal penalties or other provisions of law relating to the misrepresentation or adulteration of food or food products.<br /><br />
+HISTORY: 2008 Act No. 277, SECTION 1, eff June 5, 2008, applicable to violations that occur after that date.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-50.</span> Injunction; orders or judgments to restore property.<br /><br />
+	(a) Whenever the Attorney General has reasonable cause to believe that any person is using, has used or is about to use any method, act or practice declared by Section 39-5-20 to be unlawful, and that proceedings would be in the public interest, he may bring an action in the name of the State against such person to restrain by temporary restraining order, temporary injunction or permanent injunction the use of such method, act or practice. Unless the Attorney General determines in writing that the purposes of this article will be substantially impaired by delay in instituting legal proceedings, he shall, at least three days before instituting any legal proceedings as provided in this section, give notice to the person against whom proceedings are contemplated and give such person an opportunity to present reasons to the Attorney General why such proceedings should not be instituted. The action may be brought in the court of common pleas in the county in which such person resides, has his principal place of business or conducts or transacts business. The courts are authorized to issue orders and injunctions to restrain and prevent violations of this article, and such orders and injunctions shall be issued without bond. Whenever any permanent injunction is issued by such court in connection with any action which has become final, reasonable costs shall be awarded to the State.<br /><br />
+	(b) The court may make such additional orders or judgments as may be necessary to restore to any person who has suffered any ascertainable loss by reason of the use or employment of such unlawful method, act or practice, any moneys or property, real or personal, which may have been acquired by means of any practice declared to be unlawful in this article, including the revocation of a license or certificate authorizing that person to engage in business in this State, provided the order declaring the practice to have been unlawful has become final.<br /><br />
+HISTORY: 1962 Code SECTION 66-71.4; 1971 (57) 369.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-60.</span> Assurance of voluntary compliance with article.<br /><br />
+	In the administration of this article, the Attorney General may accept an assurance of voluntary compliance with respect to any method, act or practice deemed to be in violation of this article from any person who has engaged in, is engaging in, or is about to engage in such method, act or practice. Such assurance may include a stipulation for the voluntary payment by such person of the costs of investigation, or of an amount to be held in escrow pending the outcome of an action or as restitution to aggrieved buyers, or both. Any such assurance shall be in writing and be filed with and subject to the approval of the court of common pleas having jurisdiction. Such assurance of voluntary compliance shall not be considered an admission of violation for any purpose; however, any violation of the terms of such assurance shall constitute prima facie evidence of a violation of the provisions of this article. Matters thus closed may at any time be reopened by the Attorney General for further proceedings in the public interest.<br /><br />
+HISTORY: 1962 Code SECTION 66-71.5; 1971 (57) 369.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-70.</span> Investigative demand by Attorney General.<br /><br />
+	(a) When it appears to the Attorney General that a person has engaged in, is engaging in, or is about to engage in any act or practice declared to be unlawful by this article, or when he believes it to be in the public interests that an investigation should be made to ascertain whether a person in fact has engaged in, is engaging in, or is about to engage in any act or practice declared to be unlawful by this article, he may execute in writing and cause to be served upon that person or any other person who is believed to have information, documentary material or physical evidence relevant to the alleged or suspected violation, an investigative demand requiring such person to furnish, under oath, a report in writing setting forth the relevant facts and circumstances of which he has knowledge, or to appear and testify or to produce relevant documentary material or physical evidence for examination and copying, at such reasonable time and place as may be stated in the investigative demand, concerning the advertisement, sale or offering for sale of any goods or services or the conduct of any trade or commerce that is the subject matter of the investigation.<br /><br />
+	(b) At any time before the return date specified in an investigative demand, or within twenty days after the demand has been served, whichever period is shorter, a petition to extend the return date for a reasonable time or to modify or set aside the demand, stating good cause, may be filed in the court of common pleas where the person served with the demand resides or has his principal place of business or conducts or transacts business. This section shall not be applicable to any criminal proceedings, nor shall any information obtained under the authority of this section or Section 39-5-80 be admissible in evidence in any criminal prosecution.<br /><br />
+HISTORY: 1962 Code SECTION 66-71.6; 1971 (57) 369.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-80.</span> Additional powers of Attorney General.<br /><br />
+	To accomplish the objectives and to carry out the duties prescribed by this article, the Attorney General, in addition to other powers conferred upon him by this article, may issue subpoenas to any person, administer an oath or affirmation to any person, conduct hearings in aid of any investigation or inquiry, prescribe such forms and promulgate such rules and regulations as may be necessary, which rules and regulations shall have the force and effect of law; provided, however, that none of the powers conferred by this article shall be used for the purpose of compelling any person to furnish testimony or evidence which might tend to incriminate him or subject him to a penalty or forfeiture; and provided, further, that information obtained pursuant to the powers conferred by this article shall not be made public or disclosed by the Attorney General or his employees beyond the extent necessary for law-enforcement purposes in the public interest.<br /><br />
+HISTORY: 1962 Code SECTION 66-71.7; 1971 (57) 369.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-90.</span> Service of notice, demand, or subpoena.<br /><br />
+	Service of any notice, demand, or subpoena under this article shall be made personally within this State, but if such cannot be obtained, substituted service therefor may be made in the following manner:<br /><br />
+	(a) Personal service thereof without this State; or<br /><br />
+	(b) In the manner provided by the laws of this State as if a summons or other pleading which institutes a civil proceeding had been filed; or<br /><br />
+	(c) Such service as a court of common pleas may direct in lieu of personal service within this State.<br /><br />
+HISTORY: 1962 Code SECTION 66-71.8; 1971 (57) 369.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-100.</span> Person served with notice, investigative demand, or subpoena shall comply; penalty enforcement.<br /><br />
+	A person upon whom a notice, investigative demand, or subpoena is served pursuant to the provisions of Section 39-5-90 shall comply with the terms thereof unless otherwise provided by the order of a court as provided for in Section 39-5-70. Any person who fails to appear, or with intent to avoid, evade, or prevent compliance, in whole or in part, with any civil investigation under this article, removes from any place, conceals, withholds, or destroys, mutilates, alters, or by any other means falsifies any documentary material in the possession, custody, or control of any person subject to any such notice, or knowingly conceals any relevant information, shall be assessed a civil penalty of not more than five thousand dollars.<br /><br />
+	The Attorney General may file in the court of common pleas in which such person resides, has his principal place of business, or conducts or transacts business, and serve upon such person, in the same manner as provided for in Section 39-5-90, a petition for an order of such court for the enforcement of this section and Sections 39-5-70 and 39-5-80.<br /><br />
+HISTORY: 1962 Code SECTION 66-71.9; 1971 (57) 369.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-110.</span> Civil penalties for willful violation or violations of injunction.<br /><br />
+	(a) If a court finds that any person is willfully using or has willfully used a method, act or practice declared unlawful by Section 39-5-20, the Attorney General, upon petition to the court, may recover on behalf of the State a civil penalty of not exceeding five thousand dollars per violation.<br /><br />
+	(b) Any person who violates the terms of an injunction issued under Section 39-5-50 shall forfeit and pay to the State a civil penalty of not more than fifteen thousand dollars per violation. For the purposes of this section, the court of common pleas issuing an injunction shall retain jurisdiction, and the cause shall be continued and in such cases the Attorney General acting in the name of the State may petition for recovery of civil penalties. Whenever the court determines that an injunction issued pursuant to Section 39-5-50 has been violated, the court shall award reasonable costs to the State.<br /><br />
+	(c) For the purposes of this section, a willful violation occurs when the party committing the violation knew or should have known that his conduct was a violation of Section 39-5-20.<br /><br />
+HISTORY: 1962 Code SECTION 66-71.10; 1971 (57) 369.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-120.</span> Dissolution, suspension, or forfeiture.<br /><br />
+	Upon petition by the Attorney General, the court of common pleas may, for good cause shown, order the dissolution or suspension or forfeiture of any franchise or charter of any corporation which violates the terms of any injunction issued under Section 39-5-50.<br /><br />
+HISTORY: 1962 Code SECTION 66-71.11; 1971 (57) 369.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-130.</span> Duty of solicitors, county, and city attorneys.<br /><br />
+	It shall be the duty of the solicitors of each judicial circuit and all county and city attorneys to lend to the Attorney General such assistance as the Attorney General may request in the commencement and prosecution of actions pursuant to this article, or any solicitor or county or city attorney with prior approval of the Attorney General may institute and prosecute actions hereunder in the same manner as provided for the Attorney General; provided, however, that if an action is prosecuted by a solicitor or county or city attorney alone, he shall make a full report thereon to the Attorney General, including the final disposition of the matter.<br /><br />
+HISTORY: 1962 Code SECTION 66-71.12; 1971 (57) 369.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-140.</span> Actions for damages.<br /><br />
+	(a) Any person who suffers any ascertainable loss of money or property, real or personal, as a result of the use or employment by another person of an unfair or deceptive method, act or practice declared unlawful by Section 39-5-20 may bring an action individually, but not in a representative capacity, to recover actual damages. If the court finds that the use or employment of the unfair or deceptive method, act or practice was a willful or knowing violation of Section 39-5-20, the court shall award three times the actual damages sustained and may provide such other relief as it deems necessary or proper. Upon the finding by the court of a violation of this article, the court shall award to the person bringing such action under this section reasonable attorney&#39;s fees and costs.<br /><br />
+	(b) Upon commencement of any action brought under subsection (a) of this section, the clerk of court shall mail a copy of the complaint or other initial pleading to the Attorney General and, upon entry of any judgment or decree in the action, shall mail a copy of such judgment or decree to the Attorney General.<br /><br />
+	(c) Any permanent injunction, judgment or order of the court made under Section 39-5-50 shall be prima facie evidence in an action brought under Section 39-5-140 that the respondent used or employed a method, act or practice declared unlawful by Section 39-5-20.<br /><br />
+	(d) For the purposes of this section, a willful violation occurs when the party committing the violation knew or should have known that his conduct was a violation of Section 39-5-20.<br /><br />
+HISTORY: 1962 Code SECTION 66-71.13; 1971 (57) 369.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-145.</span> Price gouging during emergency; definitions; penalty; evidence.<br /><br />
+	(A) As used in this section:<br /><br />
+	(1) &quot;Abnormal disruption of the market&quot; means a change in the market for a commodity in a part of South Carolina, whether actual or imminently threatened, resulting from stress of weather, forces of nature, failure or shortage of electric power or other source of energy, strike, civil disorder, or other cause that constitutes the basis for an out-of-state declaration.<br /><br />
+	(2) &quot;Commodity&quot; means goods, services, materials, merchandise, supplies, equipment, resources, or other articles of commerce, and includes, without limitation, food, water, ice, chemicals, petroleum products, and lumber essential for consumption or use as a direct result of a declared state of emergency.<br /><br />
+	(3) &quot;Notice of an abnormal disruption of the market&quot; means notice given by the South Carolina Attorney General of an abnormal disruption of the market.<br /><br />
+	(4) &quot;Out-of-state declaration&quot; means a declaration of a state of emergency, state of disaster, or similar declaration by the President of the United States.<br /><br />
+	(5)(a) &quot;Unconscionable price&quot; means an amount charged which:<br /><br />
+	(i) represents a gross disparity between the price of the commodity or rental or lease of a dwelling unit, including a motel or hotel unit, or other temporary lodging, or self-storage facility that is the subject of the offer or transaction and the average price at which that commodity or dwelling unit, including a motel or hotel unit, or other temporary lodging, or self-storage facility was rented, leased, sold, or offered for rent or sale in the usual course of business during the thirty days immediately before a declaration of a state of emergency, and the increase in the amount charged is not attributable to additional costs incurred in connection with the rental or sale of the commodity or rental or lease of the dwelling unit, including a motel or hotel unit, or other temporary lodging, or self-storage facility, or local, regional, national, or international market trends; or<br /><br />
+	(ii) grossly exceeds the average price at which the same or similar commodity, dwelling unit, including a motel or hotel unit, or other temporary lodging, or self-storage facility was readily obtainable in the trade area during the thirty days immediately before a declaration of a state of emergency, and the increase in the amount charged is not attributable to additional costs incurred in connection with the rental or sale of the commodity or rental or lease of the dwelling unit, including a motel or hotel unit, or other temporary lodging, or self-storage facility, or local, regional, national, or international market trends.<br /><br />
+	(b) It is prima facie evidence that a price is unconscionable if it meets the definition of item (i) or (ii).<br /><br />
+	(B)(1) Upon a declaration of a state of emergency by the Governor, it is unlawful and a violation of this article for a person or his agent or employee to:<br /><br />
+	(a) rent or sell or offer to rent or sell a commodity at an unconscionable price within the area for which the state of emergency is declared; or<br /><br />
+	(b) impose unconscionable prices for the rental or lease of a dwelling unit, including a motel or hotel unit, or other temporary lodging, or self-storage facility within the area for which the state of emergency is declared.<br /><br />
+	(2) This prohibition remains in effect until the declaration expires or is terminated.<br /><br />
+	(C)(1) Upon a declaration of a state of disaster by the President, in which the disaster area includes all or a portion of the State of South Carolina, it is unlawful and a violation of this article for a person or his agent or employee in this State to:<br /><br />
+	(a) rent or sell or offer to rent or sell a commodity at an unconscionable price within the area for which the state of disaster is declared; or<br /><br />
+	(b) impose unconscionable prices for the rental or lease of a dwelling unit, including a motel or hotel unit, or other temporary lodging, or self-storage facility within the area for which the state of disaster is declared.<br /><br />
+	(2) This prohibition remains in effect until the declaration expires or is terminated.<br /><br />
+	(D) When notice of an abnormal disruption of the market is given, it is unlawful and a violation of this article for a person or his agent or employee to:<br /><br />
+	(1) rent or sell or offer to rent or sell a commodity at an unconscionable price in any area of this State where there is an abnormal disruption in the market; or<br /><br />
+	(2) impose unconscionable prices for the rental or lease of a dwelling unit, including a motel or hotel unit, or other temporary lodging, or self-storage facility in any area of this State where there is an abnormal disruption in the market.<br /><br />
+	(E) When notice of an abnormal disruption of the market is given, the prohibitions in this section are in effect for fifteen days unless notice of an abnormal disruption in the market is earlier retracted or renewed. The Attorney General may renew a notice of abnormal disruption of the market for an unlimited number of successive fifteen-day periods.<br /><br />
+	(F) A trade association, corporation, or partnership may register as an agent for the purpose of being notified when the Attorney General gives, retracts, or renews notice of an abnormal disruption of the market. A trade association may designate up to three persons to be notified on behalf of the organization&#39;s members. The trade association, corporation, or partnership is responsible for maintaining current information for the designated agents. The Attorney General&#39;s Office shall notify the registered agents simultaneous to giving, retracting, or renewing notice of an abnormal disruption of the market.<br /><br />
+	(G) A price increase approved by an appropriate government agency is not a violation of this section.<br /><br />
+	(H) A price increase that reflects the usual and customary seasonal fluctuation in the price of the subject essential commodity or the rental or lease of a dwelling unit or self-storage facility is not a violation of this section.<br /><br />
+	(I) This section does not apply to sales by growers, producers, or processors of raw or processed food products, except for retail sales of those products to the ultimate consumer within the area of the declared state of emergency or disaster.<br /><br />
+	(J) This section does not preempt the powers of local government, except that the evidentiary standards contained in this section are the sole evidentiary standards to be adopted by ordinance of a local government to restrict price gouging. In the event a local government declares a state of emergency or disaster or experiences an abnormal disruption of the market in which the area includes all or a portion of the area under the local government&#39;s jurisdiction, and restricts price gouging during that time, the governmental entity must notify the Governor&#39;s Office of the declaration. The Governor&#39;s Office must notify registered agents simultaneously at the time of the declaration and also at its expiration or termination.<br /><br />
+	(K) In addition to all other remedies provided in this article, a person who wilfully and knowingly violates this section is guilty of a misdemeanor and, upon conviction, must be punished by a fine of not more than one thousand dollars or imprisoned not more than thirty days, or both.<br /><br />
+	(L) A person who is charged with committing an action in violation of this section may present evidence relating to, but not limited to, his knowledge or intent when committing the action to rebut any presumption or evidence of violation of this section.<br /><br />
+HISTORY: 2002 Act No. 339, SECTION 21, eff July 2, 2002; 2006 Act No. 374, SECTION 1, eff June 14, 2006.<br /><br />
+Editor&#39;s Note<br /><br />
+	2002 Act No. 393, SECTION 45, provides as follows:<br /><br />
+	&quot;This act takes effect upon approval by the Governor, and applies to offenses committed after its effective date and to causes of action arising or accruing on or after the effective date.&quot;<br /><br />
+Effect of Amendment<br /><br />
+	The 2006 amendment, in subsection (A), added subparagraph (1), redesignated subparagraph (1) as (2), added subparagraphs (3) and (4) and redesignated subparagraph (2) as subparagraph (5); added subsections (D) to (F) relating to abnormal disruption in the market; redesignated subsection (D) as subsection (G); added subsection (H) excepting seasonal price fluctuations; redesignated subsections (E) to (H) as subsections (I) to (L); and made conforming and nonsubstantive changes throughout.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-147.</span> Charitable solicitations during emergencies; penalty.<br /><br />
+	(A) Upon a declaration of a state of emergency by the Governor, it is unlawful and a violation of this article for a person or his agent or employee to solicit the contribution or sale of goods or services for charitable purposes by any manner, means, practice, or device that is knowingly and wilfully misleading.<br /><br />
+	(B) Upon a declaration of a state of disaster by the President, in which the disaster areas include all or a portion of the State of South Carolina, it is unlawful and a violation of this article for a person or his agent or employee to solicit in this State the contribution or sale of goods or services for charitable purposes by any manner, means, practice, or device that is knowingly and wilfully misleading.<br /><br />
+	(C) These prohibitions remain in effect until the declaration of emergency or disaster expires or is terminated.<br /><br />
+	(D) In addition to all other remedies provided in this article, a person who wilfully violates this section is guilty of a misdemeanor and, upon conviction, must be fined not more than one thousand dollars or imprisoned not more than thirty days.<br /><br />
+HISTORY: 2002 Act No. 339, SECTION 21, eff July 2, 2002.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-149.</span> Registration of agent to receive notification of state of emergency.<br /><br />
+	A trade association, corporation, or partnership may register an agent for the purposes of being notified when the Governor declares and terminates a state of emergency. A trade association may designate up to three persons to be notified on behalf of the organization&#39;s members. The trade association, corporation, or partnership is responsible for maintaining current information for the designated agent or agents. The Governor&#39;s Office is responsible for notifying the registered agents simultaneous to the declaration and termination of the state of emergency.<br /><br />
+HISTORY: 2002 Act No. 339, SECTION 21, eff July 2, 2002.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-150.</span> Limitation of actions.<br /><br />
+	No action may be brought under this article more than three years after discovery of the unlawful conduct which is the subject of the suit.<br /><br />
+HISTORY: 1962 Code SECTION 66-71.14; 1971 (57) 369.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-160.</span> Article is cumulative.<br /><br />
+	The powers and remedies provided by this article shall be cumulative and supplementary to all powers and remedies otherwise provided by law.<br /><br />
+HISTORY: 1962 Code SECTION 66-71.15; 1971 (57) 369.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-170.</span> Vehicle glass repair business; unlawful practices.<br /><br />
+	It is an unfair trade practice and unlawful for a person who is acting on behalf of or engaged in a vehicle glass repair business to offer or make a payment or transfer money or other consideration to:<br /><br />
+	(1) a third person for the third person&#39;s referral of an insurance claimant to the vehicle glass repair business for the repair or replacement of vehicle safety glass;<br /><br />
+	(2) an insurance claimant in connection with the repair or replacement of vehicle safety glass; or<br /><br />
+	(3) waive, rebate, give, or pay all or part of an insurance claimant&#39;s casualty or property insurance deductible as consideration for selecting the vehicle glass repair business.<br /><br />
+HISTORY: 2002 Act No. 215, SECTION 1, eff April 22, 2002.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-180.</span> Vehicle glass repairs; false claims.<br /><br />
+	It is an unlawful practice for a person who sells, repairs, or replaces vehicle glass to knowingly:<br /><br />
+	(1) submit a claim to an insurer or a third party administrator for vehicle glass repair, replacement, or related services:<br /><br />
+	(a) if the vehicle glass was not damaged prior to repair or replacement;<br /><br />
+	(b) if the services were not provided;<br /><br />
+	(c) showing work performed in a geographical area that in fact was not the location where the services were provided and that results in a higher payment than would otherwise be paid to the person by the policyholder&#39;s insurer;<br /><br />
+	(d) without having an authorization by the owner, lessee, or insured driver of the vehicle for the repair of the vehicle;<br /><br />
+	(e) showing work performed on a date other than the date the work was actually performed and resulting in a change of insurance coverage status; or<br /><br />
+	(f) making any other material misrepresentation related to the repair or an insurance claim submitted in relation to that repair;<br /><br />
+	(2) advise a policyholder to falsify the date of damage to the vehicle glass that results in a change of insurance coverage for repair or replacement of the vehicle glass;<br /><br />
+	(3) falsely sign on behalf of a policyholder or another person a work order, insurance assignment form, or other related form in order to submit a claim to an insurer for vehicle glass repair or replacement or for related services;<br /><br />
+	(4) intentionally misrepresent to a policyholder or other person:<br /><br />
+	(a) the price of the proposed repairs or replacement being billed to the policyholder&#39;s insurer; or<br /><br />
+	(b) that the insurer or third party administrator has authorized the repairs or replacement of the glass of the insured vehicle;<br /><br />
+	(5) represent to a policyholder or other person that the repair or replacement will be paid for entirely by the policyholder&#39;s insurer and at no cost to the policyholder unless the insurance coverage has been verified by a person who is employed by, or is a producer contracted with the policyholder&#39;s insurer, or is a third party administrator contracted with the insurer;<br /><br />
+	(6) add to the damage of vehicle glass before repair in order to increase the scope of repair or replacement or encourage a policyholder or other person to add to the damage of vehicle glass before repair;<br /><br />
+	(7) perform work clearly and substantially beyond the level of work necessary to repair or replace the vehicle glass to put the vehicle back into a pre-loss condition in accordance with accepted or approved reasonable and customary glass repair or replacement techniques;<br /><br />
+	(8) engage in business practices that have the effect of providing rebates or something of value to an insured who files a claim to pay for the glass repair or replacement services provided; or<br /><br />
+	(9) intentionally misrepresent the relationship of the glass repair facility to the policyholder&#39;s insurer. For the purposes of determining whether a person intended the misrepresentation, the person presumably intended the misrepresentation if he was engaged in a regular and consistent pattern of misrepresentation. For the purposes of determining whether a defendant knew of any particular element of the prohibited activity, the person presumably had knowledge if he was engaged in a regular and consistent pattern of the prohibited activity.<br /><br />
+HISTORY: 2012 Act No. 236, SECTION 2, eff June 18, 2012.<br /><br />
+<div style="text-align: center;">ARTICLE 3</div>
+<div style="text-align: center;">Merchandising Unfair Trade Practices</div><br />
+<span style="font-weight: bold;"> SECTION 39-5-310.</span> Definitions.<br /><br />
+	For the purpose of this article:<br /><br />
+	(1) A &quot;wholesale&quot; sale shall be one made to any person for the purpose of resale at retail; and<br /><br />
+	(2) A &quot;retail sale&quot; shall be a sale for the purpose of consumption or use.<br /><br />
+HISTORY: 1962 Code SECTION 66-81; 1952 Code SECTION 66-81; 1942 Code SECTION 6640; 1939 (41) 425.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-320.</span> Retail sale by wholesaler at wholesale price is an unfair trade practice.<br /><br />
+	It is declared an unfair trade practice and unlawful for any person who is in both the wholesale and retail business of selling merchandise to sell merchandise of like grade and quality at retail at a price as low as such person sells the same merchandise at wholesale in the same town or locality.<br /><br />
+HISTORY: 1962 Code SECTION 66-82; 1952 Code SECTION 66-82; 1942 Code SECTION 6640; 1939 (41) 425.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-325.</span> Unfair trade practice for motor fuel retailer to sell below cost in order to affect competition; exemptions.<br /><br />
+	(A) Except as otherwise permitted to meet competition as provided by this chapter, it is declared an unfair trade practice and unlawful for any person who is in the retail business of selling motor fuel to sell motor fuel of like grade and quality at retail at a price which is below the cost of acquiring the product plus taxes and transportation where the intent or effect is to destroy or substantially lessen competition or to injure a competitor.<br /><br />
+	(B) The provisions of subsection (A) shall not apply in the following situations where:<br /><br />
+	(1) motor fuel is advertised, offered for sale, or sold in a bona fide clearance sale for the purpose of discontinuing trade in such motor fuel, and the advertising, offer to sell, or sale shall state the reason therefor and the quantity of such motor fuel advertised, offered for sale, or to be sold;<br /><br />
+	(2) motor fuel is sold upon the final liquidation of a business;<br /><br />
+	(3) motor fuel is advertised, offered for sale, or sold by any fiduciary or other officer under the order or direction of any court;<br /><br />
+	(4) motor fuel is sold for promotional purposes including, but not limited to, grand opening, anniversary, or promotional sales. However, the total number of days for promotional sales shall not exceed fourteen days within each calendar year; or<br /><br />
+	(5) an isolated or inadvertent incident occurs that does not exceed two days.<br /><br />
+	(C) Any person who is in the retail business of selling motor fuel claiming any exemption from subsection (A) under the exceptions provided in subsection (B) must keep and maintain records substantiating this claim. These records must be made available to the Office of the Attorney General on request made in connection with any investigation of a possible violation of this section by the Attorney General.<br /><br />
+HISTORY: 1993 Act No. 161, SECTION 1, eff sixty days after approval (approved June 15, 1993); 2017 Act No. 29 (S.359), SECTION 1, eff May 10, 2017.<br /><br />
+Effect of Amendment<br /><br />
+	2017 Act No. 29, SECTION 1, in (C), in the second sentence, deleted &quot;Department of Consumer Affairs and&quot;, substituted &quot;Office of the Attorney General&quot; for &quot;the Attorney General&#39;s Office&quot;, and deleted &quot;department or the&quot; following &quot;possible violation of this section by the&quot;.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-330.</span> Retail sale at lower than wholesale price is an unfair trade practice.<br /><br />
+	It is declared an unfair trade practice and unlawful for any person who is in both the wholesale and retail business of selling merchandise to sell merchandise of like grade and quality at retail at a lower price than such person sells the same merchandise at wholesale in the same town or locality.<br /><br />
+HISTORY: 1962 Code SECTION 66-83; 1952 Code SECTION 66-83; 1942 Code SECTION 6640; 1939 (41) 425.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-340.</span> Liability of wholesaler.<br /><br />
+	When a wholesaler owns a controlling interest or stock in a retail establishment or corporation and creates, organizes or maintains such retail outlet for the purpose of violating this article by making retail sales therefrom at a price that would be in violation of this article if made at retail directly by the wholesaler, such wholesaler shall be liable also for any violation of this article by any such retailer.<br /><br />
+HISTORY: 1962 Code SECTION 66-84; 1952 Code SECTION 66-84; 1942 Code SECTION 6640; 1939 (41) 425.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-350.</span> Exemptions.<br /><br />
+	(A) No part of this article shall be construed to apply to sales at wholesale to hotels, restaurants, colleges, bona fide licensed contractors, farmers buying for their plantations, including labor on their own farms, boardinghouses, religious institutions, or county, city, federal, or state institutions or departments or to cooperative purchases for redistribution among farmers. Retail sales of merchandise of like grade and quality at a price to meet existing competition at any time in any town or locality are also exempt from the provisions of this article. But if such competition is created by any person in violation of this article or when any two or more persons contend that they are meeting the competition of the other and all would be making retail sales in violation of this article, except for the above provisions allowing existing competition to be met, any retailer affected thereby may enjoin all in such category from continuing such practices in any court of competent jurisdiction in this State.<br /><br />
+	(B) Any person selling motor fuel at wholesale or retail at a price below the actual cost of acquiring the product, including transportation and taxes, claiming exemption from this article on the basis that such sales of motor fuel by that person are at a price to meet existing competition under subsection (A) shall keep and maintain records substantiating each effort to meet the competition, including the identity and place of business of the competitors whose competition that person is meeting. The records must be made available to the Attorney General on request made in connection with any investigation of a possible violation of this article by the Attorney General.<br /><br />
+HISTORY: 1962 Code SECTION 66-85; 1952 Code SECTION 66-85; 1942 Code SECTION 6640; 1939 (41) 425; 1993 Act No. 161, SECTION 2, eff sixty days after approval (approved June 15, 1993); 2017 Act No. 29 (S.359), SECTION 2, eff May 10, 2017.<br /><br />
+Effect of Amendment<br /><br />
+	The 1993 amendment designated the existing material subsection (A) and added subsection (B).<br /><br />
+	2017 Act No. 29, SECTION 2, in (B), deleted &quot;of this section&quot; following &quot;under subsection (A)&quot;, deleted &quot;the Department of Consumer Affairs and&quot; following &quot;made available to&quot;, and deleted &quot;department or the&quot; following &quot;possible violation of this article by the&quot;.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-360.</span> Penalties.<br /><br />
+	Each sale in violation of the terms of this article shall be declared a separate offense and the penalty for each violation thereof shall be a fine of not more than one hundred dollars or imprisonment for not more than thirty days in the discretion of the court.<br /><br />
+HISTORY: 1962 Code SECTION 66-86; 1952 Code SECTION 66-86; 1942 Code SECTION 6640; 1939 (41) 425.<br /><br />
+<div style="text-align: center;">ARTICLE 5</div>
+<div style="text-align: center;">Bidding and Negotiation of Contracts for Exhibition of Motion Pictures</div><br />
+<span style="font-weight: bold;"> SECTION 39-5-510.</span> Definitions.<br /><br />
+	When used in this article:<br /><br />
+	(a) &quot;Theater&quot; means any establishment in which motion pictures are exhibited to the public regularly for a charge.<br /><br />
+	(b) &quot;Distributor&quot; means any person engaged in the business of distributing or supplying motion pictures to exhibitors by rental or licensing.<br /><br />
+	(c) &quot;Exhibitor&quot; means any person engaged in the business of operating one or more theaters.<br /><br />
+	(d) &quot;Exhibit&quot; or &quot;exhibition&quot; means showing a motion picture to the public for a charge.<br /><br />
+	(e) &quot;Invitation to bid&quot; means a written or oral solicitation or invitation by a distributor to one or more exhibitors to bid or negotiate for the right to exhibit a motion picture.<br /><br />
+	(f) &quot;Bid&quot; means a written or oral offer or proposal by an exhibitor to a distributor in response to an invitation to bid or otherwise stating the terms under which the exhibitor will agree to exhibit a motion picture.<br /><br />
+	(g) &quot;License agreement&quot; means any contract, agreement, understanding or condition between a distributor and an exhibitor relating to the licensing or exhibition of a motion picture by the exhibitor.<br /><br />
+	(h) &quot;Trade screening&quot; means the showing of a motion picture by a distributor at a location within the State or in the Film Exchange Center in the State of North Carolina which is open to any exhibitor interested in exhibiting the motion picture.<br /><br />
+	(i) &quot;Blind bidding&quot; means the bidding for, negotiating for or offering or agreeing to terms for the licensing or exhibition of a motion picture if the motion picture has not been trade screened within the State or in the Film Exchange Center in the State of North Carolina before any such event has occurred.<br /><br />
+	(j) &quot;Run&quot; means the continuous exhibition of a motion picture in a defined geographic area for a specified period of time. A &quot;first run&quot; is the first exhibition of a picture in the designated area; a &quot;second run&quot; is the second exhibition and &quot;subsequent runs&quot; are subsequent exhibitions after the second run.<br /><br />
+HISTORY: 1978 Act No. 523 SECTION 2; 1979 Act No. 33 SECTIONS 1, 2.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-520.</span> Blind bidding prohibited; notice of trade screenings required.<br /><br />
+	(a) Blind bidding is prohibited in this State. No bids shall be returnable; no negotiations for the exhibition or licensing of a motion picture shall take place and no license agreement or any of its terms shall be agreed to for the exhibition of any motion picture in this State before the motion picture has been trade screened in the State or in the Film Exchange Center in the State of North Carolina.<br /><br />
+	(b) A distributor shall include in each invitation to bid for a motion picture for exhibition in the State, if the motion picture has not already been trade screened, the date, time and place of trade screening of the motion picture.<br /><br />
+	(c) A distributor shall provide reasonable and uniform notice to exhibitors in the State of all trade screenings of motion pictures he is distributing for exhibition within this State. The notice may be by mail or by publication having general circulation among exhibitors in the State.<br /><br />
+HISTORY: 1978 Act No. 523 SECTION 3; 1979 Act No. 33 SECTION 3.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-530.</span> Contents of invitation to bid; examination of bids; rebids.<br /><br />
+	If bids are solicited from exhibitors for the licensing of a motion picture in the State:<br /><br />
+	(a) The invitation to bid shall specify (1) the number and length of runs for which the bid is being solicited, whether it is a first, second or subsequent run and the geographic area for each run; (2) the names of all exhibitors who are being individually solicited; (3) the date and hour the invitation to bid expires and (4) the location, including the address, where the bids will be opened at the distributor&#39;s place of business in the film exchange center.<br /><br />
+	(b) All bids shall be submitted in writing and shall be opened at the same time and in the presence of exhibitors or their agents.<br /><br />
+	(c) After being opened, bids shall be subject to examination by exhibitors or their agents. Within seven days, exclusive of Saturday and Sunday, after a bid is accepted, the distributor shall notify in writing each exhibitor who submitted a bid of the terms of the accepted bid and the name of the winning bidder.<br /><br />
+	(d) Once bids are solicited, the distributor shall license the picture only by bidding and must solicit rebids if he does not accept any of the submitted bids.<br /><br />
+HISTORY: 1978 Act No. 523 SECTION 4.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-540.</span> Waiver of blind bidding prohibited.<br /><br />
+	If the first run exhibitors within any county in this State desire to waive the provisions of this article for the purpose of blind bidding on a movie to be shown within that county, the exhibitors may waive the provisions and blind bid if all exhibitors within that county who exhibit first run movies agree in writing to such waiver; and the distributors shall have the right to request waivers from any and all first run exhibitors.<br /><br />
+HISTORY: 1978 Act No. 523 SECTION 5.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-550.</span> Applicability.<br /><br />
+	The provisions of this article shall apply to all motion picture licensing contracts executed within or without this State for the exhibition of motion pictures in South Carolina.<br /><br />
+HISTORY: 1978 Act No. 523 SECTION 6A.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-560.</span> Penalty.<br /><br />
+	Any person violating the provisions of this article shall be deemed guilty of a misdemeanor and upon conviction shall be fined not more than ten thousand dollars or be imprisoned for not more than six months.<br /><br />
+HISTORY: 1978 Act No. 523 SECTION 6.<br /><br />
+<div style="text-align: center;">ARTICLE 7</div>
+<div style="text-align: center;">Pyramid Promotional Scheme Prohibition Act</div><br />
+<span style="font-weight: bold;"> SECTION 39-5-710.</span> Short title.<br /><br />
+	This article must be known and may be cited as the &quot;Pyramid Promotional Scheme Prohibition Act&quot;.<br /><br />
+HISTORY: 2017 Act No. 39 (H.3883), SECTION 1, eff May 10, 2017.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-720.</span> Definitions.<br /><br />
+	As used in this article:<br /><br />
+	(1) &quot;Compensation&quot; means the payment of money, a thing of value, or a benefit.<br /><br />
+	(2) &quot;Consideration&quot; means either the payment of money or the provision of a thing of value for the purchase of a product, good, service, or intangible property. Consideration does not include:<br /><br />
+	(a) the purchase of a product, furnished at cost, for use in making a sale, but not for resale, of the purchased product itself; or<br /><br />
+	(b) time and effort spent to pursue a sale or recruiting activity.<br /><br />
+	(3) &quot;Pyramid promotional scheme&quot; means a plan or operation in which an individual pays consideration for the right to receive compensation based primarily upon recruiting other individuals into the plan or operation instead of selling products or services to ultimate users for their use or consumption.<br /><br />
+	(4) &quot;Ultimate users&quot; are individuals who consume or use the products or services, whether or not they are participants in the plan or operation.<br /><br />
+HISTORY: 2017 Act No. 39 (H.3883), SECTION 1, eff May 10, 2017.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-730.</span> Pyramid promotional schemes prohibited.<br /><br />
+	A pyramid promotional scheme is an unfair trade practice pursuant to Section 39-5-20(a), and accordingly, is prohibited in this State.<br /><br />
+HISTORY: 2017 Act No. 39 (H.3883), SECTION 1, eff May 10, 2017.<br /><br />
+<div style="text-align: center;">ARTICLE 8</div>
+<div style="text-align: center;">South Carolina Earned Wage Access Services Act</div><br />
+<span style="font-weight: bold;"> SECTION 39-5-810.</span> Short title.<br /><br />
+	This article may be cited as the &quot;South Carolina Earned Wage Access Services Act&quot;.<br /><br />
+HISTORY: 2024 Act No. 190 (S.700), SECTION 1, eff November 21, 2024.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-820.</span> Definitions.<br /><br />
+	As used in this article, unless the context clearly requires otherwise, the term:<br /><br />
+	(1) &quot;Consumer&quot; means a natural person residing in the State of South Carolina. A provider may use the mailing address provided by a consumer to determine such consumer&#39;s state of residence for purposes of this article.<br /><br />
+	(2) &quot;Consumer-directed wage access services&quot; means offering or providing earned wage access services directly to consumers based on the consumer&#39;s representations and the provider&#39;s reasonable determination of the consumer&#39;s earned but unpaid income.<br /><br />
+	(3) &quot;Earned but unpaid income&quot; means salary, wages, compensation, or other income that a consumer or an employer has represented, and that a provider has reasonably determined, have been earned or have accrued to the benefit of the consumer in exchange for the consumer&#39;s provision of services to the employer or on behalf of the employer, including on an hourly, project-based, piecework, or other basis and including where the consumer is acting as an independent contractor of the employer, but have not, at the time of the payment of proceeds, been paid to the consumer by the employer.<br /><br />
+	(4) &quot;Earned wage access services&quot; means the business of providing consumer-directed wage access services or employer-integrated wage access services, or both.<br /><br />
+	(5)(a) &quot;Employer&quot; means:<br /><br />
+	(i) a person who employs a consumer; or<br /><br />
+	(ii) any other person who is contractually obligated to pay a consumer earned but unpaid income in exchange for consumer&#39;s provision of services to the employer or on behalf of the employer including on an hourly, project-based, piecework, or other basis and including where the consumer is acting as an independent contractor with respect to the employer.<br /><br />
+	(b) The term &quot;employer&quot; does not include:<br /><br />
+	(i) a customer of the employer; or<br /><br />
+	(ii) any other person whose obligation to make a payment of salary, wages, compensation, or other income to a consumer is not based on the provision of services by that consumer for or on behalf of such person.<br /><br />
+	(6) &quot;Employer-integrated wage access services&quot; means the business of delivering to consumers access to earned but unpaid income that is based on employment, income, and attendance data obtained directly or indirectly from an employer.<br /><br />
+	(7) &quot;Fee&quot; shall include a:<br /><br />
+	(a) fee imposed by a provider for delivery or expedited delivery of proceeds to a consumer; or<br /><br />
+	(b) subscription or membership fee imposed by a provider for a bona fide group of services that include earned wage access services.<br /><br />
+	A voluntary tip, gratuity, or other donation shall not be deemed to be a fee.<br /><br />
+	(8) &quot;Outstanding proceeds&quot; means proceeds remitted to a consumer by a provider that have not yet been repaid to that provider.<br /><br />
+	(9) &quot;Person&quot; means a partnership, association, corporation, or other business unit.<br /><br />
+	(10) &quot;Proceeds&quot; means a payment to a consumer by a provider that is based on earned but unpaid income.<br /><br />
+	(11) &quot;Provider&quot; means a person who is in the business of providing earned wage access services to consumers.<br /><br />
+	(12) &quot;Department&quot; means the South Carolina Department of Consumer Affairs.<br /><br />
+HISTORY: 2024 Act No. 190 (S.700), SECTION 1, eff November 21, 2024.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-830.</span> Registration.<br /><br />
+	(1) A person, including a person that is not physically located in this State, may not provide earned wage access in this State unless the person is registered under this article as a provider. This article does not apply to any person doing business under authority of and as permitted by any law of this State or the United States relating to banks, credit unions, savings and loan associations, savings banks, or trust companies.<br /><br />
+	(2) A person required to be registered under subsection (1) shall apply to the department for a registration on a form and in the manner prescribed by the department. The application shall include all of the following information:<br /><br />
+	(a) the name of the provider;<br /><br />
+	(b) the name under which the provider transacts business, if different than listed for item (a);<br /><br />
+	(c) the address of the provider&#39;s principal office, which may be outside of this State;<br /><br />
+	(d) the addresses of all of the provider&#39;s offices or retail stores, if any, in this State;<br /><br />
+	(e) if the provider provides earned wage access services at a location that is not an office or retail store in this State, a brief description of the manner in which the provider provides earned wage access services;<br /><br />
+	(f) the provider&#39;s federal employer identification number;<br /><br />
+	(g) a copy of the policy of the applicant relating to the privacy of information concerning users;<br /><br />
+	(h) a schedule of fees proposed to be charged to a user or employer for the provision of earned wage access services, which must include, without limitation, a statement identifying at least one option for a user to obtain earned wage access services from the applicant at no cost to the user;<br /><br />
+	(i) a statement that the applicant is applying to be registered as an employer-integrated earned wage access provider or a consumer-directed earned wage access provider, or both; and<br /><br />
+	(j) any other information or documentation the department requires to administer this article.<br /><br />
+	(3) Registration is on an annual basis and must be on a form prescribed by the department. The annual renewable period runs from May first until June thirtieth. A provider that files its renewal and annual report on a timely basis may continue operating unless the registration is denied or revoked by the department.<br /><br />
+	(4) The application for a registration pursuant to subsection (2) or renewal pursuant to subsection (3) shall be accompanied by a nonrefundable fee of one thousand dollars payable to the department. All application and renewal fees collected by the department may be retained by the department and used to implement the provisions of this article.<br /><br />
+	(5) A provider shall file with the department, and maintain in force, a surety bond that is issued by a surety company authorized to do business in this State. The surety bond must be:<br /><br />
+	(a) in a form satisfactory to the department;<br /><br />
+	(b) payable to the State for the benefit of a claimant against the provider to secure the faithful performance of obligations of the provider with respect to earned wage access services;<br /><br />
+	(c) in an amount equal to $30,000; and<br /><br />
+	(d) maintained for three years after revocation, denial, or failure to renew the registration.<br /><br />
+	(6) A registration issued pursuant to this article is not transferable or assignable.<br /><br />
+HISTORY: 2024 Act No. 190 (S.700), SECTION 1, eff November 21, 2024.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-840.</span> Compliance with requirements for providers.<br /><br />
+	A provider shall comply with all of the following requirements:<br /><br />
+	(1) The provider shall develop and implement policies and procedures to respond to questions raised by consumers and address complaints from consumers in an expedient manner.<br /><br />
+	(2) The provider shall offer to the consumer at least one reasonable option to obtain proceeds at no cost to the consumer and clearly explain how to elect that no-cost option.<br /><br />
+	(3) Before providing a consumer with earned wage access services, the provider shall provide a consumer with a written paper or electronic document, which can be included as part of the contract to provide earned wage access services, and which meets all of the following requirements:<br /><br />
+	(a) informs the consumer of the terms and conditions of the earned wage access services;<br /><br />
+	(b) clearly and conspicuously describes how the consumer may obtain proceeds at no cost to that consumer;<br /><br />
+	(c) provides a phone number or a website through which consumers can submit complaints about the provider&#39;s earned wage access services to the provider and the website and telephone number for the department;<br /><br />
+	(d) is written in a font and using language intended to be easily understood by a layperson;<br /><br />
+	(e) discloses any fees that may be directly imposed by the provider in connection with the provision of earned wage access services.<br /><br />
+	(4) The provider must inform the consumer of the fact of any material changes to the terms and conditions of the earned wage access services before implementing those changes for that consumer, using a font and language intended to be easily understood by a layperson.<br /><br />
+	(5) The provider shall provide proceeds to a consumer via any means mutually agreed upon by the consumer and provider.<br /><br />
+	(6) The provider shall comply with all local, state, and federal privacy and information security laws.<br /><br />
+	(7) If the provider solicits, charges, or receives a tip, gratuity, or other donation from a consumer, the provider shall:<br /><br />
+	(a) clearly and conspicuously disclose to the consumer immediately prior to each transaction that a tip, gratuity, or other donation amount may be zero and is voluntary;<br /><br />
+	(b) clearly and conspicuously disclose in its service contract with the consumer and elsewhere that tips, gratuities, or donations are voluntary and that the offering of earned wage access services, including the amount of proceeds a consumer is eligible to request and the frequency with which proceeds are provided to a consumer, is not contingent on whether the consumer pays any tip, gratuity, or other donation or on the size of the tip, gratuity, or other donation;<br /><br />
+	(c) not mislead or deceive consumers about the voluntary nature of such tips, gratuities, or other donations; and<br /><br />
+	(d) make no representations that tips, gratuities, or other donations will benefit any specific individuals.<br /><br />
+	(8) In any case in which a provider will seek repayment of outstanding proceeds, fees, or other payments, in connection with the activities covered by this article, including voluntary tips, gratuities, or other donations from a consumer&#39;s account at a depository institution including via electronic transfer, the provider shall:<br /><br />
+	(a) comply with applicable provisions of the federal Electronic Fund Transfer Act and its implementing regulations;<br /><br />
+	(b) reimburse the consumer for the full amount of any overdraft or non-sufficient funds fees imposed on a consumer by the consumer&#39;s depository institution that were caused by the provider attempting to seek payment of any outstanding proceeds, fees, or other payments, in connection with the activities covered by this article, including voluntary tips, gratuities, or other donations, on a date before, or in an incorrect amount from, the date or amount disclosed to the consumer; and<br /><br />
+	(c) not be subject to the requirements in subitem (b) with respect to payments of outstanding amounts or fees incurred by a consumer through fraudulent or other unlawful means.<br /><br />
+	(9) In any case in which a provider will seek repayment of outstanding proceeds, fees, or other payments in connection with the activities covered by this article, including voluntary tips, gratuities, or other donations from a consumer via payroll deduction, the provider&#39;s terms and conditions shall inform the consumer that by using the provider&#39;s earned wage access services, the consumer consents to repayment from the consumer&#39;s employer or its payroll services provider.<br /><br />
+	(10) A provider shall allow a consumer to discontinue receiving services at any time, without imposing a financial penalty on that consumer.<br /><br />
+HISTORY: 2024 Act No. 190 (S.700), SECTION 1, eff November 21, 2024.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-850.</span> Prohibited activities.<br /><br />
+	No person subject to this article shall do any of the following:<br /><br />
+	(1) share with an employer any fees, voluntary tips, gratuities, or other donations that were received from or charged to a consumer for earned wage access services;<br /><br />
+	(2) charge a late fee, interest, or any other penalty or charge for failure to repay outstanding proceeds;<br /><br />
+	(3) accept payment of outstanding proceeds, fees, voluntary tips, gratuities, or other donations from a consumer via credit card or charge card;<br /><br />
+	(4) charge a deferral fee or any other charge in connection with deferring the collection of any outstanding proceeds beyond the original scheduled repayment date;<br /><br />
+	(5) solicit a consumer to delay repayment of outstanding proceeds for the purpose of increasing the total nonmandatory payments that the provider may collect;<br /><br />
+	(6) report a consumer&#39;s payment or failed repayment of outstanding proceeds to a consumer credit reporting agency or a debt collector;<br /><br />
+	(7) require a credit score to determine a consumer&#39;s eligibility for earned wage access services;<br /><br />
+	(8) advertise, display, distribute, broadcast, televise, or cause or permit to be advertised, displayed, distributed, broadcasted, or televised in any manner whatsoever any false, misleading, or deceptive statement or representation regarding the conditions of the earned wage access services offered and provided by the provider;<br /><br />
+	(9) compel or attempt to compel payment by a consumer of outstanding proceeds, fees, voluntary tips, gratuities, or other donations to the provider through any of the following means:<br /><br />
+	(a) a suit against the consumer in a court of competent jurisdiction;<br /><br />
+	(b) use of a third party to pursue collection from the consumer on the provider&#39;s behalf; or<br /><br />
+	(c) sale of outstanding amounts to a third-party collector or debt buyer for collection from the consumer;<br /><br />
+	(10) provide proceeds in an amount that exceeds the consumer&#39;s earned but unpaid income, provided that this limitation shall not apply to any provision of proceeds that exceeds the consumer&#39;s earned but unpaid income due to administrative or technical errors so long as repayment of such proceeds provided due to an error otherwise complies with the repayment provisions of this article.<br /><br />
+	However, the limitations in this item shall not preclude the use by a provider of any of these methods to compel payment of outstanding amounts or fees incurred by a consumer through fraudulent or other unlawful means, nor shall they preclude a provider from pursuing an employer for breach of its contractual obligations to the provider.<br /><br />
+HISTORY: 2024 Act No. 190 (S.700), SECTION 1, eff November 21, 2024.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-860.</span> Earned wage access services; compliance with article.<br /><br />
+	The following shall apply in connection with the earned wage access services offered and provided by a provider in compliance with the provisions of this article:<br /><br />
+	(A) Proceeds provided to a consumer by the provider shall not be considered a consumer loan for purposes of Section 37-3-104 or a loan for purposes of Section 37-3-106.<br /><br />
+	(B) The provider shall not be considered a lender for purposes of Section 37-3-107(1), unless the provider is conducting business pursuant to Chapter 3, Title 37.<br /><br />
+	(C) Fees, voluntary tips, gratuities, or other donations paid by a consumer to a provider shall not be considered a loan finance charge for purposes of Section 37-3-109.<br /><br />
+	(D) The provider shall not be considered to be engaged in the business of money transmission for purposes of Section 35-11-200.<br /><br />
+	(E) Earned wage access services shall not be considered wage assignment for the purposes of Section 37-3-403.<br /><br />
+	(F) The provider shall not be considered a deferred presentment provider for purposes of Section 34-39-130 unless the provider is conducting business pursuant to Chapter 39, Title 34.<br /><br />
+HISTORY: 2024 Act No. 190 (S.700), SECTION 1, eff November 21, 2024.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-870.</span> Records; reporting requirements; confidentiality of data.<br /><br />
+	(1) A provider shall maintain records of its earned wage access services transactions and shall preserve its records for at least two years after the final date on which it provides proceeds to a consumer. A provider shall keep such books and records that, in the opinion of the department, will enable the department to determine whether the provider is in compliance with this article. The provider may keep books and records at a place of business located outside this State if the provider is able to readily produce those books and records for review.<br /><br />
+	(2) On or before June thirtieth of each year, a provider shall submit an annual report to the department relating to the provider&#39;s business conducted during the prior calendar year in this State. The report shall be on a form prescribed by the department and include, at a minimum:<br /><br />
+	(a) gross revenue attributable to those earned wage access services;<br /><br />
+	(b) a copy of each complaint that has been filed by a consumer against the provider with the Better Business Bureau or a state or federal agency other than the department and a description of the resolution, if any, of each such complaint;<br /><br />
+	(c) the total number of transactions in which the provider provided proceeds to consumers;<br /><br />
+	(d) the total number of unique consumers to whom the provider provided proceeds;<br /><br />
+	(e) the total dollar amount of proceeds the provider provided to consumers; and<br /><br />
+	(f) the total dollar amount of fees, voluntary tips, gratuities, or other donations the provider received from consumers.<br /><br />
+	(3) Data collected by the department pursuant to this section is confidential and may be released only in composite form, except as otherwise provided by law. The department shall prepare and make available to the public a report based on the above data. The report must be made available by October thirty-first each year.<br /><br />
+HISTORY: 2024 Act No. 190 (S.700), SECTION 1, eff November 21, 2024.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-880.</span> Cease and desist orders.<br /><br />
+	Upon satisfactory evidence that a provider has violated or failed to comply with a provision of this article or regulation promulgated pursuant to the authority of this article, the department may issue an order requiring the provider to cease and desist from engaging in the violation, requiring the provider to pay an administrative penalty or issue a refund to the consumer, denying, revoking, or suspending the provider&#39;s registration, or a combination thereof.<br /><br />
+HISTORY: 2024 Act No. 190 (S.700), SECTION 1, eff November 21, 2024.<br /><br />
+<span style="font-weight: bold;"> SECTION 39-5-890.</span> Appeal of order.<br /><br />
+	An appeal of an order issued by the department must be made pursuant to the Administrative Procedures Act and the rules governing practice before the Administrative Law Court. A contested hearing pursuant to this article is before the Administrative Law Court, with notice to, and an opportunity for a hearing by, the affected provider.<br /><br />
+HISTORY: 2024 Act No. 190 (S.700), SECTION 1, eff November 21, 2024.<br /><br />
+
+</div>
+
+
+					</div>		 <!-- mainwidepanel -->
+					
+				</div>		 <!-- pagebody -->
+				
+				<div id="footer" class="nodisplay" style="height: 30px;" onContextMenu="return false;">
+			<div id="footerdiv" style="margin:0;">
+				South Carolina Legislative Services Agency * 223 Blatt Building * 1105 Pendleton Street * Columbia, SC 29201<!-- * 803-212-4420--><br>
+				
+								<a href="/disclaimer.php">Disclaimer</a> * <a href="/policies.php">Policies</a> * <a href="/credits.php">Photo Credits</a> * <a href="/contact.php">Contact Us</a>
+							</div>
+		</div>
+		<div id="printfooter" class="printdisplay serifNormal" align=center style="font-size: 8pt;">
+			<br>
+			<br>
+			<hr>
+			Legislative Services Agency
+			<br>
+			h t t p : / / w w w . s c s t a t e h o u s e . g o v
+		</div>
+	
+		</div>	<!-- container or main in mobile page-->
+<script defer src="https://static.cloudflareinsights.com/beacon.min.js/v4513226cdae34746b4dedf0b4dfa099e1781791509496" integrity="sha512-ZE9pZaUXND66v380QUtch/5sE9tPFh2zg45pR2PB0CVkCtOREv2AJKkSidISWkysEuQ0EH8faUU5du78bx87UQ==" data-cf-beacon='{"version":"2024.11.0","token":"565410926b6c467d84cc32520b0caede","server_timing":{"name":{"cfCacheStatus":true,"cfEdge":true,"cfExtPri":true,"cfL4":true,"cfOrigin":true,"cfSpeedBrain":true},"location_startswith":null}}' crossorigin="anonymous"></script>
+</body>
+</html>
+
