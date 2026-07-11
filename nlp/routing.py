@@ -19,14 +19,27 @@ import re
 # generic deposit/credit wording so "home equity line" doesn't land in
 # deposit_account via a stray "account".
 _PRODUCT_RULES = [
-    ("mortgage", r"\bmortgage\b|\bhome equity\b|\bheloc\b|\brefinanc"),
-    ("auto_loan", r"\bauto loan\b|\bcar (?:loan|financing)\b"),
-    ("credit_card", r"\bcredit card\b|\bcash back\b|\bcard member\b"),
+    # Bare "refinanc" is intentionally absent: "refinance your car" is an
+    # auto loan, so refinancing only routes mortgage with home context.
+    ("mortgage", r"\bmortgage\b|\bhome equity\b|\bheloc\b|"
+                 r"\bhome loan\b|\bhome financing\b|"
+                 r"\brefinance? your (?:home|house|mortgage)\b|"
+                 r"\bmortgage refinanc|\brefinance? your rate\b"),
+    ("auto_loan", r"\bauto (?:loan|financing|refinance)\b|"
+                  r"\bcar (?:loan|financing|refinance)\b|"
+                  r"\bvehicle (?:loan|financing)\b|"
+                  r"\brefinance your (?:car|auto|vehicle)\b"),
+    ("credit_card", r"\bcredit card\b|\bcash back\b|\bcard member\b|"
+                    r"\brewards card\b|\bcash[- ]back card\b|"
+                    r"\bbalance transfer\b|\b0% intro apr\b|\bintro apr\b"),
     ("personal_loan", r"\bpersonal loan\b|\bdebt consolidation\b|\bconsolidat"),
-    ("bnpl", r"\bpay in \d\b|\bbuy now,? pay later\b|\bbnpl\b"),
+    ("bnpl", r"\bpay in \d\b|\bbuy now,? pay later\b|\bbnpl\b|"
+             r"\binterest[- ]free (?:payments|installments)\b|"
+             r"\bsplit your (?:purchase|payment)\b|\b4 (?:easy )?payments\b"),
     ("credit_repair", r"\bdebt relief\b|\bdebt settlement\b|\bcredit repair\b|"
                       r"\bfix your credit\b"),
-    ("crypto", r"\bcrypto|\bbitcoin\b|\bethereum\b|\btoken\b"),
+    ("crypto", r"\bcrypto|\bbitcoin\b|\bethereum\b|\btoken\b|\bweb3\b|"
+               r"\bstablecoin\b|\bdigital asset\b|\bdefi\b|\bstaking\b"),
     # "returns" only in an investment sense — bare \breturns?\b matched
     # "free returns" on retail ads.
     ("investment", r"\binvest|\bportfolio\b|\betf\b|\bstocks?\b|\bbrokerage\b|"
@@ -48,7 +61,8 @@ _PRODUCT_RULES = [
     ("deposit_account", r"\bapy\b|\bsavings account\b|"
                         r"\bhigh[- ]yield savings\b|\bchecking\b|"
                         r"\bdeposit(?!\s+insurance)\b|"
-                        r"\boverdraft\b|\bbank account\b"),
+                        r"\boverdraft\b|\bbank account\b|"
+                        r"\bmoney market\b|\bcertificate of deposit\b|\bcd account\b"),
 ]
 
 _CREDIT_PRODUCTS = {"credit_card", "personal_loan", "mortgage", "auto_loan",

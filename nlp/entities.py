@@ -19,9 +19,24 @@ import spacy
 from spacy.matcher import Matcher
 
 # --- token-pattern shorthands ---------------------------------------
+# _NUM also accepts Indian digit grouping ("5,00,000"); commas are
+# stripped at normalization time.
 _NUM = {"TEXT": {"REGEX": r"^\d[\d,]*(\.\d+)?$"}}
 _PCT = {"TEXT": "%"}
 _ANY = lambda n: {"OP": f"{{0,{n}}}"}  # up to n arbitrary tokens
+
+# Currency prefix symbol ($, €, £, ₹, ¥) or a trailing/standalone ISO-ish
+# code. Amounts are not $-only: real ad corpora carry ₹ / € / £, often
+# with a magnitude word ("₹1.5 LAKH", "$75K").
+_CUR_SYM = {"TEXT": {"REGEX": r"^[$€£₹¥]$"}}
+_CUR_CODE = {"LOWER": {"IN": ["usd", "eur", "gbp", "inr", "cad", "aud", "rs"]}}
+_MAG_TOKEN = {"LOWER": {"IN": ["k", "m", "mn", "b", "bn",
+                               "lakh", "lac", "lakhs", "cr", "crore", "crores"]}}
+# Magnitude multipliers for suffix words / letters in an amount's raw text.
+_MAGNITUDES = {"k": 1e3, "m": 1e6, "mn": 1e6, "b": 1e9, "bn": 1e9,
+               "lakh": 1e5, "lac": 1e5, "cr": 1e7, "crore": 1e7}
+_MAG_RE = re.compile(r"(?<![A-Za-z])(k|m|mn|b|bn|lakhs?|lac|crores?|cr)(?![A-Za-z])",
+                     re.IGNORECASE)
 
 _TIME_UNITS = {
     "minute": 1 / 1440, "min": 1 / 1440,
@@ -62,7 +77,15 @@ _MATCHER_PATTERNS: dict[str, list] = {
         [{"TEXT": {"REGEX": r"^\d+-(minute|hour|day|week|month|year)s?$"}}],
     ],
     "amount": [
-        [{"TEXT": "$"}, _NUM],
+        # $/€/£/₹/¥ prefix, optional magnitude word ("₹1.5 LAKH", "$75K").
+        [_CUR_SYM, _NUM, _MAG_TOKEN],
+        [_CUR_SYM, _NUM],
+        # "Rs. 5,000" — rupee written as a code with an optional dot.
+        [_CUR_CODE, {"TEXT": ".", "OP": "?"}, _NUM, _MAG_TOKEN],
+        [_CUR_CODE, {"TEXT": ".", "OP": "?"}, _NUM],
+        # Trailing code: "5,000 USD".
+        [_NUM, _MAG_TOKEN, _CUR_CODE],
+        [_NUM, _CUR_CODE],
     ],
     "percentage": [
         # Longer APY span wins over the bare "N %" span in overlap
@@ -131,6 +154,17 @@ def _first_number(text: str) -> float | None:
     return float(m.group().replace(",", "")) if m else None
 
 
+def _apply_magnitude(base: float | None, raw: str) -> float | None:
+    """Scale a base amount by a trailing magnitude word (K/M/B/LAKH/CR)."""
+    if base is None:
+        return None
+    m = _MAG_RE.search(raw)
+    if m:
+        key = m.group(1).lower().rstrip("s")
+        base *= _MAGNITUDES.get(key, 1.0)
+    return base
+
+
 def _normalize(label: str, raw: str) -> float | None:
     """Percent types -> the number; fee/amount -> USD; time -> days.
 
@@ -141,9 +175,9 @@ def _normalize(label: str, raw: str) -> float | None:
     if label == "fee":
         if re.match(r"^\s*(no|zero)\b", raw, re.IGNORECASE):
             return 0.0
-        return _first_number(raw)
+        return _apply_magnitude(_first_number(raw), raw)
     if label == "amount":
-        return _first_number(raw)
+        return _apply_magnitude(_first_number(raw), raw)
     if label == "time_period":
         n = _first_number(raw)
         unit = re.search(r"(minute|min|hour|hr|day|week|wk|month|mo|year|yr)s?\b",

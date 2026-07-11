@@ -34,9 +34,16 @@ _ENTITY_CLAIMS = {
 # claim_type -> trigger regexes over segment text
 _KEYWORD_CLAIMS = {
     "comparative": re.compile(
-        r"\bvs\.?\b|\bversus\b|\bcompared? (?:to|with)\b|\bthan\b|"
+        # A comparison names or implies a *rival*. Bare "than" fired on
+        # non-comparisons ("less than 5 minutes"), so require a comparative
+        # cue near it; "save/savings" was a mis-categorization (that is a
+        # performance/pricing claim, not a comparison) and is removed.
+        r"\bvs\.?\b|\bversus\b|\bcompared? (?:to|with)\b|"
         r"\bbeats?\b|\boutperform|\bunlike\b|\bother (?:banks|lenders|cards)\b|"
-        r"\b\d+(?:\.\d+)?\s*(?:x|times)\b|\bsav(?:e[ds]?|ings?)\b",
+        r"\b\d+(?:\.\d+)?\s*(?:x|times)\b|"
+        # "than" only when it names a rival, not a threshold ("less than 5
+        # minutes" is not a comparison).
+        r"\bthan (?:any|every|other|the|our|competitor|leading)\b",
         re.IGNORECASE),
     "guarantee": re.compile(
         r"\bguarantee[ds]?\b|\balways\b|\bnever\b|\bpromise[ds]?\b|"
@@ -52,9 +59,10 @@ _KEYWORD_CLAIMS = {
         r"\brated\b|\breviews?\b|\btestimonial",
         re.IGNORECASE),
     "performance": re.compile(
+        # "100%" alone is a bare number, not a performance claim — dropped.
         r"\bsave[ds]?\b|\bsavings\b|\bfast(?:er|est)?\b|\binstant(?:ly)?\b|"
         r"\bin (?:just )?(?:minutes|seconds)\b|\bapproved in\b|\beasy\b|"
-        r"\beffortless|\b100%\b|\bdigital process\b",
+        r"\beffortless|\bdigital process\b",
         re.IGNORECASE),
     "pricing": re.compile(
         r"\b(?:no|zero|0\$?) (?:\w+\s)?fees?\b|\bfree\b|\blow(?:er|est)? "

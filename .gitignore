@@ -42,8 +42,23 @@ benchmark*/
 .envrc
 .python-version
 
-# Claude/IDE settings
+# IDE/Editor settings
 .claude/
+.vscode/
+.idea/
+*.swp
+.DS_Store
 
-# Large files
-data/unlabeled/765302462623542.mp4
+# Data directory
+data/
+
+# User requested ignores
+test/
+test
+.env
+.venv
+pyc
+pycache
+
+# generated synthetic corpora (reproducible via synth/generator.py)
+synth/_sample_render.png
