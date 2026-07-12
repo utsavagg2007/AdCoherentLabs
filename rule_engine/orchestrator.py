@@ -54,14 +54,36 @@ class RoundRecord(BaseModel):
 
 
 class FinalResult(BaseModel):
-    """Outcome of the evaluate/retry loop with the full audit trail."""
+    """Outcome of the evaluate/retry loop with the full audit trail.
 
-    status: Literal["passed", "human_review"]
+    ``status="llm_error"`` means the injected LLM callable raised: the
+    loop stopped, every round completed before the failure is preserved
+    in ``round_records``, ``llm_error`` carries the exception type and
+    message, and ``final_report`` is the last completed round's report
+    (None when the very first call failed).
+    """
+
+    status: Literal["passed", "human_review", "llm_error"]
     asset_id: str
     rounds: int
     ruleset_version: str
-    final_report: EngineReport
+    final_report: Optional[EngineReport] = Field(
+        default=None,
+        description="Report of the last completed engine round; None only "
+        "for status='llm_error' when the round-1 LLM call itself failed.")
     round_records: list[RoundRecord]
+    llm_error: Optional[str] = Field(
+        default=None,
+        description="Set only for status='llm_error': "
+        "'<ExceptionType>: <message>' from the get_llm_output call that "
+        "failed. The engine never swallows LLM-layer failures silently.")
+    advisories: list[CheckResult] = Field(
+        default_factory=list,
+        description="Advisory applicability flags from the final report "
+        "(matrix-generated, scope='advisory'): process/governance "
+        "obligations that apply to the advertiser but are out of "
+        "creative scope. Informational — they never drive the retry "
+        "loop or the status.")
 
 
 def _instruction(r: CheckResult) -> str:
@@ -143,6 +165,12 @@ def evaluate_with_retry(
     can fix. Asset defects ride along in every round's report
     (``asset_defects``) for downstream consumers — "passed" means the
     review is sound, not that the ad is clean.
+
+    If ``get_llm_output`` itself raises (network, timeout, provider
+    error), the loop stops and returns ``status="llm_error"`` with the
+    exception type+message in ``llm_error`` and every completed round
+    preserved in ``round_records`` — the failure is surfaced, never
+    swallowed, and the audit trail is never lost.
     """
     if max_rounds < 1:
         raise ValueError("max_rounds must be >= 1")
@@ -152,20 +180,39 @@ def evaluate_with_retry(
     records: list[RoundRecord] = []
     report: EngineReport | None = None
     for round_no in range(1, max_rounds + 1):
-        llm_output = get_llm_output(asset, report)
+        try:
+            llm_output = get_llm_output(asset, report)
+        except Exception as exc:  # noqa: BLE001 — LLM/transport failure
+            # The LLM layer failed (network, timeout, provider error, a
+            # bug). Do not lose the audit trail: every completed round
+            # stays in round_records, and the failure is surfaced
+            # loudly via status + llm_error — never swallowed.
+            return FinalResult(
+                status="llm_error",
+                asset_id=(report.asset_id if report is not None
+                          else str(asset.get("asset_id", "unknown"))),
+                rounds=len(records),
+                ruleset_version=ruleset_version,
+                final_report=report,
+                round_records=records,
+                llm_error=f"{type(exc).__name__}: {exc}",
+                advisories=report.advisories if report is not None else [],
+            )
         report = run_checks(asset, llm_output, ruleset_version=ruleset_version)
         if report.passed:
             records.append(RoundRecord(round=round_no, report=report))
             return FinalResult(status="passed", asset_id=report.asset_id,
                                rounds=round_no, ruleset_version=ruleset_version,
-                               final_report=report, round_records=records)
+                               final_report=report, round_records=records,
+                               advisories=report.advisories)
         payload = (build_retry_payload(report)
                    if round_no < max_rounds else None)
         records.append(RoundRecord(round=round_no, report=report,
                                    retry_payload=payload))
     return FinalResult(status="human_review", asset_id=report.asset_id,
                        rounds=max_rounds, ruleset_version=ruleset_version,
-                       final_report=report, round_records=records)
+                       final_report=report, round_records=records,
+                       advisories=report.advisories)
 
 
 if __name__ == "__main__":
@@ -190,6 +237,8 @@ if __name__ == "__main__":
             for f in rep.asset_defects:
                 print(f"    ~ asset defect: {f.check_id} [{f.severity}] "
                       f"{f.message}")
+        for a in res.advisories:
+            print(f"  i advisory: {a.check_id} — {a.message[:100]}")
             if rec.retry_payload is not None:
                 print(f"    retry payload sent to LLM layer:")
                 for ins in rec.retry_payload:

@@ -77,6 +77,11 @@ def _segment(i: int, text: str, role: str, source: str,
 # labels (and downstream span matching) work in logical blocks — a
 # headline wrapped over two rows, a paragraph, "Member" over "FDIC".
 _MERGE_MAX_HEIGHT_RATIO = 1.8  # member line heights within 1.8x of each other
+# Stacked (vertical) merges use a tighter ratio: a size change between
+# stacked rows is a layout break (headline over body, disclosure over
+# fine print), not a wrapped paragraph. Same-row merging keeps the loose
+# 1.8 ratio — mixed glyph heights within one visual row are normal.
+_STACK_MAX_HEIGHT_RATIO = 1.4
 _MERGE_MAX_VGAP = 0.7          # stacked-row gap <= 0.7 * taller line height
 _MERGE_MAX_HGAP = 1.0          # same-row gap <= 1.0 * taller line height
 _ROW_OVERLAP = 0.5             # vertical overlap fraction that means "same row"
@@ -106,6 +111,18 @@ def _merge_ocr_lines(lines: list) -> list:
     horizontal gap) or stacks directly below the block (small vertical
     gap, horizontally aligned). Lines without real boxes stay singletons.
 
+    Two extra gates on *stacked* merges (measured on role-realistic
+    rendered banners, where over-merging was the top source of role
+    confusion):
+
+      * height: stacked rows must be within _STACK_MAX_HEIGHT_RATIO —
+        a size change between stacked rows is a layout break (headline
+        over body copy), not a wrapped paragraph;
+      * wording: a line whose keyword role (disclosure/legal/cta)
+        conflicts with the block's keyword role never stacks onto it —
+        "All rights reserved" under a "Rates may change..." paragraph is
+        a separate legal line, however tightly the ad sets them.
+
     lines: [(text, (x, y, w, h), conf)] with normalized boxes.
     Returns [(text, union_box, mean_conf, line_height)] in reading
     order. line_height is the mean member height — the union box grows
@@ -113,12 +130,14 @@ def _merge_ocr_lines(lines: list) -> list:
     """
     groups: list[dict] = []
     for text, (x, y, w, h), conf in sorted(lines, key=lambda t: (t[1][1], t[1][0])):
+        kw = _keyword_role(text)
         target = None
         for g in groups:
             gh = g["line_h"]
             if h <= 0 or gh <= 0:
                 continue
-            if min(h, gh) / max(h, gh) < 1.0 / _MERGE_MAX_HEIGHT_RATIO:
+            ratio = min(h, gh) / max(h, gh)
+            if ratio < 1.0 / _MERGE_MAX_HEIGHT_RATIO:
                 continue
             ref = max(h, gh)
             hgap = max(x - g["x1"], g["x0"] - (x + w))
@@ -131,6 +150,8 @@ def _merge_ocr_lines(lines: list) -> list:
             stacked = (
                 -0.5 * ref <= vgap <= _MERGE_MAX_VGAP * ref
                 and x_overlap >= 0.3 * min(w, g["x1"] - g["x0"])
+                and ratio >= 1.0 / _STACK_MAX_HEIGHT_RATIO
+                and not (kw and g["kw"] and kw != g["kw"])
             )
             if same_row or stacked:
                 target = g
@@ -139,6 +160,7 @@ def _merge_ocr_lines(lines: list) -> list:
             groups.append({
                 "members": [(text, (x, y, w, h), conf)],
                 "x0": x, "y0": y, "x1": x + w, "y1": y + h, "line_h": h,
+                "kw": kw,
             })
         else:
             target["members"].append((text, (x, y, w, h), conf))
@@ -148,6 +170,7 @@ def _merge_ocr_lines(lines: list) -> list:
             target["y1"] = max(target["y1"], y + h)
             target["line_h"] = (sum(mh for _, (_, _, _, mh), _ in target["members"])
                                 / len(target["members"]))
+            target["kw"] = target["kw"] or kw
 
     _consolidate_bands(groups)
 
@@ -172,8 +195,9 @@ def _consolidate_bands(groups: list[dict]) -> None:
     though the column gaps exceed the same-row line limit ('U.S. Bank |
     7.20% | Weeks | None'). Two blocks merge when their union boxes
     overlap vertically by at least half the shorter block, their line
-    heights are similar, and the horizontal gap stays within
-    _MERGE_ROW_HGAP line heights. Runs to fixpoint, in place.
+    heights are similar, the horizontal gap stays within
+    _MERGE_ROW_HGAP line heights, and their keyword roles don't
+    conflict. Runs to fixpoint, in place.
     """
     changed = True
     while changed:
@@ -192,7 +216,10 @@ def _consolidate_bands(groups: list[dict]) -> None:
                 hgap = max(b["x0"] - a["x1"], a["x0"] - b["x1"])
                 if hgap > _MERGE_ROW_HGAP * max(ha, hb):
                     continue
+                if a["kw"] and b["kw"] and a["kw"] != b["kw"]:
+                    continue
                 a["members"] += b["members"]
+                a["kw"] = a["kw"] or b["kw"]
                 a["x0"] = min(a["x0"], b["x0"])
                 a["y0"] = min(a["y0"], b["y0"])
                 a["x1"] = max(a["x1"], b["x1"])
@@ -380,7 +407,7 @@ if __name__ == "__main__":
         sys.exit("no gold-labeled image found under data/unlabeled/")
 
     print(f"asset: {gold['asset_id']}  ({image_path})\n")
-    ocr_lines, _ = run_ocr(image_path)  # free tier: no semantic signals
+    ocr_lines, _, _ = run_ocr(image_path)  # free tier: no semantic signals
     segments = segment_text(ocr_lines=ocr_lines)
     for s in segments:
         schema.Segment.model_validate(s)  # prove schema shape

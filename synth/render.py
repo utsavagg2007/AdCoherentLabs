@@ -56,8 +56,36 @@ def _wrap(draw, text, font, max_w):
     return lines or [""]
 
 
+# Role-realistic layout order: headline banner on top, body copy in the
+# middle, the CTA as a button, and a bottom compliance block (disclosure,
+# then legal, then fine_print) clustered tightly the way real ads set
+# their mouse type.
+_BOTTOM_ROLES = ("disclosure", "legal", "fine_print")
+
+# CTA button palette: dark fill + white text (still high-contrast for OCR).
+_BUTTON_FILLS = [(25, 55, 160), (10, 110, 60), (150, 30, 30), (40, 40, 40)]
+
+
+def _layout_order(segments: list[dict]) -> list[dict]:
+    """Reorder segments into visual order: headline, body/other, cta,
+    then the bottom compliance cluster. Stable within each group."""
+    heads = [s for s in segments if s["role"] == "headline"]
+    ctas = [s for s in segments if s["role"] == "cta"]
+    bottoms = [s for s in segments if s["role"] in _BOTTOM_ROLES]
+    bottoms.sort(key=lambda s: _BOTTOM_ROLES.index(s["role"]))
+    mids = [s for s in segments
+            if s["role"] not in ("headline", "cta") + _BOTTOM_ROLES]
+    return heads + mids + ctas + bottoms
+
+
 def render_asset(asset: dict, width: int = 1000, seed: int | None = None):
     """Render one asset. Returns (PIL.Image, [gt segment dicts with bbox]).
+
+    Role-realistic layout: the headline is set large at the top (randomly
+    centered), body copy follows left-aligned, the CTA renders as a
+    button (rounded filled rect, white bold text), and disclosure/legal/
+    fine_print form a tightly-clustered small-type block at the bottom,
+    separated from the marketing copy by a wide gap.
 
     Ground-truth segments carry normalized [0,1] bboxes so they can be
     scored against pipeline output exactly like OCR segments.
@@ -65,31 +93,69 @@ def render_asset(asset: dict, width: int = 1000, seed: int | None = None):
     rng = random.Random(seed if seed is not None else hash(asset["asset_id"]) & 0xFFFF)
     margin = 40
     pad = 22
+    cluster_pad = 6           # tight gap inside the bottom compliance block
+    bottom_gap = 3 * pad      # wide gap isolating the bottom block
+    btn_pad_x, btn_pad_y = 26, 14
     tmp = Image.new("RGB", (width, 10), "white")
     d = ImageDraw.Draw(tmp)
 
-    laid = []  # (text, role, x, y, w, h, lines, font)
+    center_headline = rng.random() < 0.5
+    center_cta = rng.random() < 0.5
+    button_fill = rng.choice(_BUTTON_FILLS)
+
+    laid = []  # (seg, role, x, y, w, h, lines, font, line_h, style)
     y = margin
-    for seg in asset["segments"]:
+    prev_role = None
+    for seg in _layout_order(asset["segments"]):
         role = seg["role"]
         bold, size = _ROLE_STYLE.get(role, (False, 26))
         size = max(11, size + rng.randint(-2, 2))  # mild jitter, still ordered
         font = ImageFont.truetype(_font_path(bold), size)
-        lines = _wrap(d, seg["text"], font, width - 2 * margin)
+        max_w = width - 2 * margin - (2 * btn_pad_x if role == "cta" else 0)
+        lines = _wrap(d, seg["text"], font, max_w)
         line_h = font.getbbox("Ag")[3] + 6
         block_h = line_h * len(lines)
         block_w = max((d.textlength(ln, font=font) for ln in lines), default=0)
-        laid.append((seg, role, margin, y, block_w, block_h, lines, font, line_h))
-        y += block_h + pad
+
+        # Vertical rhythm: first bottom-block segment gets the wide gap,
+        # segments inside the bottom block cluster tightly.
+        if prev_role is not None:
+            in_bottom = role in _BOTTOM_ROLES
+            was_bottom = prev_role in _BOTTOM_ROLES
+            if in_bottom and not was_bottom:
+                y += bottom_gap - pad
+            elif in_bottom and was_bottom:
+                y += cluster_pad - pad
+        # CTA button needs room for its padding.
+        if role == "cta":
+            y += btn_pad_y
+
+        centered = (role == "headline" and center_headline) or \
+                   (role == "cta" and center_cta)
+        x = (width - block_w) / 2 if centered else margin
+        laid.append((seg, role, x, y, block_w, block_h, lines, font, line_h))
+        y += block_h + pad + (btn_pad_y if role == "cta" else 0)
+        prev_role = role
 
     height = y + margin
     img = Image.new("RGB", (width, height), "white")
     draw = ImageDraw.Draw(img)
     gt = []
     for seg, role, x, yy, bw, bh, lines, font, line_h in laid:
+        fill = "black"
+        if role == "cta":
+            # Button chrome behind the text; gt bbox stays on the text.
+            draw.rounded_rectangle(
+                [x - btn_pad_x, yy - btn_pad_y,
+                 x + bw + btn_pad_x, yy + bh + btn_pad_y],
+                radius=12, fill=button_fill,
+            )
+            fill = "white"
         cy = yy
         for ln in lines:
-            draw.text((x, cy), ln, fill="black", font=font)
+            lx = x + (bw - draw.textlength(ln, font=font)) / 2 if role == "cta" \
+                else x
+            draw.text((lx, cy), ln, fill=fill, font=font)
             cy += line_h
         gt.append({
             "segment_id": seg["segment_id"], "text": seg["text"], "role": role,

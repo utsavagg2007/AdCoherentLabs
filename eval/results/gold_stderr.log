@@ -1,8 +1,0 @@
-[32mCreating model: ('PP-OCRv6_medium_det', None, None)[0m
-[32mModel files already exist. Using cached files. To redownload, please delete the directory manually: `/home/shadowxlord/.paddlex/official_models/PP-OCRv6_medium_det`.[0m
-/home/shadowxlord/AdCoherentLabs/.venv/lib/python3.12/site-packages/paddle/utils/cpp_extension/extension_utils.py:712: UserWarning: No ccache found. Please be aware that recompiling all source files may be required. You can download and install ccache from: https://github.com/ccache/ccache/blob/master/doc/INSTALL.md
-  warnings.warn(warning_message)
-[32mCreating model: ('PP-OCRv6_medium_rec', None, None)[0m
-[32mModel files already exist. Using cached files. To redownload, please delete the directory manually: `/home/shadowxlord/.paddlex/official_models/PP-OCRv6_medium_rec`.[0m
-[cv.ocr] backend: PaddleOCR (cpu)
-Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|██████████| 103/103 [00:00<00:00, 12772.39it/s]

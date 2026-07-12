@@ -13,13 +13,22 @@ from __future__ import annotations
 
 import re
 
-LEXICON_VERSION = "v1"
-THRESHOLDS_VERSION = "v1"
+#: v2 (2026-07-12): coverage-matrix check lexicons (MILITARY_CREDIT,
+#: PRESCREEN_WORDING, PRESCREEN_OPTOUT_NOTICE, EMAIL_OPTOUT) + MAPR_CAP
+#: and WCAG_CONTRAST_MIN thresholds — taxonomy §7.
+LEXICON_VERSION = "v2"
+THRESHOLDS_VERSION = "v2"
 
 # --- Appendix B thresholds (NUM_TOL lives with ALL-GRD-007) ---------------
 PROX_MAX = 0.60             # max claim->disclosure bbox-center distance
 HEIGHT_MIN_PCT = 0.9        # min disclosure text height, % of asset height
 APR_HEIGHT_RATIO_MIN = 0.33  # min APR-disclosure/trigger text-height ratio
+MAPR_CAP = 36.0             # MLA 32 CFR 232.4(b): max Military APR
+WCAG_CONTRAST_MIN = 4.5     # WCAG 2.x SC 1.4.3 minimum contrast ratio
+
+#: Roles whose text is compliance mouse type — shared by the WCAG and
+#: structural disclosure checks.
+DISCLOSURE_ROLES = frozenset({"disclosure", "fine_print", "legal"})
 
 # --- Product groupings ----------------------------------------------------
 CREDIT_PRODUCTS = frozenset(
@@ -59,6 +68,25 @@ LEXICONS: dict[str, tuple[str, ...]] = {
                             "everyone's approved", "everyone is approved"),
     "PROHIBITED_BASIS": ("race", "religion", "national origin",
                          "marital status", "public assistance"),
+    # --- v2: coverage-matrix checks (taxonomy §7) ---
+    "MILITARY_CREDIT": ("military", "servicemember", "servicemembers",
+                        "service member", "service members", "active duty",
+                        "active-duty", "armed forces", "veteran", "veterans",
+                        "va loan", "mapr", "military annual percentage rate",
+                        "military lending act"),
+    "PRESCREEN_WORDING": ("pre-approved", "preapproved", "prescreened",
+                          "pre-screened", "pre-selected", "preselected",
+                          "firm offer of credit", "you have been selected"),
+    # FCRA 615(d) prescreen opt-out notice elements (the statutory
+    # long/short notice names the 888-5-OPTOUT channel).
+    "PRESCREEN_OPTOUT_NOTICE": ("opt out", "opt-out", "optout",
+                                "1-888-567-8688", "888-5-optout",
+                                "optoutprescreen",
+                                "stop receiving prescreened offers",
+                                "prescreen & opt-out notice"),
+    "EMAIL_OPTOUT": ("unsubscribe", "opt out", "opt-out", "reply stop",
+                     "email preferences", "manage subscriptions",
+                     "stop receiving these emails"),
 }
 
 _COMPILED: dict[str, re.Pattern] = {}

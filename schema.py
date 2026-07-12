@@ -14,6 +14,13 @@ Contract minor bump (2026-07-10), additive only: Framework gains FDIC
 law); AssetRepresentation gains optional ``target_jurisdictions``
 (user-supplied ad-targeting codes; empty = unspecified). Existing
 documents validate unchanged.
+
+Contract minor bump (2026-07-12), additive only: Provenance gains
+optional ``ocr_backend``; Framework gains one value per framework family
+of the regulatory coverage matrix (docs/coverage_matrix.md), with
+umbrella values where the Regulatory Source Directory groups sources
+(STATE_PRIVACY, MINI_TCPA, PLATFORM_POLICY, CARD_NETWORK, SELF_REG,
+STATE_FINREG). Existing documents validate unchanged.
 """
 
 from __future__ import annotations
@@ -175,6 +182,30 @@ class Framework(str, Enum):
     TCPA = "TCPA"
     FDIC = "FDIC"
     STATE_UDAP = "STATE_UDAP"
+    # Coverage-matrix families (docs/coverage_matrix.md), 2026-07-12
+    # minor bump. One value per framework family; umbrella values where
+    # the Regulatory Source Directory groups sources.
+    COPPA = "COPPA"
+    REG_M = "Reg_M"
+    REG_N = "Reg_N"
+    REG_E = "Reg_E"
+    NCUA = "NCUA"
+    FAIR_HOUSING = "FAIR_HOUSING"
+    MLA = "MLA"
+    FDCPA = "FDCPA"
+    WCAG = "WCAG"
+    CFTC_NFA = "CFTC_NFA"
+    GLBA = "GLBA"
+    SCRA = "SCRA"
+    NMLS = "NMLS"
+    STATE_FINREG = "STATE_FINREG"       # state consumer-finance regulators
+    STATE_PRIVACY = "STATE_PRIVACY"     # umbrella: CCPA/VCDPA/... via target_jurisdictions
+    MINI_TCPA = "MINI_TCPA"             # umbrella: FTSA and sister mini-TCPAs
+    PLATFORM_POLICY = "PLATFORM_POLICY" # umbrella: Google/Meta ad policies
+    CARD_NETWORK = "CARD_NETWORK"       # umbrella: Visa/Mastercard standards
+    SELF_REG = "SELF_REG"               # umbrella: NAD/CARU/DAA/NAI/IAB
+    PCI_DSS = "PCI_DSS"
+    NIST_PRIVACY = "NIST_PRIVACY"
 
 
 # ---------------------------------------------------------------------------
@@ -553,6 +584,16 @@ class Provenance(BaseModel):
             "any semantic-similarity-based output (e.g. "
             "'sentence-transformers/all-MiniLM-L6-v2@<revision>'). None when "
             "no embedding model was used."
+        ),
+    )
+    ocr_backend: Optional[str] = Field(
+        default=None,
+        description=(
+            "OCR engine that transcribed the source media ('paddle', "
+            "'tesseract', 'google_vision'). Backends have materially "
+            "different measured accuracy floors (see cv.ocr.MEASURED_FLOORS), "
+            "so OCR-derived numbers are only comparable within one backend. "
+            "None for non-image assets."
         ),
     )
 

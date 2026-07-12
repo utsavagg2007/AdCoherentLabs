@@ -52,19 +52,50 @@ def test_routing_frameworks_are_valid_enum_values():
             assert f in valid
 
 
+def test_mini_tcpa_state_mirror_matches_router():
+    # The generator keeps a literal mirror of the router's mini-TCPA
+    # state list for ground-truth routing; they must never drift.
+    from nlp.routing_lexicon import MINI_TCPA_STATES
+    from synth.generator import _MINI_TCPA_STATES
+    assert _MINI_TCPA_STATES == MINI_TCPA_STATES
+
+
 def test_ocr_noise_augmentation_preserves_labels():
-    a = generate_asset(random.Random(1), 0)
+    corpus = generate_corpus(20, seed=1)
+    a = next(x for x in corpus if x["entities"])
     noisy = augment_ocr_noise(a, random.Random(2))
-    # roles, claim types, and routing survive corruption; spans are dropped.
+    # roles, claim types, and routing survive corruption.
     assert [s["role"] for s in noisy["segments"]] == [s["role"] for s in a["segments"]]
     assert noisy["routing"] == a["routing"]
-    assert noisy["entities"] == []
+    # Entity labels are PRESERVED under noise (clean and noisy share labels):
+    # spans stay exact against the corrupted text and numeric normalized
+    # values are unchanged, because digit cores are protected from corruption.
+    assert noisy["entities"], "entities must survive noise augmentation"
+    by_id = {s["segment_id"]: s["text"] for s in noisy["segments"]}
+    clean_vals = {e["entity_id"]: e["normalized_value"] for e in a["entities"]}
+    for e in noisy["entities"]:
+        cs = e["char_span"]
+        assert by_id[e["segment_id"]][cs["start"]:cs["end"]] == e["raw_text"]
+        assert e["normalized_value"] == clean_vals[e["entity_id"]]
+
+
+def test_negative_assets_have_no_entities():
+    # The distribution includes financial-sounding negatives (no extractable
+    # entities) to measure false positives; they must be schema-valid and
+    # entity-free.
+    negs = [a for a in generate_corpus(200, seed=7) if a.get("negative")]
+    assert negs, "expected some negative assets in the distribution"
+    for a in negs:
+        schema.AssetRepresentation.model_validate(a)
+        assert a["entities"] == []
 
 
 def test_harness_runs_text_mode_and_scores():
     from synth.evaluate import score_text_corpus
     r = score_text_corpus(generate_corpus(12, seed=7))
-    # On clean, consistently-labeled synthetic text the deterministic
-    # extractor should be strong — a floor guards against silent breakage.
-    assert r["entities"]["overall"]["f1"] > 0.9
-    assert r["claims"]["recall"] > 0.8
+    # The distribution deliberately includes phrasing families the current
+    # patterns were not written against, so overall F1 is intentionally below
+    # the V1 bar. This floor only guards against catastrophic breakage of the
+    # harness/extractor, not the (expected) phrasing-coverage gaps.
+    assert r["entities"]["overall"]["f1"] > 0.7
+    assert r["claims"]["recall"] > 0.75

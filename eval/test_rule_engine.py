@@ -513,9 +513,84 @@ def _fx_state():
     return a, o
 
 
+def _fx_mla():
+    s1 = _seg(1, "Personal loans for active duty servicemembers and "
+                 "veterans", "headline")
+    s2 = _seg(2, "29.99% APR. Terms and conditions apply.", "fine_print")
+    a = _asset([s1, s2], "personal_loan",
+               ["FTC", "TILA", "CFPB", "ECOA", "MLA", "SCRA"],
+               ents=[_ent(1, "apr", "29.99% APR", s2, 29.99)])
+    o = _out(findings=[
+        _fnd("f1", "FTC", "compliant", "low", ["seg_1"]),
+        _fnd("f2", "TILA", "compliant", "low", ["seg_2"], ["ent_1"],
+             quote="29.99% APR")],
+        ev=["FTC", "TILA", "CFPB", "ECOA", "MLA", "SCRA"])
+    return a, o
+
+
+def _fx_prescreen():
+    s1 = _seg(1, "You're pre-approved for the Platinum Card", "headline")
+    s2 = _seg(2, "You can opt out of prescreened offers: call "
+                 "1-888-567-8688 or visit optoutprescreen.com.",
+              "disclosure")
+    a = _asset([s1, s2], "credit_card",
+               ["FTC", "TILA", "CFPB", "ECOA", "FCRA"])
+    o = _out(findings=[_fnd("f1", "FTC", "compliant", "low", ["seg_1"])],
+             clear=["seg_2"],
+             ev=["FTC", "TILA", "CFPB", "ECOA", "FCRA"])
+    return a, o
+
+
+def _fx_email():
+    s1 = _seg(1, "You received this email because you subscribed to "
+                 "Acme Bank updates.", "body")
+    s2 = _seg(2, "Unsubscribe anytime in your email preferences.",
+              "fine_print")
+    a = _asset([s1, s2], "unknown", ["FTC", "CAN-SPAM", "TCPA"],
+               ents=[_ent(1, "optout_marker", "Unsubscribe", s2)])
+    o = _out(findings=[_fnd("f1", "FTC", "compliant", "low", ["seg_1"])],
+             clear=["seg_2"], ev=["FTC", "CAN-SPAM", "TCPA"])
+    return a, o
+
+
+def _fx_wcag():
+    s1 = _seg(1, "Earn rewards on every purchase", "headline",
+              (0.1, 0.1, 0.8, 0.08))
+    s2 = _seg(2, "Terms and conditions apply.", "disclosure",
+              (0.1, 0.9, 0.5, 0.02))
+    a = _asset([s1, s2], "unknown", ["FTC"],
+               cv=[_cvf("cvf_c1", "contrast_ratio", 7.0, "seg_2")])
+    o = _out(clear=["seg_1", "seg_2"], ev=["FTC"])
+    return a, o
+
+
+def _fx_endorse():
+    s1 = _seg(1, "#ad — see why members switched to Acme.", "body")
+    a = _asset([s1], "unknown", ["FTC"],
+               ents=[_ent(1, "endorsement_marker", "#ad", s1)])
+    o = _out(findings=[_fnd("f1", "FTC", "compliant", "low",
+                            ["seg_1"], ["ent_1"])],
+             ev=["FTC"])
+    return a, o
+
+
+def _fx_covext():
+    """Every coverage-mechanization matrix framework routed + evaluated,
+    so each generated <FW>-COV-001 check runs and passes at baseline."""
+    from rule_engine.checks_coverage_ext import COVERAGE_FRAMEWORKS
+    s1 = _seg(1, "One account for your whole financial life.", "headline")
+    fws = ["FTC"] + list(COVERAGE_FRAMEWORKS)
+    a = _asset([s1], "unknown", fws)
+    o = _out(clear=["seg_1"], ev=fws)
+    return a, o
+
+
 FIXTURE_BASES = {"fx_credit": _fx_credit, "fx_openend": _fx_openend,
                  "fx_deposit": _fx_deposit, "fx_crypto": _fx_crypto,
-                 "fx_state": _fx_state}
+                 "fx_state": _fx_state, "fx_mla": _fx_mla,
+                 "fx_prescreen": _fx_prescreen, "fx_email": _fx_email,
+                 "fx_wcag": _fx_wcag, "fx_endorse": _fx_endorse,
+                 "fx_covext": _fx_covext}
 
 
 # ---------------------------------------------------------------------------
@@ -586,9 +661,16 @@ def compliant_rated_high(asset, out):
 
 @mutation("orphan_framework_finding", intended=["ALL-CON-005"], new=True)
 def orphan_framework_finding(asset, out):
-    """File a finding under a framework the LLM never evaluated."""
+    """File a finding under a framework the LLM never evaluated. The
+    framework is chosen per base pair (first of a candidate list absent
+    from frameworks_evaluated), so the mutation stays orphaned on every
+    base — gold or fixture."""
+    fw = next((f for f in ("FCRA", "SCRA", "GLBA", "COPPA")
+               if f not in out["frameworks_evaluated"]), None)
+    if fw is None:
+        return None
     out = copy.deepcopy(out)
-    out["findings"].append(_fnd("f_mut_orphan", "FCRA", "compliant", "low",
+    out["findings"].append(_fnd("f_mut_orphan", fw, "compliant", "low",
                                 [asset["segments"][0]["segment_id"]],
                                 reasoning="mutation: orphan framework"))
     return out
@@ -924,6 +1006,157 @@ def utah_price_claims_no_qualifier(asset, out):
     return asset, copy.deepcopy(out)
 
 
+# ---- Coverage-matrix checks (taxonomy §7) -----------------------------------
+
+@mutation("mla_stated_rate_above_cap", intended=["MLA-STR-001"],
+          base="fx_mla", new=True)
+def mla_stated_rate_above_cap(asset, out):
+    """Asset+output: the stated APR rises above the 36% MAPR cap. Text,
+    entity, and quote move together so only the cap check fires."""
+    asset, out = copy.deepcopy(asset), copy.deepcopy(out)
+    asset["segments"][1]["text"] = "38.99% APR. Terms and conditions apply."
+    asset["entities"][0]["raw_text"] = "38.99% APR"
+    asset["entities"][0]["normalized_value"] = 38.99
+    out["findings"][1]["quoted_evidence"] = "38.99% APR"
+    return asset, out
+
+
+@mutation("drop_matrix_framework_from_evaluated",
+          intended=["MATRIX-COV-001"], allowed=["ALL-COV-001"],
+          base="fx_mla", new=True)
+def drop_matrix_framework_from_evaluated(asset, out):
+    """Output-side: MLA routed but silently never evaluated. ALL-COV-001
+    is the designed unattributed companion of the same duty."""
+    out = copy.deepcopy(out)
+    out["frameworks_evaluated"] = [f for f in out["frameworks_evaluated"]
+                                   if f != "MLA"]
+    return out
+
+
+@mutation("prescreen_without_optout_notice", intended=["FCRAV-STR-001"],
+          base="fx_prescreen", new=True)
+def prescreen_without_optout_notice(asset, out):
+    """Asset-side: the 615(d) opt-out notice segment loses its notice
+    wording while the prescreen hook stays."""
+    asset = copy.deepcopy(asset)
+    asset["segments"][1]["text"] = "See terms for details."
+    return asset, copy.deepcopy(out)
+
+
+@mutation("email_without_optout", intended=["CANSPAM-STR-001"],
+          base="fx_email", new=True)
+def email_without_optout(asset, out):
+    """Asset-side: the opt-out entity and wording vanish from an
+    email-structured creative."""
+    asset = copy.deepcopy(asset)
+    asset["entities"] = []
+    asset["segments"][1]["text"] = ("Thanks for reading the Acme Bank "
+                                    "newsletter.")
+    return asset, copy.deepcopy(out)
+
+
+@mutation("disclosure_contrast_below_floor", intended=["WCAG-STR-001"],
+          base="fx_wcag", new=True)
+def disclosure_contrast_below_floor(asset, out):
+    """Asset-side: the disclosure's measured contrast drops below the
+    4.5:1 WCAG minimum."""
+    asset = copy.deepcopy(asset)
+    asset["cv_findings"][0]["value"] = 2.1
+    return asset, copy.deepcopy(out)
+
+
+@mutation("endorsement_marker_unaddressed", intended=["ENDOR-COV-001"],
+          base="fx_endorse", new=True)
+def endorsement_marker_unaddressed(asset, out):
+    """Output-side: the FTC finding that addressed the #ad marker is
+    deleted and nothing else covers it."""
+    out = copy.deepcopy(out)
+    out["findings"] = [f for f in out["findings"] if f["finding_id"] != "f1"]
+    return out
+
+
+# ---- Generated coverage checks (taxonomy §7.7) ------------------------------
+# Mutations are parameterized exactly like the checks: for every
+# coverage-mechanization framework in the matrix, drop it from
+# frameworks_evaluated and assert its generated <FW>-COV-001 fires.
+# ALL-COV-001 is the designed unattributed companion of the same duty.
+
+def _register_covext_mutations():
+    from rule_engine.checks_coverage_ext import COVERAGE_FRAMEWORKS
+
+    def make(fw):
+        @mutation(f"covext_drop_{fw}", intended=[f"{fw}-COV-001"],
+                  allowed=["ALL-COV-001"], base="fx_covext", new=True)
+        def drop(asset, out, fw=fw):
+            out = copy.deepcopy(out)
+            out["frameworks_evaluated"] = [
+                f for f in out["frameworks_evaluated"] if f != fw]
+            return out
+        drop.__name__ = f"covext_drop_{fw.lower()}"
+        drop.__doc__ = (f"Output-side: {fw} routed but silently never "
+                        "evaluated (generated mutation).")
+        return drop
+
+    for fw in COVERAGE_FRAMEWORKS:
+        make(fw)
+
+
+_register_covext_mutations()
+
+
+@mutation("covext_ungrounded_finding", intended=["SEC-COV-001"],
+          allowed=["ALL-GRD-001"], base="fx_covext", new=True)
+def covext_ungrounded_finding(asset, out):
+    """Output-side: an SEC finding cites a nonexistent segment —
+    exercises the generated check's grounding leg. ALL-GRD-001 is the
+    universal companion it restates with framework attribution."""
+    out = copy.deepcopy(out)
+    out["findings"].append(_fnd("f_mut_sec", "SEC", "compliant", "low",
+                                ["seg_does_not_exist"],
+                                reasoning="mutation: ungrounded SEC review"))
+    return out
+
+
+# ---- Generated advisory checks (taxonomy §7.8) ------------------------------
+# Parameterized like the checks: for every advisory-mechanization matrix
+# row, assert its ADV-<source> flag lands in EngineReport.advisories and
+# never in failed_checks (the runner additionally asserts the global
+# advisory-never-gates invariant on every mutation).
+
+def _register_advisory_mutations():
+    from rule_engine.coverage_matrix import rows_for_mechanization
+
+    def make(row):
+        fw = row["frameworks_enum"]
+        always = row["routing_trigger"].startswith("always")
+
+        @mutation(f"advisory_{row['source']}",
+                  intended=[f"ADV-{row['source']}"], base="fx_wcag",
+                  new=True)
+        def adv(asset, out, fw=fw, always=always):
+            asset, out = copy.deepcopy(asset), copy.deepcopy(out)
+            if not always:
+                # Route the advisory's family framework onto an asset
+                # that didn't carry it; the flag must appear.
+                asset["routing"]["frameworks"].append(fw)
+                out["frameworks_evaluated"].append(fw)
+            # always-on rows: unchanged pair — the flag must appear on
+            # every run and still never gate.
+            return asset, out
+        adv.__name__ = "advisory_" + row["source"].replace("-", "_")
+        adv.__doc__ = (f"Advisory flag for {row['source']} "
+                       f"({row['citation'][:60]}): asserted present in "
+                       "EngineReport.advisories and absent from "
+                       "failed_checks (generated mutation).")
+        return adv
+
+    for row in rows_for_mechanization("advisory"):
+        make(row)
+
+
+_register_advisory_mutations()
+
+
 # ---------------------------------------------------------------------------
 # Matrix runner
 # ---------------------------------------------------------------------------
@@ -938,13 +1171,20 @@ def run_matrix():
                             f"{[(r.check_id, r.evidence) for r in rep.failed_checks]}")
         return {r.check_id for r in rep.asset_defects}
 
+    # The gold corpus lives outside git (data/ is .gitignored): use it
+    # when present locally, otherwise fall back to the synthetic fixture
+    # bases so every corpus-wide mutation still runs on a fresh clone.
     gold_pairs = []
-    for out_path in sorted(OUT_DIR.glob("*.json")):
-        out = json.loads(out_path.read_text())
-        asset = next(json.loads(p.read_text()) for p in GOLD_DIR.glob("*.json")
-                     if json.loads(p.read_text())["asset_id"] == out["asset_id"])
-        defects = baseline(asset, out, out["asset_id"])
-        gold_pairs.append((asset, out, defects))
+    if OUT_DIR.is_dir():
+        for out_path in sorted(OUT_DIR.glob("*.json")):
+            out = json.loads(out_path.read_text())
+            asset = next(json.loads(p.read_text()) for p in GOLD_DIR.glob("*.json")
+                         if json.loads(p.read_text())["asset_id"] == out["asset_id"])
+            defects = baseline(asset, out, out["asset_id"])
+            gold_pairs.append((asset, out, defects))
+    if not gold_pairs:
+        print("[note] no local gold corpus (data/ not present); "
+              "corpus-wide mutations run against fixture bases only")
 
     fixture_pairs = {}
     for name, builder in FIXTURE_BASES.items():
@@ -956,7 +1196,7 @@ def run_matrix():
     rows = []
     for name, intended, allowed, fn, base in MUTATIONS:
         if base is None:
-            bases = gold_pairs
+            bases = gold_pairs or list(fixture_pairs.values())
         else:
             bases = [fixture_pairs[base]]
         for asset, out, base_defects in bases:
@@ -970,12 +1210,26 @@ def run_matrix():
             report = run_checks(m_asset, m_out)
             failed = {r.check_id for r in report.failed_checks}
             defects = {r.check_id for r in report.asset_defects}
+            advisories = {r.check_id for r in report.advisories}
+            # Advisory invariant: advisory-scope results are
+            # informational and must NEVER appear in failed_checks or
+            # asset_defects, no matter the mutation.
+            adv_ids = {cid for cid, c in CHECK_REGISTRY.items()
+                       if c.scope == "advisory"}
+            assert not (adv_ids & (failed | defects)), (
+                f"advisory checks gated a verdict: "
+                f"{sorted(adv_ids & (failed | defects))}")
             # each intended check must land in the bucket its registered
-            # scope dictates
-            caught = all(
-                (cid in defects) if CHECK_REGISTRY[cid].scope == "asset"
-                else (cid in failed)
-                for cid in intended)
+            # scope dictates (advisory: present in advisories, absent
+            # from failed_checks)
+            def _in_bucket(cid):
+                scope = CHECK_REGISTRY[cid].scope
+                if scope == "asset":
+                    return cid in defects
+                if scope == "advisory":
+                    return cid in advisories and cid not in failed
+                return cid in failed
+            caught = all(_in_bucket(cid) for cid in intended)
             all_fired = failed | defects
             companions = sorted(all_fired & set(allowed))
             cross = sorted(all_fired - set(intended) - set(allowed)

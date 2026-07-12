@@ -441,6 +441,90 @@ class TestRouting:
         schema.RoutingLabel.model_validate(r)
 
 
+class TestMatrixRouting:
+    """Coverage-matrix routing triggers (docs/coverage_matrix.md,
+    ruleset 1.4.0): one hand-built text per new framework route. Every
+    route must fire AND name its trigger in the signal."""
+
+    CASES = [
+        ("Refinance your home loan today — mortgage rates dropped!",
+         None, {"Reg_N", "TILA", "NMLS"}, "Reg N"),
+        ("Special APR cap for active duty servicemembers under the MAPR.",
+         None, {"MLA", "SCRA"}, "MLA + SCRA"),
+        ("This is an attempt to collect a debt for a collection agency.",
+         None, {"FDCPA"}, "FDCPA"),
+        ("You're pre-approved! Accept your firm offer of credit now.",
+         None, {"FCRA"}, "FCRA"),
+        ("Send money instantly with our prepaid card and mobile wallet.",
+         None, {"Reg_E"}, "Reg E"),
+        ("Trade futures and forex with margin trading on our platform.",
+         None, {"CFTC_NFA"}, "CFTC/NFA"),
+        ("A savings app for kids — parental consent required for under 13.",
+         None, {"COPPA"}, "COPPA"),
+        ("You received this email because you subscribed. Unsubscribe "
+         "anytime.", None, {"CAN-SPAM"}, "CAN-SPAM"),
+        ("Text STOP to opt out. Msg & data rates may apply.",
+         None, {"TCPA"}, "TCPA"),
+        ("See our privacy policy for how we share your information.",
+         ["US-CA"], {"GLBA", "STATE_PRIVACY"}, "state privacy"),
+        ("Fee-only registered investment adviser and wealth management.",
+         None, {"SEC", "FINRA"}, "FINRA 2210"),
+        ("Low expense ratio index funds — read the prospectus.",
+         None, {"SEC"}, "482/34b-1"),
+        ("Pay with your Visa or Mastercard everywhere.",
+         None, {"CARD_NETWORK"}, "card network"),
+        ("Loans made by Acme Bank, NMLS #98765.",
+         None, {"NMLS"}, "NMLS"),
+        ("Buy bitcoin and stake your crypto portfolio.",
+         None, {"CFTC_NFA", "SEC", "FINRA"}, "CFTC/NFA"),
+    ]
+
+    @pytest.mark.parametrize("text,states,want,signal_names",
+                             CASES, ids=[sorted(c[2])[0] for c in CASES])
+    def test_matrix_trigger_routes(self, text, states, want, signal_names):
+        r = route(_segs(text), [], target_jurisdictions=states)
+        assert want <= set(r["frameworks"]), r["signal"]
+        assert signal_names in r["signal"]
+        schema.RoutingLabel.model_validate(r)
+
+    def test_mini_tcpa_requires_tcpa_and_ftsa_state(self):
+        text = "Text STOP to opt out. Msg & data rates may apply."
+        with_state = route(_segs(text), [], target_jurisdictions=["US-FL"])
+        assert "MINI_TCPA" in with_state["frameworks"]
+        assert "mini-TCPA" in with_state["signal"]
+        # non-mini-TCPA state: TCPA yes, MINI_TCPA no
+        other_state = route(_segs(text), [], target_jurisdictions=["US-IL"])
+        assert "TCPA" in other_state["frameworks"]
+        assert "MINI_TCPA" not in other_state["frameworks"]
+        # mini-TCPA state without any TCPA trigger: no MINI_TCPA
+        no_trigger = route(_segs("Open a savings account, earn APY"), [],
+                           target_jurisdictions=["US-FL"])
+        assert "MINI_TCPA" not in no_trigger["frameworks"]
+
+    def test_card_network_from_semantic_signals(self):
+        r = route(_segs("A better way to pay for everything you love."), [],
+                  semantic_signals=[{"signal_type": "logo",
+                                     "value": "Visa Inc.",
+                                     "confidence": 0.9,
+                                     "source": "google_vision"}])
+        assert "CARD_NETWORK" in r["frameworks"]
+        assert "card network logo signal" in r["signal"]
+
+    def test_matrix_trigger_preempts_semantic_fallback(self, monkeypatch):
+        import nlp.routing as routing_mod
+
+        def boom(text):  # pragma: no cover - must not be called
+            raise AssertionError("fallback ran despite matrix trigger")
+        monkeypatch.setattr(routing_mod, "_semantic_route", boom)
+        # No entities, no product wording — but a matrix trigger hits.
+        r = route(_segs("Send money to friends in seconds"), [])
+        assert "Reg_E" in r["frameworks"]
+
+    def test_debt_relief_is_not_debt_collection(self):
+        r = route(_segs("Debt relief and debt consolidation services"), [])
+        assert "FDCPA" not in r["frameworks"]
+
+
 # ===========================================================================
 # embeddings — real frozen-model inference (cached locally)
 # ===========================================================================

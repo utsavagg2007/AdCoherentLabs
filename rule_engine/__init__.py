@@ -26,6 +26,14 @@ from rule_engine import checks_regdd  # noqa: E402,F401
 from rule_engine import checks_fdic328  # noqa: E402,F401
 from rule_engine import checks_regb  # noqa: E402,F401
 from rule_engine import checks_state_udap  # noqa: E402,F401
+from rule_engine import checks_mla  # noqa: E402,F401
+from rule_engine import checks_fcrav  # noqa: E402,F401
+from rule_engine import checks_canspam  # noqa: E402,F401
+from rule_engine import checks_wcag  # noqa: E402,F401
+from rule_engine import checks_endorsements  # noqa: E402,F401
+from rule_engine import checks_matrix_coverage  # noqa: E402,F401
+from rule_engine import checks_coverage_ext  # noqa: E402,F401
+from rule_engine import checks_advisory  # noqa: E402,F401
 
 __all__ = [
     "CHECK_REGISTRY",

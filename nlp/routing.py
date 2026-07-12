@@ -13,6 +13,12 @@ from __future__ import annotations
 
 import re
 
+from nlp.routing_lexicon import (
+    CARD_NETWORK_SIGNALS,
+    MINI_TCPA_STATES,
+    match_routing,
+)
+
 # Most matches wins; earlier rule breaks ties. Comparative ads name
 # competitor product categories ("...vs credit card"), so a single hit
 # must not outvote the advertised product. Specific products before
@@ -88,6 +94,81 @@ _FDIC_RE = re.compile(
 )
 
 _STATE_CODE_RE = re.compile(r"US-[A-Z]{2}")
+
+# Coverage-matrix wording triggers (docs/coverage_matrix.md
+# routing_trigger column): lexicon name -> frameworks routed + reason.
+# Wording-keyed like the FDIC rule — they apply regardless of product
+# classification. Signals always name the trigger and the matched
+# lexeme. Hashed into version.ruleset_hash with the routing lexicons.
+_LEXICON_ROUTES = [
+    ("MILITARY", ["MLA", "SCRA"],
+     "military/servicemember/MAPR wording -> MLA + SCRA"),
+    ("DEBT_COLLECTION", ["FDCPA"],
+     "debt-collection wording -> FDCPA/Reg F"),
+    ("PRESCREEN", ["FCRA"],
+     "prescreen/firm-offer wording -> FCRA/Reg V prescreen notices"),
+    ("EFT_P2P", ["Reg_E"],
+     "P2P/prepaid/transfer wording -> Reg E (EFTA)"),
+    ("CFTC_TRADING", ["CFTC_NFA"],
+     "futures/forex/commodities wording -> CFTC/NFA promotional rules"),
+    ("CHILD_DIRECTED", ["COPPA"],
+     "under-13-directed signals -> COPPA (coverage)"),
+    ("EMAIL_STRUCTURE", ["CAN-SPAM"],
+     "email-structured creative -> CAN-SPAM"),
+    ("SMS_CONSENT", ["TCPA"],
+     "SMS/call-to-text or phone-consent language -> TCPA"),
+    ("PRIVACY_DATA", ["GLBA"],
+     "privacy-policy/data-use claims -> GLBA (Reg P)"),
+    ("SECURITIES_PRO", ["SEC", "FINRA"],
+     "adviser/broker-dealer wording -> SEC Marketing Rule + FINRA 2210"),
+    ("FUND_AD", ["SEC"],
+     "fund advertising -> SEC fund ad rules (482/34b-1)"),
+    ("CARD_NETWORKS", ["CARD_NETWORK"],
+     "card network name in creative -> card network standards"),
+    ("NMLS_ID", ["NMLS"],
+     "NMLS ID wording -> NMLS licensing disclosure"),
+]
+
+
+def _matrix_routes(full_text: str, product_type: str, states: list[str],
+                   semantic_signals: list | None
+                   ) -> tuple[list[str], list[str]]:
+    """(frameworks, reasons) from the coverage-matrix triggers."""
+    frameworks: list[str] = []
+    reasons: list[str] = []
+
+    for lexicon, fws, why in _LEXICON_ROUTES:
+        hits = match_routing(lexicon, full_text)
+        if hits:
+            frameworks += fws
+            reasons.append(f"{why} (matched: {hits[0]!r})")
+
+    # Product-keyed matrix rows.
+    if product_type == "mortgage":
+        frameworks += ["Reg_N", "NMLS"]
+        reasons.append("mortgage/home-loan product -> Reg N (MAP rule) "
+                       "+ NMLS licensing disclosure")
+    if product_type == "crypto":
+        frameworks.append("CFTC_NFA")
+        reasons.append("crypto product -> CFTC/NFA promotional rules")
+
+    # Card-network logo/label detections from the paid OCR tier.
+    for sig in semantic_signals or []:
+        value = str(_get(sig, "value") or "").lower()
+        hit = next((n for n in CARD_NETWORK_SIGNALS if n in value), None)
+        if hit:
+            frameworks.append("CARD_NETWORK")
+            reasons.append(f"card network logo signal ({value!r}) -> "
+                           "card network standards")
+            break
+
+    # Jurisdiction-conditioned umbrellas.
+    if "GLBA" in frameworks and states:
+        frameworks.append("STATE_PRIVACY")
+        reasons.append(f"data-use claims + targets {', '.join(states)} -> "
+                       "state privacy laws")
+
+    return frameworks, reasons
 
 # Product classification is role-weighted, not a flat full-text count:
 # the advertised product lives in the headline/body, while disclosures
@@ -175,12 +256,15 @@ def _state_targets(target_jurisdictions) -> list[str]:
 
 
 def route(segments: list, entities: list,
-          target_jurisdictions: list[str] | None = None) -> dict:
+          target_jurisdictions: list[str] | None = None,
+          semantic_signals: list | None = None) -> dict:
     """One schema.RoutingLabel-shaped dict for the asset.
 
     ``target_jurisdictions`` is the user-supplied ad-targeting list from
     scan time ("US" or "US-XX"); any state code additionally routes the
-    STATE_UDAP umbrella framework.
+    STATE_UDAP umbrella framework. ``semantic_signals`` (paid-tier
+    logo/label detections) route card-network standards when they name
+    a card network.
     """
     full_text = " ".join(_get(s, "text") for s in segments)
     entity_types = {str(_get(e, "entity_type")) for e in entities}
@@ -198,10 +282,17 @@ def route(segments: list, entities: list,
         if score > best_score:  # ties keep the earlier (more specific) rule
             product_type, best_score = product, score
 
+    # Coverage-matrix wording/product/signal triggers. Computed before
+    # the fallback gate: a trigger hit IS a rule match, so the semantic
+    # fallback must not preempt it.
+    matrix_fws, matrix_reasons = _matrix_routes(
+        full_text, product_type, states, semantic_signals)
+
     # Rules found nothing at all -> try the frozen-embedding fallback on
     # financial-sounding text. Rule-based routing below stays untouched
-    # whenever entities or product wording matched.
-    if not entities and best_score == 0.0 and _FINANCIAL_RE.search(full_text):
+    # whenever entities, product wording, or a matrix trigger matched.
+    if (not entities and best_score == 0.0 and not matrix_fws
+            and _FINANCIAL_RE.search(full_text)):
         hit = _semantic_route(full_text)
         if hit is not None:
             score, topic, suggested = hit
@@ -269,6 +360,19 @@ def route(segments: list, entities: list,
     if states:
         frameworks.append("STATE_UDAP")
         reasons.append(f"targets {', '.join(states)} -> state UDAP applies")
+
+    # Coverage-matrix triggers (wording, product rows, logo signals).
+    frameworks += matrix_fws
+    reasons += matrix_reasons
+
+    # Mini-TCPA umbrella: TCPA-triggering creative targeted at an
+    # FTSA-type state. After the merge so it sees TCPA from either the
+    # optout rule or the SMS/consent wording trigger.
+    mini_states = sorted(set(states) & MINI_TCPA_STATES)
+    if "TCPA" in frameworks and mini_states:
+        frameworks.append("MINI_TCPA")
+        reasons.append(f"TCPA trigger + targets {', '.join(mini_states)} -> "
+                       "state mini-TCPA statutes")
 
     # dedupe, keep first-mention order
     frameworks = list(dict.fromkeys(frameworks))

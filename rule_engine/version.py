@@ -20,13 +20,23 @@ import hashlib
 import inspect
 import json
 
-#: Bump on any semantic change to checks, lexicons, thresholds, or the
-#: state table.
+#: Bump on any semantic change to checks, lexicons, thresholds, the
+#: state table, or the coverage matrix.
 #: History: 1.0.0 taxonomy v1 (45 checks); 1.1.0 review/asset scope
 #: split; 1.2.0 state UDAP metadata table added to the ruleset;
 #: 1.3.0 STATE_UDAP checks (taxonomy §6, 4 checks); 1.3.1 ALL-GRD-005
-#: evidence enriched with valid-id counts.
-RULESET_VERSION = "1.3.1"
+#: evidence enriched with valid-id counts; 1.4.0 regulatory coverage
+#: matrix added to the ruleset (hashed like the lexicons) + advisory
+#: scope results emitted from it; 1.5.0 coverage-matrix checks
+#: (taxonomy §7, 6 checks: MLA/FCRAV/CANSPAM/WCAG/ENDOR/MATRIX-COV) +
+#: lexicons v2 + thresholds v2 (MAPR_CAP, WCAG_CONTRAST_MIN); 1.6.0
+#: generated per-framework coverage checks (§7.7, checks_coverage_ext:
+#: one <FW>-COV-001 per coverage-mechanization matrix framework) +
+#: MATRIX-COV-001 re-scoped to structural rows only; 1.7.0 advisory
+#: checks generated from matrix advisory rows (§7.8, checks_advisory —
+#: registered scope="advisory", replacing the core _advisory_results
+#: helper; advisories never gate, never retry).
+RULESET_VERSION = "1.7.0"
 
 _cache: dict[tuple, str] = {}
 
@@ -52,7 +62,7 @@ def ruleset_hash(registry: dict | None = None) -> str:
     if registry is None:
         from rule_engine.core import CHECK_REGISTRY
         registry = CHECK_REGISTRY
-    from rule_engine import checks_universal, lexicons, state_udap_table
+    from rule_engine import checks_universal, coverage_matrix, lexicons, state_udap_table
 
     # Cache key must cover everything the hash covers, not just the set of
     # check ids: an in-process edit to a check's source or a lexicon/
@@ -67,6 +77,7 @@ def ruleset_hash(registry: dict | None = None) -> str:
                _source_of(c.fn)) for cid, c in sorted(registry.items())),
         lexicons.LEXICON_VERSION, lexicons.THRESHOLDS_VERSION,
         state_udap_table.STATE_TABLE_VERSION, checks_universal.NUM_TOL,
+        coverage_matrix.COVERAGE_MATRIX_VERSION,
     )
     if key not in _cache:
         payload = {
@@ -87,6 +98,10 @@ def ruleset_hash(registry: dict | None = None) -> str:
                            "NUM_TOL": checks_universal.NUM_TOL},
             "state_udap": {"version": state_udap_table.STATE_TABLE_VERSION,
                            "table": state_udap_table.STATE_UDAP_TABLE},
+            "coverage_matrix": {
+                "version": coverage_matrix.COVERAGE_MATRIX_VERSION,
+                "table": coverage_matrix.COVERAGE_MATRIX,
+            },
         }
         blob = json.dumps(payload, sort_keys=True).encode()
         _cache[key] = hashlib.sha256(blob).hexdigest()[:16]

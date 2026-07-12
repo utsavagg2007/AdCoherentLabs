@@ -6,6 +6,9 @@
 # --- schema / contract ---
 pydantic>=2.6,<3            # v2 model API (model_validate/model_dump, Field constraints)
 
+# --- configuration ---
+python-dotenv>=1.0          # config.py: .env loading (safe no-op when absent)
+
 # --- NLP (layer 2) ---
 spacy>=3.5,<4               # Matcher "OP": "{0,2}" quantifier syntax requires >=3.5
 sentence-transformers>=2.2  # frozen MiniLM-L6 embedding fallback

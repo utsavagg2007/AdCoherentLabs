@@ -9,9 +9,10 @@ Two tiers behind one dispatcher:
     classification. ``run_ocr_google_vision``. Falls back to the free
     tier on any failure (missing credentials, quota, network).
 
-``run_ocr(image_path, tier=...)`` returns ``(lines, semantic_signals)``
-where lines are ``OcrLine`` and semantic_signals are
-``schema.SemanticSignal``-shaped dicts (always [] on the free tier).
+``run_ocr(image_path, tier=...)`` returns ``(lines, semantic_signals,
+backend)`` where lines are ``OcrLine``, semantic_signals are
+``schema.SemanticSignal``-shaped dicts (always [] on the free tier),
+and backend names the engine that served this call.
 Boxes are normalized to [0, 1] with origin top-left so they can feed
 ``schema.BoundingBox`` directly. This layer only transcribes and
 reports service signals — segmentation into roles and any compliance
@@ -20,6 +21,7 @@ interpretation happen downstream.
 
 from __future__ import annotations
 
+import logging
 import os
 import sys
 from dataclasses import dataclass
@@ -27,6 +29,26 @@ from dataclasses import dataclass
 # PaddleX phones home to pick a model mirror unless told not to; models
 # are cached under ~/.paddlex after first download.
 os.environ.setdefault("PADDLE_PDX_DISABLE_MODEL_SOURCE_CHECK", "True")
+
+_log = logging.getLogger("cv.ocr")
+
+# Local backend preference order, first available wins. PaddleOCR is
+# preferred because of measured fidelity on REAL ad screenshots, where
+# the two backends differ sharply; on clean rendered banners both are
+# near-perfect, so the real-screenshot numbers are the deciding floor.
+BACKEND_PREFERENCE = ("paddle", "tesseract")
+
+# Measured floors per backend — synth.backend_eval (clean renders,
+# n=20 seed=7) + synth.ocr_eval --source gold (real screenshots, n=5),
+# PaddleOCR 3.x PP-OCRv6 / tesseract 5.3.4, 2026-07-12. Downstream
+# extraction cannot recover text OCR destroyed, so no accuracy claim
+# for OCR-sourced assets may exceed the active backend's floor.
+MEASURED_FLOORS = {
+    "paddle": {"clean_render_cer": 0.001, "entity_survival": 0.98,
+               "real_word_recall": 0.994, "real_char_sim": 0.67},
+    "tesseract": {"clean_render_cer": 0.000, "entity_survival": 1.00,
+                  "real_word_recall": 0.613, "real_char_sim": 0.415},
+}
 
 
 @dataclass(frozen=True)
@@ -68,26 +90,51 @@ def _init_tesseract():
     return pytesseract
 
 
+_INIT = {"paddle": _init_paddle, "tesseract": _init_tesseract}
+
+
 def _get_engine():
     global _engine
     if _engine is None:
-        try:
-            _engine = ("paddle", _init_paddle())
-            print("[cv.ocr] backend: PaddleOCR (cpu)", file=sys.stderr)
-        except Exception as exc:
+        errors = []
+        for name in BACKEND_PREFERENCE:
             try:
-                _engine = ("tesseract", _init_tesseract())
-                print(
-                    f"[cv.ocr] backend: pytesseract (PaddleOCR unavailable: {exc})",
-                    file=sys.stderr,
-                )
-            except Exception as exc2:
-                raise RuntimeError(
-                    "No OCR backend available. PaddleOCR failed "
-                    f"({exc}); pytesseract failed ({exc2}). Install "
-                    "paddleocr+paddlepaddle or pytesseract+tesseract-ocr."
-                ) from exc2
+                _engine = (name, _INIT[name]())
+                break
+            except Exception as exc:  # noqa: BLE001 — fall to next backend
+                errors.append(f"{name}: {exc}")
+        if _engine is None:
+            raise RuntimeError(
+                "No OCR backend available ("
+                + "; ".join(errors)
+                + "). Install paddleocr+paddlepaddle or "
+                "pytesseract+tesseract-ocr."
+            )
+        name = _engine[0]
+        floor = MEASURED_FLOORS[name]
+        _log.warning(
+            "OCR backend: %s%s — measured floor: real-screenshot "
+            "word_recall %.3f / char_sim %.2f, clean-render CER %.3f, "
+            "entity survival %.2f (synth.backend_eval + synth.ocr_eval, "
+            "2026-07-12). OCR-sourced accuracy cannot exceed this floor.",
+            name,
+            f" (fallback; {'; '.join(errors)})" if errors else "",
+            floor["real_word_recall"], floor["real_char_sim"],
+            floor["clean_render_cer"], floor["entity_survival"],
+        )
     return _engine
+
+
+def active_backend() -> str | None:
+    """Name of the local OCR backend currently initialized this process
+    (``"paddle"`` or ``"tesseract"``), or ``None`` if no local OCR has run
+    yet. Callers use this to record which engine produced a set of
+    numbers — OCR output (and therefore every downstream metric) is not
+    comparable across backends.
+    """
+    return _engine[0] if _engine else None
+
+
 
 
 def _clamp01(v: float) -> float:
@@ -186,6 +233,20 @@ _GCP_CREDS_VAR = "GOOGLE_APPLICATION_CREDENTIALS"
 _VISION_SOURCE = "google_vision"
 
 
+def vision_import_error() -> str | None:
+    """None if the google-cloud-vision package imports, else the reason.
+
+    The single source of truth for "is the Vision SDK available" — the
+    same import ``run_ocr_google_vision`` performs; config.py reuses
+    this instead of duplicating the probe.
+    """
+    try:
+        from google.cloud import vision  # noqa: F401
+        return None
+    except Exception as exc:  # noqa: BLE001 — report any import failure
+        return f"{type(exc).__name__}: {exc}"
+
+
 def _signal(signal_type: str, value: str, score: float) -> dict:
     """schema.SemanticSignal-shaped dict; web-entity scores can exceed
     1.0, so clamp into the schema's [0, 1] confidence bound."""
@@ -265,7 +326,7 @@ def run_ocr_google_vision(image_path: str) -> tuple[list[OcrLine], list[dict]]:
 # ----------------------------------------------------------- dispatcher
 
 def run_ocr(image_path: str, tier: str = "free"
-            ) -> tuple[list[OcrLine], list[dict]]:
+            ) -> tuple[list[OcrLine], list[dict], str | None]:
     """OCR an image at the requested tier.
 
     tier="paid"  -> Google Vision; on any failure (missing credentials,
@@ -273,20 +334,28 @@ def run_ocr(image_path: str, tier: str = "free"
                     local OCR with no semantic signals.
     tier="free"  -> local OCR (PaddleOCR/pytesseract), no API cost.
 
-    Returns (lines, semantic_signals); semantic_signals is [] whenever
-    the local path served the request.
+    Returns (lines, semantic_signals, backend): semantic_signals is []
+    whenever the local path served the request, and ``backend`` names
+    the engine that actually transcribed THIS call ("google_vision",
+    "paddle", "tesseract", or None when nothing was read). Returned per
+    call — never stashed in shared state — so concurrent callers each
+    get their own truthful provenance value.
     """
     if tier not in ("free", "paid"):
         raise ValueError(f"unknown OCR tier {tier!r}; expected 'free' or 'paid'")
     if tier == "paid":
         try:
-            return run_ocr_google_vision(image_path)
+            lines, signals = run_ocr_google_vision(image_path)
+            return lines, signals, _VISION_SOURCE
         except Exception as exc:
             print(
                 f"[cv.ocr] paid tier failed ({exc}); falling back to local OCR",
                 file=sys.stderr,
             )
-    return run_ocr_local(image_path), []
+    lines = run_ocr_local(image_path)
+    # run_ocr_local returns [] without engine init for unreadable media;
+    # only name a backend when one actually transcribed something.
+    return lines, [], _engine[0] if _engine else None
 
 
 if __name__ == "__main__":
@@ -309,14 +378,14 @@ if __name__ == "__main__":
 
     print(f"image: {image_path}\n")
     print("-- tier=free (local OCR) --")
-    lines, signals = run_ocr(image_path, tier="free")
+    lines, signals, backend = run_ocr(image_path, tier="free")
     for line in lines:
         print(line)
     assert signals == [], "free tier must return no semantic signals"
 
     if os.environ.get(_GCP_CREDS_VAR):
         print("\n-- tier=paid (Google Vision) --")
-        lines, signals = run_ocr(image_path, tier="paid")
+        lines, signals, backend = run_ocr(image_path, tier="paid")
         for line in lines:
             print(line)
         print(f"semantic signals ({len(signals)}):")

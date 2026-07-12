@@ -17,6 +17,10 @@ _MARKER_PATTERNS = [
     re.compile(r"(?<![#\w])#ad(?!\w)", re.IGNORECASE),
     re.compile(r"\bpaid\s+partnership\b", re.IGNORECASE),
     re.compile(r"\bsponsored\b", re.IGNORECASE),
+    # FDIC membership marker (12 CFR 328). Gold encodes "Member FDIC"
+    # signage as marker_presence (fdic_member_marker_detector), the
+    # single largest marker category in the gold corpus.
+    re.compile(r"\bmember\s+fdic\b", re.IGNORECASE),
 ]
 
 _METHOD = "regex_marker_v1"

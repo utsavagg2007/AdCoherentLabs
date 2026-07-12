@@ -1,21 +1,23 @@
-.next/
-node_modules/
-dist/
-coverage/
-.env
-.env.local
-.env.*.local
-pnpm-debug.log*
-*.tsbuildinfo
-
-# Python
+# --- Python -----------------------------------------------------------
 .venv/
+venv/
 __pycache__/
 *.pyc
 *.pyo
 *.egg-info/
+.python-version
 
-# Testing artifacts
+# --- Secrets — never commit credentials of any kind ---------------------
+*credentials*
+.env
+.env.*
+!.env.example
+.envrc
+
+# --- Data (real corpora live outside git; tests are data-independent) ---
+data/
+
+# --- Test / eval artifacts ----------------------------------------------
 .pytest_cache/
 .coverage
 .coverage.*
@@ -25,40 +27,35 @@ htmlcov/
 .hypothesis/
 test-results/
 junit*.xml
+eval/results/
 
-# Temporary logs / outputs / benchmarks
+# --- Logs / temp / benchmarks -------------------------------------------
 *.log
 *.tmp
-shakedown_report.md
-eval/results/*.csv
-benchmark*/
 *.prof
+benchmark*/
+shakedown_report.md
 
-# Generated images / files from test runs
+# --- Experimental / scratch scripts (kept locally, out of git) ----------
+shakedown.py
+analyze_unlabeled_folders.py
+nlp/_demo.py
+
+# --- Generated files (reproducible from source) --------------------------
+synth/_sample_render.png
 *.generated.png
 *.generated.jpg
 
-# Local environment
-.envrc
-.python-version
-
-# IDE/Editor settings
+# --- IDE / editor / OS ----------------------------------------------------
 .claude/
 .vscode/
 .idea/
 *.swp
 .DS_Store
 
-# Data directory
-data/
-
-# User requested ignores
-test/
-test
-.env
-.venv
-pyc
-pycache
-
-# generated synthetic corpora (reproducible via synth/generator.py)
-synth/_sample_render.png
+# --- Node (legacy tooling remnants) ---------------------------------------
+node_modules/
+.next/
+dist/
+pnpm-debug.log*
+*.tsbuildinfo

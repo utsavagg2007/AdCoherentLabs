@@ -330,17 +330,142 @@ bare `free` is expected to be noisy — it only ever *triggers* REGDD-STR-002, w
 still requires a positive fee entity to fail, so the noise cannot produce a
 failure on its own.
 
-## Appendix B — Versioned thresholds (v1)
+## 7. Coverage-matrix frameworks (ruleset 1.5.0)
+
+**Source:** `docs/coverage_matrix.md` (rule_engine/coverage_matrix.py v1.0.0) —
+the classified Regulatory Source Directory. This section mechanizes the
+matrix's structural rows where the creative alone decides, adds one
+parameterized coverage check for every matrix framework the router can attach,
+and records the NOT MECHANIZABLE remainder per framework. Modules:
+`checks_mla.py`, `checks_fcrav.py`, `checks_canspam.py`, `checks_wcag.py`,
+`checks_endorsements.py`, `checks_matrix_coverage.py`. New lexicons and
+thresholds are Appendix A/B v2 entries.
+
+### 7.1 MLA — Military Lending Act (32 CFR Part 232)
+
+| check_id | framework | trigger condition | fail condition | evidence to include | severity |
+|---|---|---|---|---|---|
+| MLA-STR-001 | MLA (scope=asset) | `"MLA" ∈ A.routing.frameworks` (military/servicemember/MAPR wording on a credit ad) | any `apr`/`rate` entity with `normalized_value > MAPR_CAP` (36.0) — the creative states a rate above the Military APR cap, 32 CFR 232.4(b) | offending entity ids + values, `MAPR_CAP` + thresholds version | high |
+
+**NOT MECHANIZABLE — stays with LLM layer:** covered-borrower status (DoD
+database check); MAPR *computation* from fee components (the cap check reads
+only stated rates); required oral disclosures; arbitration-clause prohibitions.
+
+### 7.2 FCRA / Reg V — prescreened firm offers (15 U.S.C. § 1681m(d))
+
+| check_id | framework | trigger condition | fail condition | evidence to include | severity |
+|---|---|---|---|---|---|
+| FCRAV-STR-001 | FCRA (scope=asset) | `LEX:PRESCREEN_WORDING` matches a segment | zero segments match `LEX:PRESCREEN_OPTOUT_NOTICE` — prescreen solicitation with no 615(d) opt-out notice anywhere in the creative | prescreen segments + matched lexemes, lexicon version | high |
+
+**NOT MECHANIZABLE — stays with LLM layer:** whether the offer actually
+derives from a prescreened list; firm-offer genuineness; notice
+clear-and-conspicuous adequacy beyond the presence test; permissible-purpose
+analysis.
+
+### 7.3 CAN-SPAM (16 CFR Part 316)
+
+| check_id | framework | trigger condition | fail condition | evidence to include | severity |
+|---|---|---|---|---|---|
+| CANSPAM-STR-001 | CAN-SPAM (scope=asset) | `"CAN-SPAM" ∈ A.routing.frameworks` (email-structured creative per the router) | zero `optout_marker` entities AND zero `LEX:EMAIL_OPTOUT` matches — no opt-out mechanism at all | entity-type census, lexicon version | medium |
+
+**NOT MECHANIZABLE — stays with LLM layer:** header/sender accuracy;
+subject-line deception; whether opt-outs are honored within 10 days; postal
+address validity (presence could mechanize once an address entity exists).
+
+### 7.4 WCAG 2.x SC 1.4.3 — contrast (matrix row `wcag-contrast`)
+
+| check_id | framework | trigger condition | fail condition | evidence to include | severity |
+|---|---|---|---|---|---|
+| WCAG-STR-001 | WCAG (scope=asset) | `contrast_ratio` cv_findings exist on disclosure-role segments (disclosure/fine_print/legal) | any measured ratio < `WCAG_CONTRAST_MIN` (4.5) | cv finding ids + values + roles, threshold + version | medium |
+
+**NOT MECHANIZABLE — stays with LLM layer:** large-text 3:1 carve-out (point
+size is not measured, only relative height); logotype/incidental-text
+exemptions; non-text contrast (SC 1.4.11).
+
+### 7.5 FTC Endorsement Guides (16 CFR Part 255)
+
+| check_id | framework | trigger condition | fail condition | evidence to include | severity |
+|---|---|---|---|---|---|
+| ENDOR-COV-001 | FTC | `endorsement_marker` entities present | some marker where no FTC-framework finding cites its entity_id or segment_id AND its segment not in `reviewed_clear` — the 16 CFR 255 duty was reviewed by nobody | unaddressed entity ids + raw text, FTC finding ids checked | high |
+
+**NOT MECHANIZABLE — stays with LLM layer:** endorsement truthfulness and
+typicality; material-connection adequacy; disclosure conspicuousness relative
+to the endorsement (FTC5-STR-002 geometry partially covers proximity).
+
+### 7.6 Parameterized matrix coverage (structural-row frameworks)
+
+| check_id | framework | trigger condition | fail condition | evidence to include | severity |
+|---|---|---|---|---|---|
+| MATRIX-COV-001 | matrix frameworks (parameterized once — mirrors §6's never-N-copies design) | any STRUCTURAL-mechanization matrix framework ∈ `A.routing.frameworks`, excluding legacy per-framework COV-001 holders (FTC, TILA, Reg_DD, ECOA, FDIC, STATE_UDAP); coverage-mechanization rows are owned by §7.7's generated checks | some such routed framework ∉ `L.frameworks_evaluated` — companion by design: ALL-COV-001 (same duty, unattributed) | missing frameworks, routing signal, coverage-matrix version | high |
+
+### 7.7 Generated per-framework coverage checks (coverage-row frameworks)
+
+Registered at import time from the versioned matrix constant
+(`rule_engine/checks_coverage_ext.py`) — one check per
+coverage-mechanization framework, deterministic because the matrix is a
+constant hashed into the ruleset. Never N hand-written near-identical files.
+
+| check_id | framework | trigger condition | fail condition | evidence to include | severity |
+|---|---|---|---|---|---|
+| `<FW>-COV-001` (generated: one per coverage-row framework — COPPA, SEC, FINRA, GLBA, SCRA, NMLS, CFTC_NFA, STATE_FINREG, STATE_PRIVACY, MINI_TCPA, PLATFORM_POLICY, CARD_NETWORK, SELF_REG) | FW | `FW ∈ A.routing.frameworks` (registration gates on it) | `FW ∉ L.frameworks_evaluated`, OR some finding under FW cites an unresolvable segment/entity/claim id (framework-attributed restatement of ALL-GRD-001/002/003, which fire alongside by design) | the framework's matrix source rows + citations, frameworks_evaluated / unresolved ids, matrix version | high |
+
+Mutations are parameterized identically: for every generated check, one
+drop-from-`frameworks_evaluated` mutation (companion: ALL-COV-001), plus one
+ungrounded-finding mutation exercising the grounding leg.
+
+### 7.8 Generated advisory checks (advisory-row frameworks)
+
+Registered at import time from the matrix's `mechanization="advisory"` rows
+(`rule_engine/checks_advisory.py`), with the third check scope,
+`scope="advisory"`: informational applicability flags that land in
+`EngineReport.advisories` (and `FinalResult.advisories` end-to-end), **never
+gate `passed`, and never retry** — nothing about the creative can satisfy or
+violate a process/governance rule.
+
+| check_id | framework | trigger condition | emits | evidence to include | severity |
+|---|---|---|---|---|---|
+| `ADV-<source>` (generated: sec-204-2-books-records → SEC-routed; finra-4511-17a-4 → FINRA-routed; cfpb-cms → CFPB-routed; pci-dss, nist-privacy-framework → always) | matrix row's family | row's routing_trigger (framework routed, or always for advertiser-level baselines) | applicability flag: "retention/program obligations apply to this material; out of creative scope" | source id, citation, routing_trigger, matrix version | low |
+
+Mutations are parameterized from the same rows: each `ADV-<source>` flag is
+asserted present in `EngineReport.advisories` and absent from
+`failed_checks`; the harness additionally asserts on every mutation that no
+advisory-scope result ever appears in `failed_checks` or `asset_defects`.
+
+**NOT MECHANIZABLE — stays with LLM layer (per framework):** SCRA —
+benefit/rate-reduction eligibility. FDCPA/Reg F — false-representation and
+harassment judgments in collection copy. Reg E — disclosure-content adequacy.
+Reg M — lease-disclosure completeness beyond trigger terms. Reg N — deception
+judgment on mortgage claims. NMLS — license validity lookup (a registry query
+is a network call, outside the deterministic floor). COPPA —
+audience-composition analysis. GLBA/Reg P + STATE_PRIVACY — privacy-notice
+content adequacy; applicability beyond targeting codes. TCPA/MINI_TCPA —
+consent sufficiency, established-business-relationship analysis. CFTC/NFA —
+hypothetical-performance and risk-disclosure adequacy. SEC/FINRA (Marketing
+Rule, 2210, 482/34b-1) — performance-presentation, testimonial, and
+fair-balance judgments. CARD_NETWORK/PLATFORM_POLICY/SELF_REG — contractual
+brand/policy compliance against evolving external rulebooks. FAIR_HOUSING —
+discriminatory-content judgment. NCUA 740 — mirrors FDIC 328; dedicated
+structural checks deferred until credit-union assets appear in the corpus.
+
+---
+
+## Appendix B — Versioned thresholds (v2)
 
 All applied by the engine to CV-layer measurements; all tunable pending
 calibration against gold/silver corpora, via ruleset version bump only.
 
-| constant | v1 value | used by | meaning |
+| constant | value | used by | meaning |
 |---|---|---|---|
 | `PROX_MAX` | 0.60 | FTC5-STR-002, REGZ-STR-004 | max normalized bbox-center distance claim→disclosure (`disclosure_proximity`) |
 | `HEIGHT_MIN_PCT` | 0.9 | FTC5-STR-002 | min disclosure `text_height_percent` (percent of asset height) |
 | `APR_HEIGHT_RATIO_MIN` | 0.33 | REGZ-STR-004 | min ratio of APR-disclosure text height to triggering-claim text height |
 | `NUM_TOL` | 0.005 | ALL-GRD-007 | max absolute difference between a unit-normalized quoted numeric and an entity `normalized_value` (i.e. equal after rounding both to 2 decimals) |
+| `MAPR_CAP` | 36.0 | MLA-STR-001 | Military APR cap, 32 CFR 232.4(b) (v2 addition) |
+| `WCAG_CONTRAST_MIN` | 4.5 | WCAG-STR-001 | WCAG 2.x SC 1.4.3 minimum contrast ratio (v2 addition) |
+
+Appendix A v2 lexicon additions (see `rule_engine/lexicons.py`):
+`LEX:MILITARY_CREDIT`, `LEX:PRESCREEN_WORDING`, `LEX:PRESCREEN_OPTOUT_NOTICE`,
+`LEX:EMAIL_OPTOUT`.
 
 ## Appendix C — Deferred to later phase
 

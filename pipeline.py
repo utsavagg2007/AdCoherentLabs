@@ -133,7 +133,7 @@ def _cv_findings(segments: list[dict], claims: list[dict],
 
 def analyze_asset(asset_id: str, *, image_path: str | list[str] = None,
                   text: str = None, html: str = None,
-                  tier: str = "free",
+                  tier: str | None = None,
                   target_jurisdictions: list[str] | None = None
                   ) -> schema.AssetRepresentation:
     """Analyze one asset from exactly one source (image > text > html).
@@ -145,24 +145,38 @@ def analyze_asset(asset_id: str, *, image_path: str | list[str] = None,
     cards. Carousel segment ids encode the card: seg_c<card>_<n>.
 
     ``tier`` selects the OCR provider for image assets: "free" (local,
-    default, no credentials needed) or "paid" (Google Vision, adds
-    semantic_signals; falls back to local on any failure). Non-image
-    assets never perform OCR, so tier has no effect on them.
+    no credentials needed) or "paid" (Google Vision, adds
+    semantic_signals; falls back to local on any failure). ``None``
+    (default) resolves to ``config.get_settings().ocr_tier`` — the
+    OCR_TIER environment/.env setting, "free" when unconfigured — so
+    callers can still override per call. Non-image assets never perform
+    OCR, so tier has no effect on them.
 
     ``target_jurisdictions`` is user-supplied targeting ("US" or
     "US-XX" state codes) passed through verbatim — where an ad runs
     cannot be extracted from the creative. None/empty means
     unspecified, and state-law checks downstream will not run.
     """
+    if tier is None:
+        from config import get_settings
+        tier = get_settings().ocr_tier
+
     cv_findings: list[dict] = []
     semantic_signals: list[dict] = []
     seg_images: dict = {}
+    ocr_backend: str | None = None
     if image_path is not None:
         paths = [image_path] if isinstance(image_path, str) else list(image_path)
         segments = []
         for card, p in enumerate(paths, start=1):
-            lines, signals = run_ocr(p, tier=tier)
+            lines, signals, card_backend = run_ocr(p, tier=tier)
             semantic_signals += signals
+            # Name the engine that transcribed this asset — OCR accuracy
+            # floors differ by backend (cv.ocr.MEASURED_FLOORS), so the
+            # provenance must say which one produced these segments. The
+            # value comes from THIS call's return, never shared state, so
+            # concurrent analyze_asset calls cannot cross-contaminate.
+            ocr_backend = card_backend or ocr_backend
             card_segments = segment_text(ocr_lines=lines)
             if len(paths) > 1:
                 for seg in card_segments:
@@ -191,7 +205,8 @@ def analyze_asset(asset_id: str, *, image_path: str | list[str] = None,
     entities = extract_entities(segments)
     claims = detect_claims(segments, entities)
     routing = route(segments, entities,
-                    target_jurisdictions=target_jurisdictions)
+                    target_jurisdictions=target_jurisdictions,
+                    semantic_signals=semantic_signals)
     if image_path is not None:
         cv_findings = _cv_findings(segments, claims, seg_images)
 
@@ -214,7 +229,8 @@ def analyze_asset(asset_id: str, *, image_path: str | list[str] = None,
         "semantic_signals": semantic_signals,
         "routing": routing,
         "target_jurisdictions": target_jurisdictions or [],
-        "provenance": make_provenance(embedding_model_version=embedding_version),
+        "provenance": make_provenance(embedding_model_version=embedding_version,
+                                      ocr_backend=ocr_backend),
     })
 
 

@@ -30,13 +30,17 @@ from rule_engine import (
 # ===========================================================================
 
 class TestRegistry:
-    def test_all_49_checks_registered(self):
-        assert len(CHECK_REGISTRY) == 49
+    def test_all_73_checks_registered(self):
+        # 49 (taxonomy §0-§6) + 6 coverage-matrix checks (§7, ruleset
+        # 1.5.0) + 13 generated per-framework coverage checks (§7.7,
+        # ruleset 1.6.0) + 5 generated advisory checks (§7.8, ruleset
+        # 1.7.0 — one per advisory-mechanization matrix row)
+        assert len(CHECK_REGISTRY) == 73
         fams = {"coverage", "grounding", "consistency", "structural",
-                "severity_sanity"}
+                "severity_sanity", "advisory"}
         for check in CHECK_REGISTRY.values():
             assert set(check.families) <= fams
-            assert check.scope in ("review", "asset")
+            assert check.scope in ("review", "asset", "advisory")
 
     def test_duplicate_id_rejected(self, clean_registry):
         register_check("X-TST-001", families=["coverage"],
@@ -123,7 +127,7 @@ class TestRunChecks:
         import schema
         from llm_contract import LLMOutput
 
-        aid = "881224884306098"
+        aid = "ref_clean"
         rep = schema.AssetRepresentation.model_validate(gold_assets[aid])
         out = LLMOutput.model_validate(reference_outputs[aid])
         assert run_checks(rep, out).passed
@@ -439,6 +443,45 @@ class TestOrchestrator:
         with pytest.raises(ValueError):
             evaluate_with_retry({}, lambda a, p: {}, max_rounds=0)
 
+    def test_llm_error_on_round_one(self):
+        # The very first LLM call fails: no completed rounds, no final
+        # report — but a structured llm_error result, never a raise.
+        from rule_engine.orchestrator import evaluate_with_retry
+
+        asset, _ = self._pair()
+
+        def exploding(a, prior):
+            raise TimeoutError("provider timed out after 30s")
+
+        res = evaluate_with_retry(asset, exploding, max_rounds=2)
+        assert res.status == "llm_error"
+        assert res.llm_error == "TimeoutError: provider timed out after 30s"
+        assert res.rounds == 0 and res.round_records == []
+        assert res.final_report is None
+        assert res.asset_id == asset["asset_id"]
+
+    def test_llm_error_on_retry_preserves_round_records(self):
+        # Round 1 completes (and fails review); the round-2 call raises.
+        # The completed round-1 record and report must survive intact.
+        from rule_engine.orchestrator import evaluate_with_retry
+
+        asset, _ = self._pair()
+        bad = make_output(ev=["TILA"], clear=["seg_1"])  # FTC never evaluated
+
+        def llm(a, prior):
+            if prior is None:
+                return bad
+            raise ConnectionError("rate limited")
+
+        res = evaluate_with_retry(asset, llm, max_rounds=2)
+        assert res.status == "llm_error"
+        assert res.llm_error == "ConnectionError: rate limited"
+        assert res.rounds == 1 and len(res.round_records) == 1
+        assert res.round_records[0].report.passed is False
+        assert res.final_report is res.round_records[0].report
+        # engine identity still logged per scan despite the LLM failure
+        assert res.ruleset_version == RULESET_VERSION
+
 
 # ===========================================================================
 # regression gates — reference outputs and the full mutation matrix
@@ -455,8 +498,8 @@ class TestRegressionGates:
     def test_known_asset_defects_still_detected(self, gold_assets,
                                                 reference_outputs):
         # Deliberate true positives — do not tune thresholds to erase
-        expected = {"795628683491121": "FTC5-STR-001",
-                    "881224884306098": "FTC5-STR-002"}
+        expected = {"ref_str001": "FTC5-STR-001",
+                    "ref_str002": "FTC5-STR-002"}
         for aid, check in expected.items():
             report = run_checks(gold_assets[aid], reference_outputs[aid])
             assert check in {r.check_id for r in report.asset_defects}

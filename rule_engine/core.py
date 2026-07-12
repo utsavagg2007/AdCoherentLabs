@@ -38,13 +38,20 @@ from schema import AssetRepresentation
 
 from rule_engine.version import RULESET_VERSION, ruleset_hash
 
-#: Check families, as defined in docs/check_taxonomy.md.
+#: Check families, as defined in docs/check_taxonomy.md. "advisory" is
+#: the family of matrix-generated applicability flags (taxonomy §7.8).
 FAMILIES = frozenset(
-    {"coverage", "grounding", "consistency", "structural", "severity_sanity"}
+    {"coverage", "grounding", "consistency", "structural",
+     "severity_sanity", "advisory"}
 )
 
 
-Scope = Literal["review", "asset"]
+# "review"/"asset"/"advisory" all come from check registration.
+# Advisory-scope results are informational applicability flags
+# (process/governance rules applicable to the advertiser but out of
+# creative scope): they never gate ``passed`` and are never retried,
+# regardless of their ``passed`` value.
+Scope = Literal["review", "asset", "advisory"]
 
 
 class CheckResult(BaseModel):
@@ -123,7 +130,9 @@ def register_check(check_id: str, families: list[str], frameworks: list[str],
     ``scope`` splits the verdict: "review" (default) checks judge the LLM
     output and gate ``EngineReport.passed``; "asset" checks are decidable
     from the asset alone — their failures are reported as
-    ``asset_defects``, never retried, and do not fail the review.
+    ``asset_defects``, never retried, and do not fail the review;
+    "advisory" checks are informational applicability flags
+    (``EngineReport.advisories``) that never gate and never retry.
     """
     if not check_id:
         raise ValueError("check_id must be non-empty")
@@ -133,8 +142,9 @@ def register_check(check_id: str, families: list[str], frameworks: list[str],
                          f"got unknown {sorted(unknown)}")
     if not frameworks:
         raise ValueError("frameworks must be non-empty (use ['*'] for universal)")
-    if scope not in ("review", "asset"):
-        raise ValueError(f"scope must be 'review' or 'asset', got {scope!r}")
+    if scope not in ("review", "asset", "advisory"):
+        raise ValueError(f"scope must be 'review', 'asset', or 'advisory', "
+                         f"got {scope!r}")
     if check_id in CHECK_REGISTRY:
         raise ValueError(f"duplicate check_id {check_id!r}")
 
@@ -164,6 +174,12 @@ class EngineReport(BaseModel):
     results: list[CheckResult]
     failed_checks: list[CheckResult]
     asset_defects: list[CheckResult] = []
+    advisories: list[CheckResult] = Field(
+        default_factory=list,
+        description="Advisory-scope results from the coverage matrix: "
+        "process/governance frameworks applicable to the advertiser but "
+        "out of creative scope. Informational; never gate 'passed'.",
+    )
     ruleset_version: str
     ruleset_hash: str = Field(
         default="",
@@ -214,14 +230,21 @@ def run_checks(asset: dict | AssetRepresentation, llm_output: dict | LLMOutput,
         # Registration is the source of truth for scope.
         results.append(result.model_copy(update={"scope": check.scope}))
 
+    # Report invariant: results sorted by check_id. Advisory-scope
+    # results (matrix-generated applicability flags, registered by
+    # rule_engine.checks_advisory) never gate ``passed`` and are never
+    # retried, regardless of their ``passed`` value.
+    results.sort(key=lambda r: r.check_id)
     review_failures = [r for r in results if not r.passed and r.scope == "review"]
     asset_defects = [r for r in results if not r.passed and r.scope == "asset"]
+    advisories = [r for r in results if r.scope == "advisory"]
     return EngineReport(
         asset_id=asset_model.asset_id,
         passed=not review_failures,
         results=results,
         failed_checks=review_failures,
         asset_defects=asset_defects,
+        advisories=advisories,
         ruleset_version=ruleset_version or RULESET_VERSION,
         ruleset_hash=ruleset_hash(CHECK_REGISTRY),
         timestamp=datetime.now(timezone.utc),

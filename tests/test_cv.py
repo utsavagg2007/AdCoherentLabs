@@ -233,9 +233,10 @@ class TestRunOcrDispatcher:
 
     def test_free_tier_never_returns_signals(self, fake_paddle_engine,
                                              tiny_images):
-        lines, signals = run_ocr(tiny_images["png"], tier="free")
+        lines, signals, backend = run_ocr(tiny_images["png"], tier="free")
         assert signals == []
         assert lines
+        assert backend == "paddle"    # named per call, not shared state
 
     def test_paid_without_credentials_names_env_var(self, monkeypatch,
                                                     tiny_images):
@@ -248,9 +249,10 @@ class TestRunOcrDispatcher:
                                            fake_paddle_engine, tiny_images,
                                            capsys):
         monkeypatch.delenv("GOOGLE_APPLICATION_CREDENTIALS", raising=False)
-        lines, signals = run_ocr(tiny_images["png"], tier="paid")
+        lines, signals, backend = run_ocr(tiny_images["png"], tier="paid")
         assert signals == []          # served by the local fallback
         assert lines                  # ...which still produced text
+        assert backend == "paddle"    # the fallback names itself honestly
         assert "falling back to local OCR" in capsys.readouterr().err
 
     def test_paid_tier_success_passes_signals_through(self, monkeypatch,
@@ -262,7 +264,9 @@ class TestRunOcrDispatcher:
                     "confidence": 0.9, "source": "google_vision"}])
         monkeypatch.setattr(ocr, "run_ocr_google_vision",
                             lambda path: canned)
-        assert run_ocr(tiny_images["png"], tier="paid") == canned
+        lines, signals, backend = run_ocr(tiny_images["png"], tier="paid")
+        assert (lines, signals) == canned
+        assert backend == "google_vision"
 
     def test_signal_helper_clamps_confidence(self):
         from cv.ocr import _signal
@@ -290,7 +294,7 @@ class TestCvNlpIntegration:
                                            tiny_images):
         from nlp.normalize import segment_text
 
-        lines, _ = run_ocr(tiny_images["png"], tier="free")
+        lines, _, _ = run_ocr(tiny_images["png"], tier="free")
         segments = segment_text(ocr_lines=lines)
         assert segments
         for s in segments:
@@ -321,3 +325,64 @@ class TestCvNlpIntegration:
         assert any(i.startswith("seg_c1_") for i in seg_ids)
         assert any(i.startswith("seg_c2_") for i in seg_ids)
         assert len(seg_ids) == len(set(seg_ids))
+
+
+# ===========================================================================
+# concurrency — provenance must come from each call's own OCR return value
+# ===========================================================================
+
+class TestConcurrentProvenance:
+    def test_concurrent_tiers_each_get_own_backend(self, fake_paddle_engine,
+                                                   tiny_images, monkeypatch):
+        """Two analyze_asset calls on different tiers, running on real
+        threads with both OCR calls in flight simultaneously (barrier),
+        must each stamp THEIR OWN backend into provenance. Regression
+        for the removed cv.ocr._last_served shared global, which let one
+        call's backend overwrite another's."""
+        import threading
+        import time
+
+        import cv.ocr as ocr
+        from pipeline import analyze_asset
+
+        barrier = threading.Barrier(2, timeout=10)
+
+        def fake_vision(path):
+            barrier.wait()          # meet the free-tier call mid-flight
+            time.sleep(0.05)        # keep both calls overlapping
+            return ([OcrLine("Earn 4.50% APY today", (0.1, 0.1, 0.8, 0.1),
+                             0.99)],
+                    [{"signal_type": "label", "value": "bank",
+                      "confidence": 0.9, "source": "google_vision"}])
+
+        real_local = ocr.run_ocr_local
+
+        def slow_local(path, max_dim=None):
+            barrier.wait()
+            time.sleep(0.05)
+            return real_local(path, max_dim)
+
+        monkeypatch.setattr(ocr, "run_ocr_google_vision", fake_vision)
+        monkeypatch.setattr(ocr, "run_ocr_local", slow_local)
+
+        results: dict = {}
+        errors: list = []
+
+        def scan(name, tier):
+            try:
+                results[name] = analyze_asset(
+                    name, image_path=tiny_images["png"], tier=tier)
+            except Exception as exc:  # surfaced after join
+                errors.append((name, exc))
+
+        threads = [threading.Thread(target=scan, args=("paid_asset", "paid")),
+                   threading.Thread(target=scan, args=("free_asset", "free"))]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join(timeout=30)
+        assert not errors, errors
+        assert results["paid_asset"].provenance.ocr_backend == "google_vision"
+        assert results["free_asset"].provenance.ocr_backend == "paddle"
+        assert results["paid_asset"].semantic_signals  # Vision served it
+        assert results["free_asset"].semantic_signals == []
