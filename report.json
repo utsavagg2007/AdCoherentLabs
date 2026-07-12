@@ -1,0 +1,221 @@
+{
+  "run_id": "run_fbf8a8e58df5",
+  "asset_id": "ad_8643b9594f64",
+  "tier": "pro",
+  "status": "passed",
+  "llm_rounds_used": 1,
+  "max_llm_rounds": 3,
+  "llm_review": {
+    "asset_id": "ad_8643b9594f64",
+    "findings": [
+      {
+        "finding_id": "llmf_state_001",
+        "framework": "STATE_UDAP",
+        "severity": "low",
+        "verdict": "compliant",
+        "cited_segment_ids": [
+          "seg_1"
+        ],
+        "cited_entity_ids": [],
+        "quoted_evidence": "guaranteed approval",
+        "claim_candidate_id": null,
+        "regulation_citations": [
+          "Cal. Bus. & Prof. Code § 17500 (stub)"
+        ],
+        "reasoning": "Considered each targeted state individually: US-CA. No state-specific deceptive-practice exposure beyond the federal analysis on this record.",
+        "scope_of_improvement": "No change required."
+      }
+    ],
+    "reviewed_clear": [
+      "clm_1",
+      "clm_2",
+      "seg_1"
+    ],
+    "frameworks_evaluated": [
+      "FTC",
+      "TILA",
+      "CFPB",
+      "STATE_UDAP"
+    ],
+    "llm_meta": {
+      "tier": "pro",
+      "model": "stub-compliance-llm",
+      "prompt_version": "compliance-review-v1.0",
+      "rag_corpus_hash": "bcd244069489628c",
+      "retrieved_chunks": 8,
+      "input_tokens": null,
+      "output_tokens": null,
+      "max_output_tokens": 8000,
+      "reviewed_at": "2026-07-12T20:31:22.635037Z",
+      "latency_ms": 0
+    }
+  },
+  "verification": {
+    "review_passed": true,
+    "checks_run": 50,
+    "failed_checks": [],
+    "asset_defects": [
+      {
+        "check_id": "FTC5-STR-001",
+        "passed": false,
+        "evidence": {
+          "trigger_entities": [
+            {
+              "entity_id": "ent_2",
+              "type": "guarantee_term",
+              "raw_text": "guaranteed",
+              "segment_id": "seg_1",
+              "char_span": [
+                15,
+                25
+              ]
+            }
+          ],
+          "trigger_claim_ids": [
+            "clm_1"
+          ],
+          "segment_role_census": {
+            "headline": 1
+          }
+        },
+        "message": "absolute claims with no disclosure/fine-print/legal segment anywhere in the asset",
+        "severity": "medium",
+        "scope": "asset"
+      }
+    ],
+    "advisories": [
+      {
+        "check_id": "ADV-cfpb-cms",
+        "passed": true,
+        "evidence": {
+          "source": "cfpb-cms",
+          "citation": "CFPB Supervision & Examination Manual — Compliance Management System",
+          "frameworks_enum": "CFPB",
+          "routing_trigger": "CFPB routed -> advisory flag",
+          "note": "organizational compliance program expectation",
+          "coverage_matrix_version": "1.0.0"
+        },
+        "message": "CFPB Supervision & Examination Manual — Compliance Management System applies to the advertiser's compliance program (e.g. retention obligations apply to this material); out of creative scope — informational applicability flag",
+        "severity": "low",
+        "scope": "advisory"
+      },
+      {
+        "check_id": "ADV-nist-privacy-framework",
+        "passed": true,
+        "evidence": {
+          "source": "nist-privacy-framework",
+          "citation": "NIST Privacy Framework v1.0",
+          "frameworks_enum": "NIST_PRIVACY",
+          "routing_trigger": "always (voluntary governance baseline)",
+          "note": "process rule per directory architecture notes",
+          "coverage_matrix_version": "1.0.0"
+        },
+        "message": "NIST Privacy Framework v1.0 applies to the advertiser's compliance program (e.g. retention obligations apply to this material); out of creative scope — informational applicability flag",
+        "severity": "low",
+        "scope": "advisory"
+      },
+      {
+        "check_id": "ADV-pci-dss",
+        "passed": true,
+        "evidence": {
+          "source": "pci-dss",
+          "citation": "PCI DSS v4.0",
+          "frameworks_enum": "PCI_DSS",
+          "routing_trigger": "always (advertiser-level payment-card program)",
+          "note": "process rule per directory architecture notes",
+          "coverage_matrix_version": "1.0.0"
+        },
+        "message": "PCI DSS v4.0 applies to the advertiser's compliance program (e.g. retention obligations apply to this material); out of creative scope — informational applicability flag",
+        "severity": "low",
+        "scope": "advisory"
+      }
+    ],
+    "ruleset_version": "1.7.0",
+    "ruleset_hash": "bad2a49239b87b66"
+  },
+  "rounds": [
+    {
+      "round": 1,
+      "was_rule_engine_callback": false,
+      "had_human_guidance": false,
+      "feedback_sent_to_llm": null,
+      "llm_review": {
+        "asset_id": "ad_8643b9594f64",
+        "findings": [
+          {
+            "finding_id": "llmf_state_001",
+            "framework": "STATE_UDAP",
+            "severity": "low",
+            "verdict": "compliant",
+            "cited_segment_ids": [
+              "seg_1"
+            ],
+            "cited_entity_ids": [],
+            "quoted_evidence": "guaranteed approval",
+            "claim_candidate_id": null,
+            "regulation_citations": [
+              "Cal. Bus. & Prof. Code § 17500 (stub)"
+            ],
+            "reasoning": "Considered each targeted state individually: US-CA. No state-specific deceptive-practice exposure beyond the federal analysis on this record.",
+            "scope_of_improvement": "No change required."
+          }
+        ],
+        "reviewed_clear": [
+          "clm_1",
+          "clm_2",
+          "seg_1"
+        ],
+        "frameworks_evaluated": [
+          "FTC",
+          "TILA",
+          "CFPB",
+          "STATE_UDAP"
+        ],
+        "llm_meta": {
+          "tier": "pro",
+          "model": "stub-compliance-llm",
+          "prompt_version": "compliance-review-v1.0",
+          "rag_corpus_hash": "bcd244069489628c",
+          "retrieved_chunks": 8,
+          "input_tokens": null,
+          "output_tokens": null,
+          "max_output_tokens": 8000,
+          "reviewed_at": "2026-07-12T20:31:22.635037Z",
+          "latency_ms": 0
+        }
+      },
+      "adapter_notes": [],
+      "rule_engine_passed": true,
+      "failed_checks": []
+    }
+  ],
+  "human_review": null,
+  "llm_error": null,
+  "warnings": [],
+  "provenance": {
+    "tier": "pro",
+    "llm_provider": "anthropic",
+    "llm_model": "claude-sonnet-5",
+    "llm_effort": "medium",
+    "prompt_version": "compliance-review-v1.0",
+    "rag_corpus_hash": "bcd244069489628c",
+    "rag_online": true,
+    "ruleset_version": "1.7.0",
+    "asset_provenance": {
+      "cv_version": "cv-0.1.0",
+      "nlp_version": "nlp-0.1.0",
+      "ruleset_hash": "2ebb768be9c8c562",
+      "timestamp": "2026-07-12T20:31:22.635037Z",
+      "embedding_model_version": null,
+      "ocr_backend": null
+    },
+    "ocr_backend": null,
+    "as_of": null
+  },
+  "timings_ms": {
+    "review_and_verify": 93,
+    "prepare_asset": 327
+  },
+  "resumed_from_run_id": null,
+  "asset": null
+}

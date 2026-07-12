@@ -1,0 +1,72 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      # tesseract is small (~5 MB) and gives the OCR-binary tests a real
+      # fallback backend; PaddleOCR model downloads (~/.paddlex) are
+      # cached below and the engine degrades to tesseract if they fail.
+      - name: Install tesseract (OCR fallback backend)
+        run: sudo apt-get update && sudo apt-get install -y tesseract-ocr
+
+      - name: Cache HF + Paddle models
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/huggingface
+            ~/.paddlex
+          key: models-${{ runner.os }}-${{ hashFiles('requirements.txt') }}
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pytesseract
+          python -m spacy download en_core_web_sm
+
+      # (2) Full pytest suite — data-independent by design (no data/ on
+      # the runner; conftest fixtures are synthetic). RUN_OCR_TESTS=1
+      # opts in the real-OCR-backend tests, valid now that tesseract is
+      # installed.
+      - name: Unit tests (CV + NLP + rule engine)
+        env:
+          RUN_OCR_TESTS: "1"
+        run: python -m pytest -q
+
+      # (3) Rule-engine mutation suite — exits nonzero unless the catch
+      # rate is 100% AND every registered check has a mutation. Without
+      # data/ it runs corpus-wide mutations against the fixture bases.
+      - name: Mutation suite (catch rate must be 100%)
+        run: python eval/test_rule_engine.py
+
+      # (4) Synthetic eval on the expanded adversarial set, seeded.
+      # Gates (workstream-1 bars, enforced by synth/evaluate.py's exit
+      # code): entities F1 >= 0.90 clean and >= 0.80 noisy, claims
+      # recall >= 0.85, segments role_acc >= 0.85, routing F1 >= 0.90.
+      # Text mode only — no OCR, no data/ (gold/silver dirs are absent
+      # on a clean runner and skipped automatically).
+      - name: Synthetic eval bars (clean + OCR-noise)
+        run: python -m synth.evaluate --n 600 --seed 7 --noise
+
+      # (5) Determinism audit — static AST scan proving rule_engine/
+      # imports nothing beyond the standard library and the two contract
+      # modules (no models, no network, no third-party code at check
+      # time).
+      - name: Determinism audit (rule_engine purity)
+        run: python -m rule_engine.determinism_audit

@@ -1,0 +1,61 @@
+# --- Python -----------------------------------------------------------
+.venv/
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.python-version
+
+# --- Secrets — never commit credentials of any kind ---------------------
+*credentials*
+.env
+.env.*
+!.env.example
+.envrc
+
+# --- Data (real corpora live outside git; tests are data-independent) ---
+data/
+
+# --- Test / eval artifacts ----------------------------------------------
+.pytest_cache/
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.tox/
+.hypothesis/
+test-results/
+junit*.xml
+eval/results/
+
+# --- Logs / temp / benchmarks -------------------------------------------
+*.log
+*.tmp
+*.prof
+benchmark*/
+shakedown_report.md
+
+# --- Experimental / scratch scripts (kept locally, out of git) ----------
+shakedown.py
+analyze_unlabeled_folders.py
+nlp/_demo.py
+
+# --- Generated files (reproducible from source) --------------------------
+synth/_sample_render.png
+*.generated.png
+*.generated.jpg
+
+# --- IDE / editor / OS ----------------------------------------------------
+.claude/
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# --- Node (legacy tooling remnants) ---------------------------------------
+node_modules/
+.next/
+dist/
+pnpm-debug.log*
+*.tsbuildinfo

@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DIV5 N="1030" TYPE="PART">
+  <HEAD>PART 1030—TRUTH IN SAVINGS (REGULATION DD)</HEAD>
+  <AUTH>
+    <HED>Authority:</HED>
+    <PSPACE>12 U.S.C. 4302 et seq.</PSPACE>
+  </AUTH>
+  <DIV8 N="1030.1" TYPE="SECTION">
+    <HEAD>§ 1030.1   Authority, purpose, coverage, and effect on state laws.</HEAD>
+    <P>(a) <E T="03">Authority.</E> This part, known as Regulation DD, is issued by the Bureau.</P>
+    <P>(b) <E T="03">Purpose.</E> The purpose of this part is to enable consumers to make informed decisions about accounts at depository institutions.</P>
+    <CITA TYPE="N">[76 FR 79276, Dec. 21, 2011]</CITA>
+  </DIV8>
+  <DIV8 N="1030.8" TYPE="SECTION">
+    <HEAD>§ 1030.8   Advertising.</HEAD>
+    <P>(a) <E T="03">Misleading or inaccurate advertisements.</E> An advertisement shall not be misleading or inaccurate and shall not misrepresent a depository institution's deposit contract.</P>
+    <P>(a)(1) An advertisement shall not refer to or describe an account as free if a maintenance or activity fee may be imposed.</P>
+    <P>(b) <E T="03">Permissible rates.</E> If an advertisement states a rate of return, it shall state the rate as an annual percentage yield, using that term.</P>
+    <P>(c) <E T="03">When additional disclosures are required.</E> If the annual percentage yield is stated in an advertisement, the advertisement shall state the following clearly and conspicuously.</P>
+    <SOURCE>
+      <HED>Source:</HED>
+      <PSPACE>This should be skipped.</PSPACE>
+    </SOURCE>
+  </DIV8>
+  <DIV9 N="Appendix A to Part 1030" TYPE="APPENDIX">
+    <HEAD>Appendix A to Part 1030—Annual Percentage Yield Calculation</HEAD>
+    <P>The annual percentage yield measures the total interest paid based on the interest rate and the frequency of compounding.</P>
+  </DIV9>
+</DIV5>

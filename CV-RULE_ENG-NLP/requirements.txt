@@ -1,0 +1,28 @@
+# AdCoherentLabs — CV + NLP + rule-engine dependencies.
+# Pins are lower bounds chosen for the version-sensitive APIs the code
+# relies on; see notes inline. Install the spaCy English model too:
+#     python -m spacy download en_core_web_sm   (optional; falls back to blank "en")
+
+# --- schema / contract ---
+pydantic>=2.6,<3            # v2 model API (model_validate/model_dump, Field constraints)
+
+# --- configuration ---
+python-dotenv>=1.0          # config.py: .env loading (safe no-op when absent)
+
+# --- NLP (layer 2) ---
+spacy>=3.5,<4               # Matcher "OP": "{0,2}" quantifier syntax requires >=3.5
+sentence-transformers>=2.2  # frozen MiniLM-L6 embedding fallback
+huggingface-hub>=0.19       # embedding_model_version provenance (snapshot_download)
+
+# --- CV / OCR (layer 1) ---
+paddleocr>=3.0,<4           # free-tier OCR; 3.x API (device=, use_textline_orientation=)
+paddlepaddle>=3.0           # PaddleOCR inference engine
+opencv-contrib-python>=4.8  # cv2 imread + Otsu contrast estimation
+numpy>=1.24
+
+# --- optional ---
+# pytesseract>=0.3.10        # alternative free-tier OCR backend (needs tesseract-ocr binary)
+# google-cloud-vision>=3.4   # paid OCR tier (Google Vision); only if tier="paid" is used
+
+# --- dev / test ---
+pytest>=7.4

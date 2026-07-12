@@ -1,0 +1,242 @@
+{
+  "asset_id": "sample_asset_001",
+  "segments": [
+    {
+      "segment_id": "seg_1",
+      "text": "Lowest APR in America - as low as 8.99% APR, guaranteed approval in 5 minutes!",
+      "role": "headline",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.05,
+        "width": 0.9,
+        "height": 0.15
+      },
+      "ocr_confidence": 0.97
+    },
+    {
+      "segment_id": "seg_2",
+      "text": "Apply Now",
+      "role": "cta",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.35,
+        "y": 0.45,
+        "width": 0.3,
+        "height": 0.08
+      },
+      "ocr_confidence": 0.99
+    },
+    {
+      "segment_id": "seg_3",
+      "text": "APR ranges from 8.99% to 29.99% based on creditworthiness. A $95 annual fee applies. Approval is not guaranteed and is subject to credit review.",
+      "role": "disclosure",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.88,
+        "width": 0.9,
+        "height": 0.06
+      },
+      "ocr_confidence": 0.91
+    },
+    {
+      "segment_id": "seg_4",
+      "text": "Reply STOP to unsubscribe from marketing messages.",
+      "role": "fine_print",
+      "source": "ocr",
+      "bbox": {
+        "x": 0.05,
+        "y": 0.95,
+        "width": 0.9,
+        "height": 0.03
+      },
+      "ocr_confidence": 0.93
+    }
+  ],
+  "entities": [
+    {
+      "entity_id": "ent_1",
+      "entity_type": "apr",
+      "raw_text": "8.99% APR",
+      "normalized_value": 8.99,
+      "segment_id": "seg_1",
+      "char_span": {
+        "start": 34,
+        "end": 43
+      }
+    },
+    {
+      "entity_id": "ent_2",
+      "entity_type": "superlative",
+      "raw_text": "Lowest APR in America",
+      "normalized_value": null,
+      "segment_id": "seg_1",
+      "char_span": {
+        "start": 0,
+        "end": 21
+      }
+    },
+    {
+      "entity_id": "ent_3",
+      "entity_type": "guarantee_term",
+      "raw_text": "guaranteed approval",
+      "normalized_value": null,
+      "segment_id": "seg_1",
+      "char_span": {
+        "start": 45,
+        "end": 64
+      }
+    },
+    {
+      "entity_id": "ent_4",
+      "entity_type": "time_period",
+      "raw_text": "5 minutes",
+      "normalized_value": 0.003472,
+      "segment_id": "seg_1",
+      "char_span": {
+        "start": 68,
+        "end": 77
+      }
+    },
+    {
+      "entity_id": "ent_5",
+      "entity_type": "apr",
+      "raw_text": "8.99%",
+      "normalized_value": 8.99,
+      "segment_id": "seg_3",
+      "char_span": {
+        "start": 16,
+        "end": 21
+      }
+    },
+    {
+      "entity_id": "ent_6",
+      "entity_type": "apr",
+      "raw_text": "29.99%",
+      "normalized_value": 29.99,
+      "segment_id": "seg_3",
+      "char_span": {
+        "start": 25,
+        "end": 31
+      }
+    },
+    {
+      "entity_id": "ent_7",
+      "entity_type": "fee",
+      "raw_text": "$95 annual fee",
+      "normalized_value": 95.0,
+      "segment_id": "seg_3",
+      "char_span": {
+        "start": 61,
+        "end": 75
+      }
+    },
+    {
+      "entity_id": "ent_8",
+      "entity_type": "optout_marker",
+      "raw_text": "Reply STOP to unsubscribe",
+      "normalized_value": null,
+      "segment_id": "seg_4",
+      "char_span": {
+        "start": 0,
+        "end": 25
+      }
+    }
+  ],
+  "claim_candidates": [
+    {
+      "claim_id": "clm_1",
+      "claim_type": "comparative",
+      "text": "Lowest APR in America",
+      "segment_id": "seg_1",
+      "char_span": {
+        "start": 0,
+        "end": 21
+      },
+      "entity_ids": [
+        "ent_2"
+      ],
+      "pattern_id": null
+    },
+    {
+      "claim_id": "clm_2",
+      "claim_type": "pricing",
+      "text": "as low as 8.99% APR",
+      "segment_id": "seg_1",
+      "char_span": {
+        "start": 24,
+        "end": 43
+      },
+      "entity_ids": [
+        "ent_1"
+      ],
+      "pattern_id": null
+    },
+    {
+      "claim_id": "clm_3",
+      "claim_type": "guarantee",
+      "text": "guaranteed approval in 5 minutes",
+      "segment_id": "seg_1",
+      "char_span": {
+        "start": 45,
+        "end": 77
+      },
+      "entity_ids": [
+        "ent_3",
+        "ent_4"
+      ],
+      "pattern_id": null
+    }
+  ],
+  "cv_findings": [
+    {
+      "finding_id": "cvf_1",
+      "measurement": "contrast_ratio",
+      "value": 2.7,
+      "segment_id": "seg_3",
+      "related_segment_id": null,
+      "method": "wcag2_relative_luminance"
+    },
+    {
+      "finding_id": "cvf_2",
+      "measurement": "text_height_percent",
+      "value": 1.8,
+      "segment_id": "seg_3",
+      "related_segment_id": null,
+      "method": "rendered_glyph_height"
+    },
+    {
+      "finding_id": "cvf_3",
+      "measurement": "disclosure_proximity",
+      "value": 0.71,
+      "segment_id": "seg_1",
+      "related_segment_id": "seg_3",
+      "method": "bbox_center_distance"
+    },
+    {
+      "finding_id": "cvf_4",
+      "measurement": "marker_presence",
+      "value": 1.0,
+      "segment_id": "seg_4",
+      "related_segment_id": null,
+      "method": "optout_marker_detector"
+    }
+  ],
+  "routing": {
+    "product_type": "credit_card",
+    "frameworks": [
+      "TILA",
+      "FTC",
+      "ECOA",
+      "TCPA"
+    ],
+    "signal": "APR + fee entities with credit_card product -> TILA advertising rules; comparative superlative and guarantee claims -> FTC substantiation/deception; 'guaranteed approval' credit-decision language -> ECOA; SMS opt-out marker -> TCPA"
+  },
+  "provenance": {
+    "cv_version": "gold",
+    "nlp_version": "gold",
+    "ruleset_hash": "gold",
+    "timestamp": "2026-07-03T00:00:00Z"
+  }
+}
