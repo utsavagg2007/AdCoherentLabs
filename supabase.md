@@ -4,9 +4,13 @@ How the self-hosted Supabase stack is configured for the AdCoherent SaaS, and
 every step needed to (re)configure, harden, operate, and launch it. Follows
 the *AdCoherent Labs Build Playbook* (Phases 1–3, 6, 8; Appendices B–D).
 
-- Stack location: `/Users/utsavaggarwal/Documents/supabase-data/supabase-project`
+- Stack location: `C:\Users\HP\supabase-project` (moved from the macOS box
+  `/Users/utsavaggarwal/Documents/supabase-data/supabase-project` on 2026-07-13;
+  data volumes, migrations, and the 11k-chunk RAG corpus survived the move)
 - Migrations: `supabase/migrations/` (this repo) — applied with `supabase/apply.sh`
 - Tenant-isolation test: `supabase/tests/rls_isolation_test.sql`
+- Engine integration: `engine/saas.py` (tier fetch, quota, persistence, audit)
+  — see `ENGINE.md` §4.6; live proof: `python -m engine.cli saas-selftest`
 
 ---
 
@@ -42,20 +46,34 @@ and lives **only** in the API/worker environment.
 
 ---
 
-## 2. What is already configured (state as of 2026-07-07)
+## 2. What is already configured (state as of 2026-07-13, Windows box)
 
-- Full stack up and healthy (`docker compose ps` in the stack directory).
-- Pooler `_supabase` database repaired 2026-07-06 (was corrupt on disk); both
-  pooler ports verified. If it recurs: recreate `_supabase` +
-  `_analytics`/`_supavisor` schemas from `volumes/db/*.sql`, restart
-  `supabase-pooler`.
-- **SaaS schema applied** via `supabase/migrations/0001–0006` (see §4).
-- RAG corpus loaded (11k+ chunks) and locked away from the public API (§4.6).
-- RLS cross-tenant isolation test **passing**.
-- `POSTGRES_PASSWORD` and `DASHBOARD_PASSWORD` customized.
+- Full stack up and healthy (`docker compose ps` in `C:\Users\HP\supabase-project`).
+- **SaaS schema applied** via `supabase/migrations/0001–0007` (see §4);
+  0004's seed re-synced 2026-07-13 (provider `openrouter`, namespaced
+  Qwen model ids — the moved DB carried the pre-OpenRouter values).
+- RAG corpus loaded (11,061 chunks) and locked away from the public API (§4.6).
+- socat DB proxy recreated on this device (`adcoherent-rag-db-proxy`,
+  `127.0.0.1:54322 → supabase-db:5432`, restart unless-stopped) — it does
+  NOT survive a machine move; recreate with the command in `rag-engine/.env`.
+- **Engine fully integrated** (`engine/saas.py` + migration 0007): tier from
+  `app.org_tier`, quota-before-work, run/layer/finding persistence, audit —
+  `python -m engine.cli saas-selftest` passes all 32 live checks.
+- RLS cross-tenant isolation test **passing** (re-verified post-move).
+- `DASHBOARD_USERNAME`/`DASHBOARD_PASSWORD` customized.
 
-**Not yet done (blockers before any public exposure):** JWT secret rotation
-(§3), production SMTP (§5), TLS/reverse proxy + firewall (§8), backups (§7).
+**⚠ REGRESSED ON THIS DEVICE — the moved stack still carries the PUBLIC
+DEFAULTS** for `JWT_SECRET` (demo anon/service keys!), `POSTGRES_PASSWORD`,
+`SECRET_KEY_BASE`, `VAULT_ENC_KEY`, `PG_META_CRYPTO_KEY`, and Kong/pooler
+were published on `0.0.0.0` (LAN-reachable). One-shot fix prepared:
+
+```powershell
+python supabase\harden.py   # rotates everything, loopback-binds ports,
+                            # restarts, verifies old keys are dead (§3)
+```
+
+**Still pending before any public exposure:** run `harden.py` above,
+production SMTP (§5), TLS/reverse proxy + firewall (§8), backups (§7).
 
 ---
 
@@ -67,7 +85,13 @@ defaults from the Supabase repo.** Anyone who knows the defaults can mint a
 valid `service_role` JWT and read every tenant's data. The playbook treats
 this as launch-blocking; do it before anything is exposed beyond localhost.
 
-Do all of this in the stack directory (`supabase-data/supabase-project`):
+**Automated for this install:** `python supabase\harden.py` performs every
+step below end-to-end (mint → write `.env` → loopback-bind ports → `ALTER
+ROLE` passwords → reseed the pooler tenant → `docker compose up -d` →
+verify the old demo keys return 401), updates this repo's `DATABASE_URL`s,
+and prints fingerprints only. Backups are at `.env.bak-2026-07-13` /
+`docker-compose.yml.bak-2026-07-13` in the stack dir. The manual
+equivalent, in the stack directory (`C:\Users\HP\supabase-project`):
 
 ```sh
 # 1. Generate new secrets
@@ -132,6 +156,7 @@ Forward-only; take a backup before destructive changes (playbook Phase 11).
 | `0004_entitlements_and_quota.sql` | Tier seed (below) + `app.org_tier()`, `app.scans_used()`, `app.check_quota()`, `app.consume_scan_quota()` |
 | `0005_storage_and_realtime.sql` | Private `assets` bucket + org-scoped storage policies; realtime publication for `analysis_runs` and `findings` |
 | `0006_lock_rag_tables.sql` | RLS (no policies) on all `rag_*` tables → invisible through the public API; RAG engine unaffected (direct owner connection) |
+| `0007_engine_integration.sql` | `analysis_runs.status` gains first-class `human_review`; `engine_run_id` (correlates DB rows to `EngineRunResult.run_id` / report files); `resumed_from_run_id` (operator-resume lineage); active-runs index rebuilt |
 
 ### Tier → entitlements (single source of truth: `plan_entitlements`)
 
@@ -374,10 +399,12 @@ service role. Entitlements always resolve from the DB
 ## 10. Operations quick reference
 
 ```sh
-cd /Users/utsavaggarwal/Documents/supabase-data/supabase-project
+cd /c/Users/HP/supabase-project          # (PowerShell: cd C:\Users\HP\supabase-project)
 docker compose ps                        # health
 docker compose logs -f supabase-auth     # a service's logs
 docker compose up -d                     # apply .env changes / restart
+                                         # (avoid `down`: it removes the network
+                                         # the socat proxy is attached to)
 
 # psql into the DB (direct)
 docker exec -it supabase-db psql -U postgres -d postgres

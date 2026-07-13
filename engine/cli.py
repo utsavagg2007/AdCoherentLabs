@@ -4,11 +4,19 @@
     python -m engine.cli check --image ad.png --tier free --jurisdictions US-CA
     python -m engine.cli check --html-file page.html --tier design --out report.json
     python -m engine.cli check --text "..." --tier hobby --interactive
+    python -m engine.cli check --text "..." --user reviewer@acme.com   # SaaS mode
+    python -m engine.cli quota --user reviewer@acme.com
     python -m engine.cli selftest
+    python -m engine.cli saas-selftest
     python -m engine.cli tiers
 
+SaaS mode (--user): the product tier is FETCHED FROM SUPABASE (the org's
+subscription via app.org_tier) — --tier is ignored — quota is consumed
+before the run, and the run/layer outputs/findings/audit trail are
+persisted to the SaaS schema.
+
 Exit codes: 0 = passed, 2 = human_review (operator input still needed),
-3 = llm_error, 1 = bad usage / crash.
+3 = llm_error, 4 = quota/permission rejected, 1 = bad usage / crash.
 """
 
 from __future__ import annotations
@@ -50,7 +58,10 @@ def _write_out(result: EngineRunResult, out: str | None) -> None:
 
 
 def _interactive_loop(result: EngineRunResult, asset: dict, args) -> EngineRunResult:
-    """Operator-interference loop: prompt for guidance, re-run one round."""
+    """Operator-interference loop: prompt for guidance, re-run one round.
+
+    In SaaS mode (--user) the resume goes through engine.saas.resume_run,
+    so every operator round is persisted and audited like the original."""
     while result.status == "human_review":
         print()
         print("The engine needs operator interference. Outstanding items:")
@@ -65,11 +76,20 @@ def _interactive_loop(result: EngineRunResult, asset: dict, args) -> EngineRunRe
         if not guidance:
             print("no guidance given - run left in human_review state")
             break
-        result = resume_with_human_guidance(
-            asset, guidance,
-            product_tier=args.tier, previous=result,
-            as_of=args.as_of_date, include_asset=True,
-        )
+        if getattr(args, "user", None):
+            from .saas import resume_run
+
+            result = resume_run(
+                user=args.user,
+                run=result.provenance["saas"]["analysis_run_id"],
+                guidance=guidance, as_of=args.as_of_date, include_asset=True,
+            )
+        else:
+            result = resume_with_human_guidance(
+                asset, guidance,
+                product_tier=args.tier, previous=result,
+                as_of=args.as_of_date, include_asset=True,
+            )
         _print_result(result)
     return result
 
@@ -111,17 +131,43 @@ def cmd_check(args) -> int:
         print("NOTE: --stub-llm - deterministic offline stand-ins for the "
               "LLM and retrieval; wiring demo only, NOT a compliance review.")
 
-    result = run_compliance_engine(
-        asset_id=args.asset_id,
-        image_path=image, text=text, html=html,
-        product_tier=args.tier,
-        target_jurisdictions=args.jurisdictions,
-        as_of=args.as_of_date,
-        max_llm_rounds=args.max_llm_rounds,
-        provider=provider,
-        retriever=retriever,
-        include_asset=True,
-    )
+    if args.user:
+        from .saas import SaasError, run_for_user
+
+        print("SaaS mode: tier comes from the org's subscription in Supabase"
+              " (--tier is ignored)")
+        try:
+            result = run_for_user(
+                user=args.user, org=args.org,
+                asset_id=args.asset_id,
+                image_path=image, text=text, html=html,
+                title=args.title,
+                target_jurisdictions=args.jurisdictions,
+                as_of=args.as_of_date,
+                max_llm_rounds=args.max_llm_rounds,
+                provider=provider,
+                retriever=retriever,
+                include_asset=True,
+            )
+        except SaasError as exc:
+            print(f"rejected: {exc}", file=sys.stderr)
+            return 4
+        saas = result.provenance.get("saas", {})
+        print(f"persisted: org {saas.get('org_id')}  "
+              f"run {saas.get('analysis_run_id')}  "
+              f"(tier {result.tier} fetched from Supabase)")
+    else:
+        result = run_compliance_engine(
+            asset_id=args.asset_id,
+            image_path=image, text=text, html=html,
+            product_tier=args.tier,
+            target_jurisdictions=args.jurisdictions,
+            as_of=args.as_of_date,
+            max_llm_rounds=args.max_llm_rounds,
+            provider=provider,
+            retriever=retriever,
+            include_asset=True,
+        )
     _print_result(result)
 
     if args.interactive and result.status == "human_review":
@@ -137,6 +183,40 @@ def cmd_selftest(_args) -> int:
     from .selftest import main as selftest_main
 
     return selftest_main()
+
+
+def cmd_saas_selftest(_args) -> int:
+    from .saas_selftest import main as saas_selftest_main
+
+    return saas_selftest_main()
+
+
+def cmd_quota(args) -> int:
+    """Quota/tier snapshot for a user's org, straight from the DB."""
+    from .saas import SaasError, SupabaseDataPlane
+
+    try:
+        with SupabaseDataPlane() as db:
+            user = db.resolve_user(args.user)
+            org_id, role = db.resolve_org(user["id"], args.org)
+            ent = db.get_entitlements(org_id)
+            quota = db.check_quota(org_id)
+    except SaasError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 4
+    print(f"user   {user['email']}  (role: {role}, "
+          f"confirmed: {'yes' if user['confirmed'] else 'NO'})")
+    print(f"org    {org_id}")
+    print(f"tier   {ent.tier}  ->  {ent.llm_provider}:{ent.llm_model}  "
+          f"(max {ent.max_output_tokens:,} out tokens)")
+    print(f"quota  {quota.get('used', '?')} used / "
+          f"{quota.get('limit') if quota.get('limit') is not None else 'uncapped'}"
+          f"  remaining: {quota.get('remaining', 'n/a')}")
+    print(f"api    {'yes' if ent.api_access else 'no'}   "
+          f"frameworks: {ent.frameworks}")
+    for d in ent.drift:
+        print(f"DRIFT  {d}  <- plan_entitlements and engine TIERS disagree")
+    return 0
 
 
 def cmd_tiers(_args) -> int:
@@ -169,7 +249,17 @@ def build_parser() -> argparse.ArgumentParser:
                    help="path(s) to ad image(s); multiple paths = carousel")
     c.add_argument("--html-file", help="path to an HTML creative")
     c.add_argument("--tier", default="free", choices=list(PRODUCT_TIERS),
-                   help="product tier (selects the LLM; default free)")
+                   help="product tier (selects the LLM; default free); "
+                        "IGNORED with --user (the DB decides)")
+    c.add_argument("--user", default=None,
+                   help="SaaS mode: auth user id or email - tier is fetched "
+                        "from the org's Supabase subscription, quota enforced, "
+                        "run + findings + audit persisted")
+    c.add_argument("--org", default=None,
+                   help="org uuid (only needed with --user when the user "
+                        "belongs to several orgs; membership is verified)")
+    c.add_argument("--title", default=None,
+                   help="submission title stored in Supabase (--user mode)")
     c.add_argument("--jurisdictions", nargs="*", default=None,
                    help="targeting, e.g. US or US-CA US-NY (state checks "
                         "run only when given)")
@@ -195,6 +285,17 @@ def build_parser() -> argparse.ArgumentParser:
     s = sub.add_parser("selftest",
                        help="offline wiring proof (stub LLM + stub retrieval)")
     s.set_defaults(fn=cmd_selftest)
+
+    ss = sub.add_parser("saas-selftest",
+                        help="LIVE Supabase integration proof: temp org/user, "
+                             "tier fetch, quota, persistence, audit chain "
+                             "(stub LLM - no API spend)")
+    ss.set_defaults(fn=cmd_saas_selftest)
+
+    q = sub.add_parser("quota", help="tier + quota snapshot for a user's org")
+    q.add_argument("--user", required=True, help="auth user id or email")
+    q.add_argument("--org", default=None, help="org uuid if member of several")
+    q.set_defaults(fn=cmd_quota)
 
     t = sub.add_parser("tiers", help="print the tier -> model/OCR matrix")
     t.set_defaults(fn=cmd_tiers)

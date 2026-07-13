@@ -239,6 +239,75 @@ See `rag-engine/README.md` for state-coverage details and
 `RAG-ingest-approach-steps.txt` for the update-detection design
 (Federal Register poller, eCFR diffs, effective-dating).
 
+### 4.6 SaaS mode — the engine as a tenant operation (Supabase)
+
+`engine/saas.py` wires the engine to the self-hosted Supabase data plane
+(schema in `supabase/migrations/`, ops doc in `supabase.md`). The defining
+property: **the product tier is fetched from the database** — the org's
+Stripe-synced `subscriptions` row via `app.org_tier()` — never taken from
+the caller. Change the subscription row and the very next run reviews with
+the new tier's LLM, budgets, and framework scope; no code or config moves.
+
+```python
+from engine.saas import run_for_user, resume_run
+
+result = run_for_user(
+    user="reviewer@acme.com",            # auth.users id or email
+    text="Get 5.99% APR, guaranteed approval!",
+    target_jurisdictions=["US-CA"],
+    title="Q3 landing banner",
+)
+result.provenance["saas"]                # org / submission / analysis_run ids
+# CLI equivalent (tier line shows what the DB decided):
+#   python -m engine.cli check --text "..." --user reviewer@acme.com
+#   python -m engine.cli quota --user reviewer@acme.com
+#   python -m engine.cli saas-selftest   # live integration proof (stub LLM)
+```
+
+What one call does, in order (every step visible in the DB):
+
+1. **Identity + tenancy** — `auth.users` lookup; org derived from
+   `memberships` (a supplied `org=` only selects among the user's own
+   orgs; membership is always re-verified). Reviewer+ role and confirmed
+   email required, or the run is refused before any layer executes.
+2. **Entitlements** — tier + model + token caps + per-tier `frameworks`
+   from `plan_entitlements`; drift against the engine's compiled `TIERS`
+   is audited (`entitlements.drift`).
+3. **Rows first, quota second** — `submissions` -> `assets` (sha256
+   checksum) -> `analysis_runs(queued)`, then
+   `app.consume_scan_quota(org, run)` atomically consumes or rejects
+   (rejected runs are recorded: status `failed`, audit
+   `run.quota_rejected`) — expensive layers never start over cap.
+4. **Layers with live status** — `running_cv -> running_nlp ->
+   running_llm -> reconciling` on the run row (Realtime pushes these to
+   the UI); plan frameworks scope routing before Layer 3 (deterministic
+   checks are framework-registered, so their rules drop out with them —
+   drops are surfaced in `result.warnings`).
+5. **Persistence** — all four `layer_outputs` (the stored `nlp` payload
+   lets a resume skip re-OCR), `findings` rows (LLM findings verbatim +
+   rule-engine asset defects as `potential_violation` with the check id
+   as `rule_ref`), token spend in `usage_events`, terminal status
+   `complete | human_review | failed` (`human_review` is a first-class
+   DB status — migration 0007 — with `engine_run_id` correlating DB rows
+   to report files).
+6. **Audit** — hash-chained `audit_logs` events at every lifecycle edge
+   (`submission.created`, `run.started`, `run.completed`, ...).
+
+`resume_run(user=..., run=<uuid or engine_run_id>, guidance=...)` is the
+persisted operator-interference path: a NEW `analysis_runs` row linked via
+`resumed_from_run_id`, no extra scan quota (same creative), tokens metered,
+`run.resumed` audited. API keys for Pro+ programmatic access:
+`SupabaseDataPlane.issue_api_key/verify_api_key` (sha256 at rest, scope +
+`api_access` entitlement checks, revocation).
+
+Security contract: the module connects as a privileged DB role that
+**bypasses RLS** — every statement sets `org_id` explicitly, it must stay
+server-side, and its connection string (`SUPABASE_DB_URL`, falling back to
+`DATABASE_URL`) is env-only. `python -m engine.cli saas-selftest` proves
+the whole contract live: 32 checks covering tier fetch, gates, quota,
+persistence, API keys, the audit hash chain, cross-tenant RLS isolation,
+and the Realtime publication, against a throwaway org it deletes after.
+
 ---
 
 ## 5. The run lifecycle in detail
