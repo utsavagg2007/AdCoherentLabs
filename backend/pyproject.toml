@@ -1,0 +1,60 @@
+[project]
+name = "adcoherent-backend"
+version = "0.1.0"
+description = "AdCoherent Labs SaaS backend: API + worker + scheduler over the 4-layer compliance engine"
+requires-python = ">=3.11,<3.12"
+dependencies = [
+    # web
+    "fastapi~=0.116.0",
+    "uvicorn[standard]~=0.35.0",
+    "python-multipart~=0.0.20",
+    # contracts / config
+    "pydantic~=2.11.0",
+    "pydantic-settings~=2.10.0",
+    "python-dotenv~=1.1.0",
+    # data plane
+    "psycopg[binary,pool]~=3.2.0",
+    "redis~=6.2.0",
+    "httpx~=0.28.0",
+    # auth
+    "PyJWT~=2.10.0",
+    # billing
+    "stripe~=12.3.0",
+    # upload security
+    "Pillow~=11.3.0",
+    'python-magic~=0.4.27; sys_platform != "win32"',
+    'python-magic-bin~=0.4.14; sys_platform == "win32"',
+    "clamd~=1.0.2",
+    # jobs / retries
+    "APScheduler~=3.11.0",
+    "tenacity~=9.1.0",
+    # observability
+    "structlog~=25.4.0",
+    "prometheus-client~=0.22.0",
+]
+
+[project.optional-dependencies]
+sentry = ["sentry-sdk[fastapi]~=2.33.0"]
+test = [
+    "pytest~=8.4.0",
+    "pytest-asyncio~=1.0.0",
+    "httpx~=0.28.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+markers = [
+    "redline: red-line CI checks (RLS isolation, credit race) - a failure blocks merge",
+    "needs_db: requires the local Supabase stack",
+    "needs_redis: requires a reachable Redis",
+    "needs_clamav: requires a reachable clamd",
+    "slow: executes the real engine layers (seconds per test)",
+]
+
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+packages = ["app", "worker", "scheduler"]

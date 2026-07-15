@@ -213,8 +213,13 @@ def main() -> int:  # noqa: C901 - one linear proof, deliberately verbose
         usage = {r["kind"] for r in db._all(
             "select kind from public.usage_events where org_id = %s",
             (ids["org"],))}
-        check("scan + token_spend metered", {"scan", "token_spend"} <= usage,
-              str(usage))
+        check("token_spend metered", "token_spend" in usage, str(usage))
+        charged = db._one(
+            "select coalesce(sum(-delta), 0) as n from public.credit_ledger "
+            "where run_id = %s and reason = 'consume.run'",
+            (saas["analysis_run_id"],))["n"]
+        check("run charged its published credit price (pro text = 5)",
+              charged == 5, f"charged={charged}")
         actions = {r["action"] for r in db._all(
             "select action from public.audit_logs where org_id = %s",
             (ids["org"],))}
@@ -261,29 +266,74 @@ def main() -> int:  # noqa: C901 - one linear proof, deliberately verbose
               r_run["resumed_from_run_id"] == g_run["id"],
               str(r_run["resumed_from_run_id"]))
 
-        print("== H. quota rejects BEFORE the layers ==")
-        used = db._one(
-            "select count(*) as n from public.usage_events "
-            "where org_id = %s and kind = 'scan'", (ids["org"],))["n"]
-        cap = db.get_entitlements(ids["org"]).scans_per_month
-        with db.conn.cursor() as cur:
-            for _ in range(max(cap - used, 0)):
-                cur.execute(
-                    "insert into public.usage_events (org_id, kind, meta) "
-                    "values (%s, 'scan', '{\"source\": \"selftest-filler\"}')",
-                    (ids["org"],))
+        print("== H. the credit gate rejects BEFORE the layers ==")
+        bal = db.credit_balance(ids["org"])
+        with db.conn.cursor() as cur:   # drain both buckets to exactly zero
+            if bal["subscription_credits"]:
+                cur.execute("select app.adjust_credits_manual(%s, %s, "
+                            "'subscription', null, 'selftest drain')",
+                            (ids["org"], -bal["subscription_credits"]))
+            if bal["purchased_credits"]:
+                cur.execute("select app.adjust_credits_manual(%s, %s, "
+                            "'purchased', null, 'selftest drain')",
+                            (ids["org"], -bal["purchased_credits"]))
         db.conn.commit()
         try:
             run_for_user(user=ids["owner"], text=AD_TEXT,
                          provider=ClearProvider(), retriever=stub_retriever,
                          db=db)
-            check("run over cap rejected", False, "no exception")
+            check("run over balance rejected", False, "no exception")
         except QuotaExceededError as exc:
-            check("run over cap rejected", exc.used >= cap)
+            check("run over balance rejected (needed > balance)",
+                  getattr(exc, "needed", 0) > getattr(exc, "balance", 0),
+                  str(exc))
         check("rejection audited", "run.quota_rejected" in {
             r["action"] for r in db._all(
                 "select action from public.audit_logs where org_id = %s",
                 (ids["org"],))})
+
+        print("== M. credit system contract (migration 0008) ==")
+        _set_tier(db, ids["org"], "free")
+        c_free_text = db.credit_cost(ids["org"], "text")
+        _set_tier(db, ids["org"], "pro")
+        c_pro_image = db.credit_cost(ids["org"], "image")
+        _set_tier(db, ids["org"], "design")
+        c_design_car3 = db.credit_cost(ids["org"], "carousel", 3)
+        check("published cost matrix (free text 1 / pro image 10 / "
+              "design 3-card carousel 40)",
+              (c_free_text, c_pro_image, c_design_car3) == (1, 10, 40),
+              f"got {(c_free_text, c_pro_image, c_design_car3)}")
+        _set_tier(db, ids["org"], "pro")
+        grant = db._one("select app.grant_purchased_credits(%s, 100, %s) as g",
+                        (ids["org"], f"selftest-pack-{tag}"))["g"]
+        db.conn.commit()
+        regrant = db._one("select app.grant_purchased_credits(%s, 100, %s) as g",
+                          (ids["org"], f"selftest-pack-{tag}"))["g"]
+        db.conn.commit()
+        check("pack grant idempotent by stripe_ref",
+              grant["granted"] and not regrant["granted"], str(regrant))
+        db._exec("select app.adjust_credits_manual(%s, 2, 'subscription', "
+                 "null, 'selftest spend-order')", (ids["org"],))
+        m_sub = db.create_submission(ids["org"], ids["owner"], "spend-order")
+        m_run = db.create_run(m_sub, ids["org"], "pro", "claude-sonnet-5")
+        decision = db.consume_credits(ids["org"], m_run, 5)
+        check("allowance spent before packs (2 sub + 3 pack)",
+              decision["sub_bal"] == 0 and decision["pack_bal"] == 97,
+              str(decision))
+        refund = db.refund_credits(ids["org"], m_run)
+        again = db.refund_credits(ids["org"], m_run)
+        check("system refund reverses per bucket, idempotently",
+              refund["subscription"] == 2 and refund["purchased"] == 3
+              and again["refunded"] == 0, f"{refund} / {again}")
+        drift_rows = db._all(
+            "select * from app.reconcile_credit_balances() where org_id = %s",
+            (ids["org"],))
+        check("ledger sums to balance (reconcile clean)", not drift_rows,
+              str(drift_rows))
+        q = db.check_quota(ids["org"])
+        check("check_quota reports credits for legacy callers",
+              q.get("currency") == "credits" and "remaining" in q, str(q))
+        _set_tier(db, ids["org"], "free")   # section I expects a free org
 
         print("== I. API keys (sha256 at rest, entitlement-gated) ==")
         try:

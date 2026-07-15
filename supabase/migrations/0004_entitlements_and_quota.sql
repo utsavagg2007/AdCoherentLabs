@@ -14,8 +14,8 @@ insert into public.plan_entitlements
   (tier, llm_provider, llm_model, max_output_tokens, scans_per_month, seats,
    api_access, sso, sla, frameworks)
 values
-  ('free',       'openrouter', 'qwen/qwen-turbo', 1500,  20,   1,  false, false, false, '["FTC"]'::jsonb),
-  ('hobby',      'openrouter', 'qwen/qwen-max',   3000,  150,  2,  false, false, false, '["FTC","GDPR"]'::jsonb),
+  ('free',       'openrouter', 'qwen/qwen3.7-plus', 4000,  20,   1,  false, false, false, '["FTC"]'::jsonb),
+  ('hobby',      'openrouter', 'qwen/qwen3.7-max',  6000,  150,  2,  false, false, false, '["FTC","GDPR"]'::jsonb),
   ('pro',        'anthropic', 'claude-sonnet-5', 8000,  1000, 8,  true,  false, false, '"all"'::jsonb),
   ('design',     'anthropic', 'claude-opus-4-8', 16000, 4000, 20, true,  false, false, '"all"'::jsonb),
   ('enterprise', 'anthropic', 'claude-opus-4-8', 32000, null, null, true, true, true,  '"all"'::jsonb)

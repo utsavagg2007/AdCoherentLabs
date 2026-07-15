@@ -9,8 +9,8 @@ pricing supports:
   max_chunks_per_framework cap on regulation excerpts sent per framework
   max_context_chars        cap on the total regulation-excerpt text
 
-Model pricing anchors (per MTok in/out): qwen-turbo ~$0.05/$0.20,
-qwen-max ~$1.6/$6.4 (OpenRouter passes provider pricing through),
+Model pricing anchors (per MTok in/out): qwen3.7-plus ~$0.40/$1.20,
+qwen3.7-max ~$1.6/$6.4 (OpenRouter passes provider pricing through),
 claude-sonnet-5 $3/$15, claude-opus-4-8 $5/$25. Budgets scale roughly
 inversely with output price.
 """
@@ -37,18 +37,18 @@ class TierConfig:
 # Free/hobby models are served via OpenRouter (OpenRouter-namespaced ids,
 # env-overridable — catalog/pricing shifts are config, not code); the
 # Claude models are fixed per the product spec.
-_OPENROUTER_FREE_MODEL = os.environ.get("OPENROUTER_FREE_MODEL", "qwen/qwen-turbo")
-_OPENROUTER_HOBBY_MODEL = os.environ.get("OPENROUTER_HOBBY_MODEL", "qwen/qwen-max")
+_OPENROUTER_FREE_MODEL = os.environ.get("OPENROUTER_FREE_MODEL", "qwen/qwen3.7-plus")
+_OPENROUTER_HOBBY_MODEL = os.environ.get("OPENROUTER_HOBBY_MODEL", "qwen/qwen3.7-max")
 
 TIERS: dict[str, TierConfig] = {
     "free": TierConfig(
         name="free", paid=False, provider="openrouter", model=_OPENROUTER_FREE_MODEL,
-        max_output_tokens=1_500, effort=None,
+        max_output_tokens=4_000, effort=None,
         chunks_per_query=3, max_chunks_per_framework=6, max_context_chars=24_000,
     ),
     "hobby": TierConfig(
         name="hobby", paid=True, provider="openrouter", model=_OPENROUTER_HOBBY_MODEL,
-        max_output_tokens=3_000, effort=None,
+        max_output_tokens=6_000, effort=None,
         chunks_per_query=4, max_chunks_per_framework=8, max_context_chars=40_000,
     ),
     "pro": TierConfig(

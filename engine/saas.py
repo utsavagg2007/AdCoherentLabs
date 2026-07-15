@@ -117,6 +117,22 @@ class QuotaExceededError(SaasError):
         super().__init__(f"scan quota exhausted: {used}/{limit} used this period")
 
 
+class InsufficientCreditsError(QuotaExceededError):
+    """Credit balance cannot fund the run — reject BEFORE the layers (402).
+
+    Subclasses QuotaExceededError so every existing rejection path (CLI exit
+    code 4, run.quota_rejected audit, API 402 mapping) keeps working under
+    the credit system (migration 0008, Backend Architecture spec §8).
+    """
+
+    def __init__(self, needed: int, balance: int):
+        self.needed, self.balance = needed, balance
+        # Parent attrs kept meaningful for legacy readers.
+        SaasError.__init__(
+            self, f"insufficient credits: run costs {needed}, balance is {balance}")
+        self.used, self.limit = balance, needed
+
+
 class ApiKeyError(SaasError):
     """API key unknown, revoked, or not entitled (401/403)."""
 
@@ -308,8 +324,8 @@ class SupabaseDataPlane:
         return row["q"] if row else {}
 
     def consume_quota(self, org_id: str, run_id: str | None = None) -> dict:
-        """Atomic consume-or-reject BEFORE expensive work (advisory-locked in
-        the DB so parallel submissions cannot slip past the cap)."""
+        """DEPRECATED (0008): superseded by consume_credits — kept one release
+        for rollback, mirroring app.consume_scan_quota's own deprecation."""
         assert self.conn is not None
         with self.conn.cursor() as cur:
             cur.execute("select app.consume_scan_quota(%s, %s) as d",
@@ -319,6 +335,55 @@ class SupabaseDataPlane:
         if not decision.get("allowed"):
             raise QuotaExceededError(decision.get("used", 0), decision.get("limit"))
         return decision
+
+    # -- credits (migration 0008 — the usage currency) ------------------------
+
+    def credit_cost(self, org_id: str, kind: str, cards: int = 1) -> int:
+        """Published flat price of one run for this org's CURRENT tier —
+        known before execution (app.credit_cost over credit_costs)."""
+        row = self._one("select app.credit_cost(%s, %s, %s) as c",
+                        (org_id, kind, cards))
+        return int(row["c"])
+
+    def ensure_cycle_grant(self, org_id: str) -> dict:
+        """Grant the current allowance cycle if not yet granted (idempotent
+        by cycle key — safe to call before every consume)."""
+        assert self.conn is not None
+        with self.conn.cursor() as cur:
+            cur.execute("select app.ensure_cycle_grant(%s) as g", (org_id,))
+            grant = cur.fetchone()["g"]
+        self.conn.commit()
+        return grant
+
+    def consume_credits(self, org_id: str, run_id: str | None, cost: int) -> dict:
+        """Atomic consume-or-reject BEFORE expensive work (SELECT ... FOR
+        UPDATE on the org's credit_balances row — parallel submissions can
+        never overspend). The §8.5 sibling of consume_quota."""
+        assert self.conn is not None
+        with self.conn.cursor() as cur:
+            cur.execute("select app.consume_credits(%s, %s, %s) as d",
+                        (org_id, run_id, cost))
+            decision = cur.fetchone()["d"]
+        self.conn.commit()
+        if not decision.get("allowed"):
+            raise InsufficientCreditsError(
+                decision.get("needed", cost), decision.get("balance", 0))
+        return decision
+
+    def credit_balance(self, org_id: str) -> dict:
+        row = self._one("select app.credit_balance(%s) as b", (org_id,))
+        return row["b"] if row else {}
+
+    def refund_credits(self, org_id: str, run_id: str) -> dict:
+        """System-failure refund (DLQ / llm_error / infra) — ledger-derived
+        amount, idempotent under double-fire."""
+        assert self.conn is not None
+        with self.conn.cursor() as cur:
+            cur.execute("select app.refund_credits(%s, %s) as r",
+                        (org_id, run_id))
+            refund = cur.fetchone()["r"]
+        self.conn.commit()
+        return refund
 
     # -- audit ------------------------------------------------------------
 
@@ -639,6 +704,7 @@ def run_for_user(
     target_jurisdictions: list[str] | None = None,
     as_of: date | None = None,
     max_llm_rounds: int = DEFAULT_MAX_LLM_ROUNDS,
+    cost: int | None = None,
     conn: Any = None,
     embedder: Any = None,
     retriever: Any = None,
@@ -646,14 +712,17 @@ def run_for_user(
     include_asset: bool = False,
     db: SupabaseDataPlane | None = None,
 ) -> EngineRunResult:
-    """The whole engine for one tenant: tier fetched from Supabase, quota
+    """The whole engine for one tenant: tier fetched from Supabase, credits
     consumed first, every layer persisted, everything audited.
 
     ``user`` is an auth.users id or email; ``org`` is only needed when the
-    user belongs to several orgs. ``conn``/``embedder``/``retriever``/
-    ``provider`` are the usual test-injection seams and do not weaken any
-    tenancy gate. Raises NotProvisionedError / PermissionDeniedError /
-    MultipleOrgsError / QuotaExceededError before any layer runs.
+    user belongs to several orgs. ``cost`` is the pre-computed credit price
+    from the API layer (§8.5); when None it is computed here from the
+    published price list (app.credit_cost) so direct/CLI callers keep
+    working. ``conn``/``embedder``/``retriever``/``provider`` are the usual
+    test-injection seams and do not weaken any tenancy gate. Raises
+    NotProvisionedError / PermissionDeniedError / MultipleOrgsError /
+    InsufficientCreditsError (a QuotaExceededError) before any layer runs.
     """
     own_db = db is None
     if own_db:
@@ -675,8 +744,9 @@ def run_for_user(
             db.audit(org_id, user_id, "entitlements.drift", f"tier:{ent.tier}",
                      {"drift": ent.drift})
 
-        # -- pipeline rows, then quota BEFORE any expensive layer ----------
+        # -- pipeline rows, then the credit gate BEFORE any expensive layer --
         kind, checksum = _sha256_of_input(image_path, text, html)
+        cards = len(image_path) if isinstance(image_path, list) else 1
         submission_id = db.create_submission(org_id, user_id, title)
         asset_row_id = db.register_asset(submission_id, org_id, kind, checksum)
         run_id = db.create_run(submission_id, org_id, ent.tier, ent.llm_model)
@@ -684,13 +754,19 @@ def run_for_user(
                  f"submission:{submission_id}",
                  {"kind": kind, "checksum": checksum, "title": title})
         try:
-            quota = db.consume_quota(org_id, run_id)
+            db.ensure_cycle_grant(org_id)
+            run_cost = cost if cost is not None else db.credit_cost(
+                org_id, "carousel" if kind == "image" and cards > 1 else kind,
+                cards)
+            quota = db.consume_credits(org_id, run_id, run_cost)
         except QuotaExceededError as exc:
             db.set_run(run_id, finished=True, status="failed",
                        error=f"rejected: {exc}")
             db.audit(org_id, user_id, "run.quota_rejected",
                      f"analysis_run:{run_id}",
-                     {"used": exc.used, "limit": exc.limit, "tier": ent.tier})
+                     {"needed": getattr(exc, "needed", None),
+                      "balance": getattr(exc, "balance", None),
+                      "tier": ent.tier})
             raise
 
         try:
@@ -698,8 +774,9 @@ def run_for_user(
             db.set_run(run_id, status="running_cv", started=True)
             db.audit(org_id, user_id, "run.started", f"analysis_run:{run_id}",
                      {"tier": ent.tier, "model": ent.llm_model,
-                      "quota_used": quota.get("used"),
-                      "quota_limit": quota.get("limit")})
+                      "credits_charged": quota.get("charged"),
+                      "sub_bal": quota.get("sub_bal"),
+                      "pack_bal": quota.get("pack_bal")})
             asset = prepare_asset(
                 asset_id=asset_id, image_path=image_path, text=text, html=html,
                 product_tier=ent.tier,
@@ -814,7 +891,8 @@ def resume_run(
 
 
 __all__ = [
-    "ApiKeyError", "Entitlements", "MultipleOrgsError", "NotProvisionedError",
-    "PermissionDeniedError", "QuotaExceededError", "SaasError",
-    "SupabaseDataPlane", "resume_run", "run_for_user",
+    "ApiKeyError", "Entitlements", "InsufficientCreditsError",
+    "MultipleOrgsError", "NotProvisionedError", "PermissionDeniedError",
+    "QuotaExceededError", "SaasError", "SupabaseDataPlane", "resume_run",
+    "run_for_user",
 ]

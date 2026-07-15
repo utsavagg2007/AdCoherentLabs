@@ -130,9 +130,9 @@ class FakeProvider:
 
 def test_tier_registry_matches_product_spec():
     assert get_tier("free").provider == "openrouter"
-    assert get_tier("free").model == "qwen/qwen-turbo"
+    assert get_tier("free").model == "qwen/qwen3.7-plus"
     assert get_tier("hobby").provider == "openrouter"
-    assert get_tier("hobby").model == "qwen/qwen-max"
+    assert get_tier("hobby").model == "qwen/qwen3.7-max"
     assert get_tier("pro").model == "claude-sonnet-5"
     assert get_tier("design").model == "claude-opus-4-8"
     ent = get_tier("enterprise")

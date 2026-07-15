@@ -162,8 +162,8 @@ Forward-only; take a backup before destructive changes (playbook Phase 11).
 
 | Tier | Model | Max output tokens | Scans/mo | Seats | API | SSO/SLA |
 |---|---|---|---|---|---|---|
-| free | `qwen/qwen-turbo` (OpenRouter) | 1,500 | 20 | 1 | — | — |
-| hobby | `qwen/qwen-max` (OpenRouter) | 3,000 | 150 | 2 | — | — |
+| free | `qwen/qwen3.7-plus` (OpenRouter) | 1,500 | 20 | 1 | — | — |
+| hobby | `qwen/qwen3.7-max` (OpenRouter) | 3,000 | 150 | 2 | — | — |
 | pro | `claude-sonnet-5` | 8,000 | 1,000 | 8 | ✓ | — |
 | design | `claude-opus-4-8` | 16,000 | 4,000 | 20 | ✓ | — |
 | enterprise | `claude-opus-4-8` | 32,000 | custom | custom | ✓ | ✓ |

@@ -12,9 +12,9 @@ export const TIERS: Tier[] = ["free", "hobby", "pro", "design", "enterprise"];
 export const ENTITLEMENTS: Record<Tier, PlanEntitlement> = {
   free: {
     tier: "free",
-    llm_provider: "qwen",
-    llm_model: "qwen-turbo",
-    max_output_tokens: 1500,
+    llm_provider: "openrouter",
+    llm_model: "qwen/qwen3.7-plus",
+    max_output_tokens: 4000,
     scans_per_month: 20,
     seats: 1,
     api_access: false,
@@ -24,9 +24,9 @@ export const ENTITLEMENTS: Record<Tier, PlanEntitlement> = {
   },
   hobby: {
     tier: "hobby",
-    llm_provider: "qwen",
-    llm_model: "qwen-max",
-    max_output_tokens: 3000,
+    llm_provider: "openrouter",
+    llm_model: "qwen/qwen3.7-max",
+    max_output_tokens: 6000,
     scans_per_month: 150,
     seats: 2,
     api_access: false,

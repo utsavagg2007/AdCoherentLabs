@@ -3,22 +3,26 @@
 Does, in order (backups already at .env.bak-2026-07-13 / docker-compose.yml.bak-2026-07-13):
   1. mint fresh JWT_SECRET + anon/service_role keys (HS256), SECRET_KEY_BASE,
      VAULT_ENC_KEY, PG_META_CRYPTO_KEY, LOGFLARE tokens, POSTGRES_PASSWORD
-     -> writes them into C:/Users/HP/supabase-project/.env
+     candidate
   2. binds ALL published ports (Kong 8000/8443, pooler 5432/6543) to
      127.0.0.1 in docker-compose.yml (skips lines already bound)
-  3. ALTER ROLE ... PASSWORD for every Supabase login role in Postgres
-  4. deletes the supavisor tenant row so the pooler reseeds itself with the
-     new password on restart
-  5. `docker compose up -d` (recreates only changed services; keeps the
+  3. verifies the live DB password from .env/.env backups; if the postgres
+     role is a superuser, ALTER ROLE ... PASSWORD for every Supabase login
+     role; otherwise preserve the verified live POSTGRES_PASSWORD and skip
+     DB password rotation
+  4. writes the updated values into C:/Users/HP/supabase-project/.env
+  5. if the DB password changed, deletes the supavisor tenant row so the
+     pooler reseeds itself with the new password on restart
+  6. `docker compose up -d` (recreates only changed services; keeps the
      network so the adcoherent-rag-db-proxy socat container stays attached)
-  6. updates DATABASE_URL in the project's .env and rag-engine/.env
-  7. verifies: containers healthy, OLD demo anon key rejected (401), new
+  7. updates DATABASE_URL in the project's .env and rag-engine/.env
+  8. verifies: containers healthy, OLD demo anon key rejected (401), new
      anon key accepted, psql via the 54322 proxy works, ports loopback-only
 
 Prints key fingerprints only, never full secrets (read them from .env).
 Afterwards run:  python -m engine.cli saas-selftest
 
-Usage:  python rotate.py
+Usage:  python supabase/harden.py
 """
 import base64
 import hashlib
@@ -58,14 +62,70 @@ def mint_jwt(secret: str, role: str) -> str:
 
 
 def run(cmd: list[str], **kw) -> subprocess.CompletedProcess:
-    print("  $", " ".join(cmd[:6]) + (" ..." if len(cmd) > 6 else ""))
+    redactions = tuple(kw.pop("redact", ()))
+    shown = []
+    for part in cmd[:6]:
+        text = part
+        for secret in redactions:
+            if secret:
+                text = text.replace(secret, "***")
+        if text.startswith("PGPASSWORD="):
+            text = "PGPASSWORD=***"
+        shown.append(text)
+    print("  $", " ".join(shown) + (" ..." if len(cmd) > 6 else ""))
     return subprocess.run(cmd, capture_output=True, text=True, **kw)
+
+
+def env_value(text: str, key: str) -> str:
+    m = re.search(rf"(?m)^{re.escape(key)}=(.*)$", text)
+    return m.group(1).strip() if m else ""
+
+
+def replace_env_values(text: str, values: dict[str, str]) -> str:
+    for key, val in values.items():
+        if not re.search(rf"(?m)^{re.escape(key)}=", text):
+            raise KeyError(key)
+        text = re.sub(rf"(?m)^{re.escape(key)}=.*$", f"{key}={val}", text)
+    return text
+
+
+def stack_env_candidates(env_path: Path, key: str) -> list[str]:
+    candidates: list[str] = []
+    paths = [env_path]
+    paths.extend(sorted(env_path.parent.glob(".env.bak-*"),
+                        key=lambda p: p.stat().st_mtime, reverse=True))
+    for path in paths:
+        try:
+            val = env_value(path.read_text(encoding="utf-8"), key)
+        except OSError:
+            continue
+        if val and val not in candidates:
+            candidates.append(val)
+    return candidates
+
+
+def password_auth_works(password: str) -> bool:
+    cmd = ["docker", "exec", "-e", f"PGPASSWORD={password}", "supabase-db",
+           "psql", "-h", "127.0.0.1", "-U", "postgres", "-d", "postgres",
+           "-tAc", "select 1;"]
+    p = run(cmd, redact=(password,))
+    return p.returncode == 0 and p.stdout.strip() == "1"
+
+
+def current_role_is_superuser() -> bool | None:
+    p = run(["docker", "exec", "supabase-db", "psql", "-U", "postgres",
+             "-d", "postgres", "-tAc",
+             "select rolsuper from pg_roles where rolname = current_user;"])
+    if p.returncode != 0:
+        print("ABORT: could not inspect postgres role:", p.stderr[-500:])
+        return None
+    return p.stdout.strip() == "t"
 
 
 def main() -> int:
     global OLD_ANON
-    # ---- 1. mint + write stack .env --------------------------------------
-    print("== 1. rotating secrets in stack .env ==")
+    # ---- 1. mint + validate stack .env -----------------------------------
+    print("== 1. minting secrets and checking stack .env ==")
     jwt_secret = secrets.token_hex(32)
     alphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
     new = {
@@ -81,15 +141,26 @@ def main() -> int:
     }
     env_path = STACK / ".env"
     env = env_path.read_text(encoding="utf-8")
-    m = re.search(r"(?m)^ANON_KEY=(.+)$", env)
-    OLD_ANON = m.group(1).strip() if m else ""
-    for key, val in new.items():
-        if not re.search(rf"(?m)^{key}=", env):
+    OLD_ANON = env_value(env, "ANON_KEY")
+    for key in new:
+        if not re.search(rf"(?m)^{re.escape(key)}=", env):
             print(f"ABORT: {key} not found in stack .env - nothing written")
             return 1
-        env = re.sub(rf"(?m)^{key}=.*$", f"{key}={val}", env)
-    env_path.write_text(env, encoding="utf-8", newline="\n")
-    print("  written:", ", ".join(new))
+    print("  minted:", ", ".join(new))
+
+    live_password = ""
+    print("  checking live database password candidates")
+    for candidate in stack_env_candidates(env_path, "POSTGRES_PASSWORD"):
+        if password_auth_works(candidate):
+            live_password = candidate
+            break
+    if not live_password:
+        print("ABORT: could not verify the current database password from "
+              "stack .env or .env backups - nothing written")
+        return 1
+    if live_password != env_value(env, "POSTGRES_PASSWORD"):
+        print("  stack .env POSTGRES_PASSWORD was stale; will restore the "
+              "verified live password")
 
     # ---- 2. loopback port bindings ---------------------------------------
     print("== 2. binding published ports to 127.0.0.1 ==")
@@ -113,36 +184,59 @@ def main() -> int:
 
     # ---- 3. rotate DB role passwords -------------------------------------
     print("== 3. ALTER ROLE passwords in Postgres ==")
-    sql = "do $$ begin\n" + "".join(
-        f"if exists (select 1 from pg_roles where rolname = '{r}') then "
-        f"execute format('alter role {r} with password %L', "
-        f"'{new['POSTGRES_PASSWORD']}'); end if;\n" for r in ROLES) + "end $$;"
-    p = run(["docker", "exec", "-i", "supabase-db", "psql", "-U", "postgres",
-             "-d", "postgres", "-v", "ON_ERROR_STOP=1", "-c", sql])
-    if p.returncode != 0:
-        print("ABORT: role rotation failed:", p.stderr[-500:])
-        print("stack .env now holds the NEW password but the DB has the OLD "
-              "one - restore .env.bak-2026-07-13 or re-run after fixing.")
+    rotated_db_password = False
+    is_superuser = current_role_is_superuser()
+    if is_superuser is None:
         return 1
-    print("  roles rotated:", ", ".join(ROLES))
+    if is_superuser:
+        sql = "do $$ begin\n" + "".join(
+            f"if exists (select 1 from pg_roles where rolname = '{r}') then "
+            f"execute format('alter role {r} with password %L', "
+            f"'{new['POSTGRES_PASSWORD']}'); end if;\n" for r in ROLES) + "end $$;"
+        p = run(["docker", "exec", "-i", "supabase-db", "psql", "-U", "postgres",
+                 "-d", "postgres", "-v", "ON_ERROR_STOP=1", "-c", sql])
+        if p.returncode != 0:
+            print("ABORT: role rotation failed:", p.stderr[-500:])
+            print("nothing secret was written to stack .env; fix the DB role "
+                  "permissions or retry with a verified superuser role.")
+            return 1
+        rotated_db_password = True
+        print("  roles rotated:", ", ".join(ROLES))
+    else:
+        new["POSTGRES_PASSWORD"] = live_password
+        print("  postgres is not a superuser; keeping the verified live "
+              "POSTGRES_PASSWORD and skipping DB role password rotation")
 
-    # ---- 4. pooler tenant reseed ------------------------------------------
-    print("== 4. dropping supavisor tenant (reseeds on restart) ==")
-    p = run(["docker", "exec", "supabase-db", "psql", "-U", "postgres",
-             "-d", "_supabase", "-c",
-             "delete from _supavisor.tenants where external_id = 'your-tenant-id';"])
-    print("  ", (p.stdout or p.stderr).strip())
+    # ---- 4. write stack .env ----------------------------------------------
+    print("== 4. writing stack .env ==")
+    try:
+        env = replace_env_values(env, new)
+    except KeyError as e:
+        print(f"ABORT: {e.args[0]} not found in stack .env - nothing written")
+        return 1
+    env_path.write_text(env, encoding="utf-8", newline="\n")
+    print("  written:", ", ".join(new))
 
-    # ---- 5. restart stack --------------------------------------------------
-    print("== 5. docker compose up -d (recreates changed services) ==")
+    # ---- 5. pooler tenant reseed ------------------------------------------
+    print("== 5. dropping supavisor tenant (reseeds on restart) ==")
+    if rotated_db_password:
+        p = run(["docker", "exec", "supabase-db", "psql", "-U", "postgres",
+                 "-d", "_supabase", "-c",
+                 "delete from _supavisor.tenants where external_id = 'your-tenant-id';"])
+        print("  ", (p.stdout or p.stderr).strip())
+    else:
+        print("  skipped: DB password was not rotated")
+
+    # ---- 6. restart stack --------------------------------------------------
+    print("== 6. docker compose up -d (recreates changed services) ==")
     p = run(["docker", "compose", "up", "-d"], cwd=str(STACK))
     if p.returncode != 0:
         print("ABORT: compose up failed:", p.stderr[-800:])
         return 1
     run(["docker", "restart", "adcoherent-rag-db-proxy"])
 
-    # ---- 6. project env files ----------------------------------------------
-    print("== 6. updating project DATABASE_URLs ==")
+    # ---- 7. project env files ---------------------------------------------
+    print("== 7. updating project DATABASE_URLs ==")
     url = (f"postgresql://postgres:{new['POSTGRES_PASSWORD']}"
            "@127.0.0.1:54322/postgres")
     for env_file in (PROJECT / ".env", PROJECT / "rag-engine" / ".env"):
@@ -151,8 +245,8 @@ def main() -> int:
         env_file.write_text(text, encoding="utf-8", newline="\n")
         print("  updated", env_file)
 
-    # ---- 7. verify -----------------------------------------------------------
-    print("== 7. verification ==")
+    # ---- 8. verify ---------------------------------------------------------
+    print("== 8. verification ==")
     deadline = time.time() + 180
     while time.time() < deadline:
         p = run(["docker", "compose", "ps", "--format",
@@ -182,8 +276,10 @@ def main() -> int:
     print(f"  old demo anon key -> HTTP {old_status} (want 401)")
     print(f"  new anon key      -> HTTP {new_status} (want 200)")
 
-    p = run(["docker", "exec", "supabase-db", "psql", "-U", "postgres",
-             "-tAc", "select count(*) from rag_chunks;"])
+    p = run(["docker", "exec", "-e", f"PGPASSWORD={new['POSTGRES_PASSWORD']}",
+             "supabase-db", "psql", "-h", "127.0.0.1", "-U", "postgres",
+             "-tAc", "select count(*) from rag_chunks;"],
+            redact=(new["POSTGRES_PASSWORD"],))
     print("  rag_chunks reachable:", p.stdout.strip() or p.stderr.strip())
     p = run(["docker", "port", "supabase-kong"])
     q = run(["docker", "port", "supabase-pooler"])

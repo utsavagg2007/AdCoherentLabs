@@ -100,8 +100,8 @@ tiers; only the model and budgets swap.
 
 | tier       | LLM (Layer 3)                  | OCR (Layer 1)       | max output tok | chunks/framework | context chars |
 |------------|--------------------------------|---------------------|---------------:|-----------------:|--------------:|
-| free       | qwen/qwen-turbo (OpenRouter)   | local **PaddleOCR** |          1,500 |                6 |        24,000 |
-| hobby      | qwen/qwen-max (OpenRouter)     | local **PaddleOCR** |          3,000 |                8 |        40,000 |
+| free       | qwen/qwen3.7-plus (OpenRouter) | local **PaddleOCR** |          4,000 |                6 |        24,000 |
+| hobby      | qwen/qwen3.7-max (OpenRouter)  | local **PaddleOCR** |          6,000 |                8 |        40,000 |
 | pro        | claude-sonnet-5 (Anthropic)    | local **PaddleOCR** |          8,000 |               10 |        60,000 |
 | design     | claude-opus-4-8 (Anthropic)    | local **PaddleOCR** |         16,000 |               12 |        90,000 |
 | enterprise | claude-opus-4-8 (Anthropic)    | local **PaddleOCR** |         32,000 |               16 |       140,000 |
@@ -273,11 +273,12 @@ What one call does, in order (every step visible in the DB):
 2. **Entitlements** — tier + model + token caps + per-tier `frameworks`
    from `plan_entitlements`; drift against the engine's compiled `TIERS`
    is audited (`entitlements.drift`).
-3. **Rows first, quota second** — `submissions` -> `assets` (sha256
-   checksum) -> `analysis_runs(queued)`, then
-   `app.consume_scan_quota(org, run)` atomically consumes or rejects
-   (rejected runs are recorded: status `failed`, audit
-   `run.quota_rejected`) — expensive layers never start over cap.
+3. **Rows first, credits second** — `submissions` -> `assets` (sha256
+   checksum) -> `analysis_runs(queued)`, then `app.consume_credits(org,
+   run, cost)` atomically consumes or rejects at the published flat price
+   (`app.credit_cost`; migration 0008 — the old `consume_scan_quota` is
+   deprecated). Rejected runs are recorded: status `failed`, audit
+   `run.quota_rejected` — expensive layers never start unpaid.
 4. **Layers with live status** — `running_cv -> running_nlp ->
    running_llm -> reconciling` on the run row (Realtime pushes these to
    the UI); plan frameworks scope routing before Layer 3 (deterministic

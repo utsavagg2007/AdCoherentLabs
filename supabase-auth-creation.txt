@@ -1,0 +1,184 @@
+Act as a principal SaaS security architect and senior full-stack engineer.
+
+You are modifying an existing SaaS application with an existing frontend, backend, database, and deployment setup.
+
+Primary objective:
+Implement secure, privacy-conscious, production-grade authentication using ONLY our self-hosted Supabase Auth instance.
+
+Supabase Auth must handle:
+- Signup and login
+- Email verification
+- Password reset
+- Session refresh and logout
+- Optional or mandatory MFA
+- User identity and authentication tokens
+
+Our existing backend must remain responsible for:
+- Business logic
+- Authorization
+- Tenant isolation
+- Roles and permissions
+- Billing and entitlements
+- API access
+- Application data
+- Audit logging
+
+Do not replace or bypass the existing backend.
+
+Strict technology constraints:
+- Use only our self-hosted Supabase instance.
+- Never use hosted Supabase or any `*.supabase.co` URL.
+- Do not introduce Clerk, Auth0, Firebase, Cognito, NextAuth, Passport, or another identity provider.
+- Do not move business logic into Supabase Edge Functions.
+- Do not expose service-role keys, secret keys, JWT secrets, database passwords, or SMTP credentials to the browser.
+- Never store plaintext passwords in our application database.
+- Never trust user IDs, tenant IDs, roles, or permissions supplied by the client.
+- Do not link accounts primarily by email. Use the immutable Supabase Auth user UUID from the JWT `sub` claim.
+- Do not make destructive schema changes.
+- Do not upgrade dependencies or Supabase unless you explain the reason first.
+- Do not claim that the application is GDPR, SOC 2, HIPAA, or otherwise compliant. Instead, produce a compliance-control gap report.
+
+First, inspect the repository without editing files.
+
+Audit the following:
+1. Frontend framework and authentication screens.
+2. Backend framework, middleware, API routes, database, ORM, and existing user model.
+3. Existing authentication, sessions, cookies, JWTs, password handling, and authorization.
+4. Existing tenant, organization, workspace, membership, and role models.
+5. Docker Compose and self-hosted Supabase configuration.
+6. Environment variables and secrets management.
+7. CORS, CSRF, cookie, proxy, TLS, and deployment configuration.
+8. Database migrations, indexes, foreign keys, and existing audit logs.
+9. Logging, analytics, error tracking, and PII exposure.
+10. Backup, restore, monitoring, and incident-response configuration.
+11. Whether the Supabase deployment uses legacy HS256 JWTs or asymmetric signing keys.
+12. Whether frontend and backend use the same origin, subdomains, or separate domains.
+
+Do not implement anything until you provide an audit report containing:
+- Current architecture
+- Current authentication flow
+- Current tenant model
+- Existing security weaknesses
+- Proposed target architecture
+- Authentication and authorization sequence
+- Threat model
+- Files that need to change
+- Database migrations required
+- Environment variables required
+- Operational requirements
+- Security and privacy assumptions
+- Compliance gaps
+- Rollback plan
+- Verification commands
+
+Target architecture:
+- The frontend authenticates only against our self-hosted Supabase Auth.
+- The frontend sends the Supabase access token to the existing backend using:
+  `Authorization: Bearer <access-token>`
+- The backend validates every protected request.
+- The backend derives the authenticated user from the verified JWT `sub` claim.
+- The backend maps the Supabase user UUID to the existing application user.
+- The backend derives the active tenant from validated membership data.
+- Every tenant-owned query and mutation must enforce tenant boundaries.
+- Authorization must be deny-by-default.
+- Authentication and authorization must be separate concerns.
+- A valid user must not automatically receive access to every tenant.
+- If this application uses SSR or a BFF pattern, prefer secure HttpOnly, Secure, SameSite cookies and explain the CSRF protection strategy.
+
+JWT validation requirements:
+- Validate signature, issuer, audience, expiration, and not-before claims where applicable.
+- Detect the actual signing-key strategy used by the deployed Supabase version.
+- For asymmetric signing, use the self-hosted JWKS endpoint and a maintained JWT library.
+- For legacy HS256, use the safest supported server-side validation approach.
+- Never merely decode a JWT and trust its contents.
+- Support signing-key rotation.
+- Reject tokens from another project, issuer, environment, or audience.
+- Never log access tokens, refresh tokens, authorization headers, passwords, reset tokens, or secrets.
+
+SaaS tenant-isolation requirements:
+- Model organizations/workspaces/tenants explicitly.
+- Model memberships separately from users.
+- Use explicit roles and permissions.
+- Add unique constraints and foreign keys that prevent cross-tenant relationships.
+- Derive tenant context from authenticated membership, never from an untrusted request body.
+- Check tenant membership on every read, write, update, delete, export, and download operation.
+- Prevent IDOR, horizontal privilege escalation, vertical privilege escalation, and tenant breakout.
+- Ensure background jobs, webhooks, scheduled jobs, exports, and admin tools also enforce tenant boundaries.
+- Define a secure platform-admin path separately from tenant-admin access.
+- Add authorization tests for same-tenant, cross-tenant, regular-user, tenant-admin, and platform-admin scenarios.
+
+Security requirements:
+- Enforce strong password and email-verification policies.
+- Add rate limiting and abuse protection to signup, login, password reset, verification, and invitation flows.
+- Implement session expiration, refresh-token handling, logout, revocation, and concurrent-session behavior.
+- Support MFA for privileged users and sensitive actions if supported by the deployed Supabase version.
+- Require step-up authentication for changing email, password, MFA, ownership, billing, API keys, or tenant membership.
+- Use secure cookie settings where cookies are used.
+- Configure strict CORS allow-lists.
+- Add CSRF protection where cookie authentication is used.
+- Prevent open redirects in login, reset, invite, and OAuth flows.
+- Validate all input server-side.
+- Use parameterized queries and existing ORM protections.
+- Add security headers where appropriate.
+- Review SSRF, XSS, SQL injection, CSRF, request smuggling, file-upload, webhook, and dependency risks.
+- Never allow client-controlled role or tenant changes.
+
+Privacy requirements:
+- Create a data inventory of all personal and sensitive data.
+- Classify data as public, internal, confidential, or sensitive.
+- Collect only data necessary for the product.
+- Do not place PII, tokens, passwords, or secrets in logs.
+- Redact emails, IP addresses, authorization headers, and user identifiers where appropriate.
+- Document retention periods for authentication data, audit logs, backups, and deleted accounts.
+- Implement account deletion, data export, anonymization, and tenant offboarding where required by the product.
+- Preserve legal/audit records only when necessary and document the exception.
+- Document whether email delivery, monitoring, analytics, backups, or support tools process customer data.
+- Do not assume data residency, encryption, compliance, or deletion guarantees. Identify what must be configured operationally.
+- Add privacy-safe error messages that do not reveal whether an account exists.
+
+Audit and operational requirements:
+- Add structured audit events for login, logout, failed login, password reset, MFA changes, email changes, invitations, membership changes, role changes, API-key changes, data exports, and account deletion.
+- Include tenant, actor, target, action, outcome, timestamp, request ID, and source where appropriate.
+- Never include secrets or sensitive payloads in audit logs.
+- Make audit records tamper-resistant as far as the existing architecture allows.
+- Document secret rotation, JWT-key rotation, backup restoration, incident response, and account-compromise procedures.
+- Add health checks and failure behavior for Supabase Auth outages.
+- Ensure the backend fails closed when token verification or authorization cannot be completed.
+- Do not make production infrastructure changes automatically.
+
+Implementation workflow:
+Phase 1: Audit and threat model only.
+Phase 2: Present the architecture and migration plan for approval.
+Phase 3: Implement the smallest safe change.
+Phase 4: Add tests, documentation, and security checks.
+Phase 5: Review the final diff for secrets, tenant leaks, insecure cookies, unsafe redirects, missing authorization checks, and destructive migrations.
+
+Required tests:
+- Missing token returns 401.
+- Malformed token returns 401.
+- Expired token returns 401.
+- Wrong issuer or audience returns 401.
+- Valid token authenticates the correct user.
+- Valid user without membership receives 403.
+- User cannot access another tenant’s records.
+- Tenant admin cannot perform platform-admin actions.
+- Email changes do not break identity mapping.
+- Logout and token refresh behave correctly.
+- Password-reset and invitation links cannot be reused.
+- MFA is required for configured privileged actions.
+- Background jobs cannot cross tenant boundaries.
+- Audit events contain no secrets or raw tokens.
+- Secrets are not present in frontend bundles, logs, test fixtures, or committed files.
+
+At the end, provide:
+- Files changed
+- Database migration summary
+- Environment-variable reference
+- Local development instructions
+- Production deployment checklist
+- Security test results
+- Privacy-control checklist
+- Threat-model findings
+- Compliance-gap report
+- Known limitations
+- Manual infrastructure and legal steps still required
