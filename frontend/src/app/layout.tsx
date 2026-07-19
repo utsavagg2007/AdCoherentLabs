@@ -1,37 +1,33 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Manrope } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const manrope = Manrope({
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-manrope",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
   title: {
-    default: "AdCoherent Labs — AI Compliance Engine for Fintech Marketing",
+    default: "AdCoherent Labs — AI-assisted fintech ad compliance",
     template: "%s · AdCoherent Labs",
   },
   description:
-    "Upload an ad, get an auditable compliance verdict. A four-layer CV/NLP/LLM/Rules engine reviews regulated fintech marketing against FTC, SEC, SEBI, RBI and GDPR.",
+    "Upload a creative. Surface claims, disclosures, and regulation-grounded findings your compliance team can review. Decision support, not legal advice.",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#05060a",
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
-  children: React.ReactNode;
-}>) {
+}: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">{children}</body>
+    <html lang="en" className={manrope.variable} data-scroll-behavior="smooth">
+      <body className="min-h-dvh antialiased">{children}</body>
     </html>
   );
 }

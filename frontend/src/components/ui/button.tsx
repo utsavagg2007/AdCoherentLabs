@@ -1,57 +1,65 @@
-import { cn } from "@/lib/utils";
-import type { ButtonHTMLAttributes } from "react";
+"use client";
 
-type Variant = "primary" | "secondary" | "ghost" | "danger";
+import Link from "next/link";
+import { forwardRef } from "react";
+import { Loader2 } from "lucide-react";
+import { cn } from "@/lib/utils";
+
+type Variant = "primary" | "secondary" | "ghost" | "danger" | "dark";
 type Size = "sm" | "md" | "lg";
 
 const VARIANTS: Record<Variant, string> = {
   primary:
-    "bg-brand text-canvas font-semibold hover:bg-brand-bright shadow-[0_0_20px_-6px] shadow-brand/50",
+    "bg-violet-600 text-white hover:bg-violet-500 active:bg-violet-700 shadow-[0_1px_2px_rgb(76_29_149/0.3)]",
   secondary:
-    "bg-raised text-ink border border-line-bright hover:bg-overlay hover:border-line-bright",
-  ghost: "text-ink-dim hover:text-ink hover:bg-raised",
-  danger:
-    "bg-rose-500/10 text-rose-300 border border-rose-500/30 hover:bg-rose-500/20",
+    "border border-line bg-white text-ink-800 hover:bg-cream hover:border-zinc-300",
+  ghost: "text-ink-700 hover:bg-zinc-100",
+  danger: "bg-red-600 text-white hover:bg-red-500 active:bg-red-700",
+  dark: "border border-white/15 bg-white/5 text-white hover:bg-white/10",
 };
 
 const SIZES: Record<Size, string> = {
-  sm: "h-8 px-3 text-xs rounded-lg gap-1.5",
-  md: "h-10 px-4 text-sm rounded-xl gap-2",
-  lg: "h-12 px-6 text-base rounded-xl gap-2",
+  sm: "h-8 px-3 text-[13px] gap-1.5",
+  md: "h-10 px-4.5 text-sm gap-2",
+  lg: "h-12 px-6 text-[15px] gap-2",
 };
 
-export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
+export interface ButtonProps
+  extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: Variant;
   size?: Size;
+  loading?: boolean;
+  href?: string;
 }
 
-export function Button({
-  className,
-  variant = "primary",
-  size = "md",
-  ...props
-}: ButtonProps) {
-  return (
-    <button
-      className={cn(
-        "inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors",
-        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand",
-        "disabled:pointer-events-none disabled:opacity-50",
-        VARIANTS[variant],
-        SIZES[size],
-        className,
-      )}
-      {...props}
-    />
-  );
-}
-
-/** Same look as Button, for <Link>/<a> children. */
-export function buttonClasses(variant: Variant = "primary", size: Size = "md") {
-  return cn(
-    "inline-flex items-center justify-center whitespace-nowrap font-medium transition-colors",
-    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand",
-    VARIANTS[variant],
-    SIZES[size],
-  );
-}
+export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
+  function Button(
+    { className, variant = "primary", size = "md", loading, href, children, disabled, ...props },
+    ref
+  ) {
+    const classes = cn(
+      "inline-flex select-none items-center justify-center rounded-full font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50",
+      VARIANTS[variant],
+      SIZES[size],
+      className
+    );
+    if (href && !disabled) {
+      return (
+        <Link href={href} className={classes}>
+          {children}
+        </Link>
+      );
+    }
+    return (
+      <button
+        ref={ref}
+        className={classes}
+        disabled={disabled || loading}
+        {...props}
+      >
+        {loading && <Loader2 className="size-4 animate-spin" aria-hidden />}
+        {children}
+      </button>
+    );
+  }
+);

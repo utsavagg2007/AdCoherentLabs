@@ -1,67 +1,172 @@
 @import "tailwindcss";
 
+/* ------------------------------------------------------------------ tokens */
+
 @theme {
-  --color-canvas: #070b10;
-  --color-surface: #0c121a;
-  --color-raised: #111a24;
-  --color-overlay: #16202c;
-  --color-line: #1b2531;
-  --color-line-bright: #2b3a4b;
-  --color-ink: #e8eef5;
-  --color-ink-dim: #93a3b4;
-  --color-ink-faint: #5d6d7e;
-  --color-brand: #34d399;
-  --color-brand-bright: #6ee7b7;
-  --color-brand-deep: #059669;
+  /* brand neutrals — near-black navy "ink" for dark surfaces */
+  --color-ink-950: #05060a;
+  --color-ink-900: #090b12;
+  --color-ink-850: #0c0f17;
+  --color-ink-800: #10131d;
+  --color-ink-700: #161a27;
+  --color-ink-600: #1f2434;
+  --color-ink-500: #2a3044;
 
-  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  /* warm light surfaces */
+  --color-paper: #faf9f7;
+  --color-cream: #f3f2ee;
+  --color-line: #e8e6e1;
 
-  --animate-fade-up: fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
-  --animate-pulse-soft: pulse-soft 2s ease-in-out infinite;
+  /* typography */
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, -apple-system,
+    "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, "Cascadia Code", "Source Code Pro", Menlo, monospace;
+
+  /* shadows */
+  --shadow-soft: 0 1px 2px rgb(16 18 24 / 0.04), 0 8px 24px -8px rgb(16 18 24 / 0.1);
+  --shadow-float: 0 2px 6px rgb(16 18 24 / 0.05), 0 24px 48px -16px rgb(16 18 24 / 0.18);
+  --shadow-hud: 0 0 0 1px rgb(139 92 246 / 0.12), 0 12px 40px -12px rgb(3 4 8 / 0.6);
+
+  /* motion */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --animate-fade-up: fade-up 0.7s var(--ease-out-expo) both;
+  --animate-fade-in: fade-in 0.6s ease both;
+  --animate-pulse-dot: pulse-dot 2.4s ease-in-out infinite;
 
   @keyframes fade-up {
-    from {
-      opacity: 0;
-      transform: translateY(14px);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0);
-    }
+    from { opacity: 0; transform: translateY(14px); }
+    to { opacity: 1; transform: translateY(0); }
   }
+  @keyframes fade-in {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes pulse-dot {
+    0%, 100% { opacity: 0.45; }
+    50% { opacity: 1; }
+  }
+}
 
-  @keyframes pulse-soft {
-    0%,
-    100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.45;
-    }
-  }
+/* ------------------------------------------------------------------ base */
+
+:root {
+  color-scheme: light;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
 }
 
 body {
-  background-color: var(--color-canvas);
-  color: var(--color-ink);
+  background: var(--color-paper);
+  color: #14161d;
   font-family: var(--font-sans);
+  font-feature-settings: "cv05", "ss01";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 ::selection {
-  background-color: color-mix(in srgb, var(--color-brand) 30%, transparent);
+  background: rgb(139 92 246 / 0.25);
 }
 
-/* Thin, dark scrollbars to match the shell */
+/* accessible focus — visible everywhere, brand-colored */
+:focus-visible {
+  outline: 2px solid #8b5cf6;
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* dark sections invert the focus halo for contrast */
+[data-surface="dark"] :focus-visible {
+  outline-color: #a78bfa;
+}
+
+/* subtle scrollbars */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--color-line-bright) transparent;
+  scrollbar-color: rgb(120 120 135 / 0.35) transparent;
 }
 
-/* Subtle grid backdrop used on the marketing hero */
-.bg-grid {
-  background-image:
-    linear-gradient(to right, color-mix(in srgb, var(--color-line) 55%, transparent) 1px, transparent 1px),
-    linear-gradient(to bottom, color-mix(in srgb, var(--color-line) 55%, transparent) 1px, transparent 1px);
-  background-size: 44px 44px;
+/* ------------------------------------------------------------------ layers */
+
+@layer components {
+  .container-page {
+    @apply mx-auto w-full max-w-6xl px-5 sm:px-8;
+  }
+  .container-wide {
+    @apply mx-auto w-full max-w-7xl px-5 sm:px-8;
+  }
+
+  .eyebrow {
+    @apply text-[11px] font-bold uppercase tracking-[0.22em];
+  }
+
+  .card {
+    @apply rounded-2xl border border-line bg-white shadow-(--shadow-soft);
+  }
+
+  .hairline-b {
+    @apply border-b border-line;
+  }
+
+  /* glass — used sparingly: hero HUD, floating report chrome, overlays */
+  .glass-dark {
+    background: rgb(13 15 24 / 0.62);
+    backdrop-filter: blur(14px) saturate(1.2);
+    -webkit-backdrop-filter: blur(14px) saturate(1.2);
+    border: 1px solid rgb(148 132 226 / 0.16);
+  }
+  .glass-light {
+    background: rgb(255 255 255 / 0.78);
+    backdrop-filter: blur(14px) saturate(1.15);
+    -webkit-backdrop-filter: blur(14px) saturate(1.15);
+    border: 1px solid rgb(20 22 29 / 0.08);
+  }
+
+  .btn-primary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full bg-violet-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-violet-500 active:bg-violet-700 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-secondary {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-line bg-white px-5 py-2.5 text-sm font-semibold text-ink-800 transition-colors hover:border-zinc-300 hover:bg-cream disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-ghost-dark {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border border-white/15 bg-white/5 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-white/10 disabled:opacity-50;
+  }
+
+  .input {
+    @apply w-full rounded-xl border border-line bg-white px-3.5 py-2.5 text-sm text-ink-800 placeholder:text-zinc-400 focus:border-violet-400 focus:outline-none focus:ring-2 focus:ring-violet-500/25 disabled:cursor-not-allowed disabled:bg-cream;
+  }
+
+  .label {
+    @apply mb-1.5 block text-[13px] font-semibold text-ink-700;
+  }
+}
+
+@layer utilities {
+  .text-balance { text-wrap: balance; }
+  .text-pretty { text-wrap: pretty; }
+
+  /* faint dotted grid for empty states / panels */
+  .bg-grid-faint {
+    background-image: radial-gradient(rgb(20 22 29 / 0.06) 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+  .bg-grid-faint-dark {
+    background-image: radial-gradient(rgb(255 255 255 / 0.05) 1px, transparent 1px);
+    background-size: 22px 22px;
+  }
+
+  /* thin gradient hairline used between dark and light bands */
+  .seam-violet {
+    background: linear-gradient(90deg, transparent, rgb(139 92 246 / 0.5), transparent);
+  }
+
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+  .no-scrollbar { scrollbar-width: none; }
 }

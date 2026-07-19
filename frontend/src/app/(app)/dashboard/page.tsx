@@ -1,200 +1,392 @@
+"use client";
+
 import Link from "next/link";
-import { ArrowUpRight, FileWarning, Layers, Inbox, Percent } from "lucide-react";
-import { requireContext, getDashboardData } from "@/lib/data";
-import { PageHeader } from "@/components/page-header";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Table, TBody, TD, TH, THead, TR } from "@/components/ui/table";
-import { RunStatusBadge, SeverityBadge, VerdictBadge } from "@/components/badges";
-import { QuotaMeter } from "@/components/quota-meter";
-import { buttonClasses } from "@/components/ui/button";
-import { timeAgo } from "@/lib/utils";
+import {
+  ArrowRight,
+  CircleDollarSign,
+  FileSearch2,
+  Gauge,
+  Scale,
+  ScanSearch,
+  ShieldCheck,
+  SquarePlus,
+} from "lucide-react";
+import { PageBody, PageHeader } from "@/components/app/page-header";
+import { useApi, useOrg } from "@/components/providers";
+import { Button } from "@/components/ui/button";
+import {
+  RunStatusBadge,
+  SeverityBadge,
+  SeverityDot,
+} from "@/components/ui/badge";
+import {
+  Disclaimer,
+  EmptyState,
+  ErrorPanel,
+  Skeleton,
+} from "@/components/ui/feedback";
+import { useAsyncData } from "@/lib/hooks";
+import { frameworkLabel } from "@/lib/labels";
+import { ACTIVE_RUN_STATUSES, type Severity } from "@/lib/types";
+import { formatNumber, timeAgo, truncate } from "@/lib/utils";
 
-export const metadata = { title: "Dashboard" };
+const REVIEW_STEPS = [
+  {
+    icon: ScanSearch,
+    title: "Extract",
+    text: "OCR and vision turn the creative into structured evidence.",
+  },
+  {
+    icon: FileSearch2,
+    title: "Identify",
+    text: "NLP finds every claim, qualifier, and disclosure.",
+  },
+  {
+    icon: Scale,
+    title: "Ground",
+    text: "The AI review cites the regulation text it relied on.",
+  },
+  {
+    icon: ShieldCheck,
+    title: "Verify",
+    text: "Deterministic checks audit the review before you see it.",
+  },
+];
 
-export default async function DashboardPage() {
-  const ctx = await requireContext();
-  const data = await getDashboardData(ctx.org.id);
-  const openTotal =
-    data.openBySeverity.high + data.openBySeverity.medium + data.openBySeverity.low;
+export default function DashboardPage() {
+  const api = useApi();
+  const { orgId, orgName } = useOrg();
+
+  const orgMe = useAsyncData((s) => api.orgMe(s), [api, orgId]);
+  const runs = useAsyncData((s) => api.listRuns({ limit: 25 }, s), [api, orgId]);
+  const findings = useAsyncData(
+    (s) => api.listFindings({ status: "open", limit: 200 }, s),
+    [api, orgId]
+  );
+  const submissions = useAsyncData(
+    (s) => api.listSubmissions(null, 8, s),
+    [api, orgId]
+  );
+
+  const credits = orgMe.data?.credits ?? null;
+  const activeRuns =
+    runs.data?.runs.filter((r) =>
+      (ACTIVE_RUN_STATUSES as string[]).includes(r.status)
+    ) ?? [];
+  const humanReview =
+    runs.data?.runs.filter((r) => r.status === "human_review") ?? [];
+
+  const bySeverity: Record<Severity, number> = { high: 0, medium: 0, low: 0 };
+  for (const f of findings.data?.findings ?? []) {
+    if (f.severity in bySeverity) bySeverity[f.severity] += 1;
+  }
+  const openTotal = bySeverity.high + bySeverity.medium + bySeverity.low;
+
+  const isBrandNew =
+    !runs.loading &&
+    !submissions.loading &&
+    (runs.data?.runs.length ?? 0) === 0 &&
+    (submissions.data?.submissions.length ?? 0) === 0;
+
+  const firstError = orgMe.error || runs.error;
 
   return (
     <>
       <PageHeader
-        title={`Good to see you`}
-        description={`${ctx.org.name} · ${ctx.quota.tier} plan · ${ctx.quota.model}`}
-      >
-        <Link href="/submissions/new" className={buttonClasses("primary", "sm")}>
-          New submission <ArrowUpRight size={14} />
-        </Link>
-      </PageHeader>
-
-      {/* Stat cards */}
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Card>
-          <CardHeader className="flex-row items-center justify-between">
-            <CardTitle className="text-ink-dim">Submissions</CardTitle>
-            <Inbox size={15} className="text-ink-faint" />
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-semibold tracking-tight">
-              {data.submissionsCount}
-            </p>
-            <p className="mt-1 text-[11px] text-ink-faint">
-              campaigns & asset bundles reviewed
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex-row items-center justify-between">
-            <CardTitle className="text-ink-dim">Runs in flight</CardTitle>
-            <Layers size={15} className="text-ink-faint" />
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-semibold tracking-tight">
-              {data.activeRuns}
-            </p>
-            <p className="mt-1 text-[11px] text-ink-faint">
-              queued or moving through the four layers
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex-row items-center justify-between">
-            <CardTitle className="text-ink-dim">Open findings</CardTitle>
-            <FileWarning size={15} className="text-ink-faint" />
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-semibold tracking-tight">{openTotal}</p>
-            <div className="mt-2 flex gap-3 text-[11px]">
-              <span className="text-rose-300">{data.openBySeverity.high} high</span>
-              <span className="text-amber-300">{data.openBySeverity.medium} med</span>
-              <span className="text-sky-300">{data.openBySeverity.low} low</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex-row items-center justify-between">
-            <CardTitle className="text-ink-dim">Compliance rate</CardTitle>
-            <Percent size={15} className="text-ink-faint" />
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-semibold tracking-tight">
-              {data.complianceRate == null ? "—" : `${data.complianceRate}%`}
-            </p>
-            <p className="mt-1 text-[11px] text-ink-faint">
-              of recent findings judged compliant or approved
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      <div className="mt-6 grid gap-4 lg:grid-cols-3">
-        {/* Recent runs */}
-        <Card className="lg:col-span-2">
-          <CardHeader className="flex-row items-center justify-between">
-            <CardTitle>Recent analysis runs</CardTitle>
-            <Link
-              href="/reports"
-              className="text-[11px] text-ink-faint hover:text-ink"
-            >
-              View all →
-            </Link>
-          </CardHeader>
-          <CardContent className="px-0 pb-2">
-            <Table>
-              <THead>
-                <TR className="hover:bg-transparent">
-                  <TH>Submission</TH>
-                  <TH>Status</TH>
-                  <TH>Findings</TH>
-                  <TH className="text-right">When</TH>
-                </TR>
-              </THead>
-              <TBody>
-                {data.recentRuns.length === 0 && (
-                  <TR>
-                    <TD colSpan={4} className="py-10 text-center text-ink-faint">
-                      No runs yet — upload your first creative.
-                    </TD>
-                  </TR>
-                )}
-                {data.recentRuns.map((run) => (
-                  <TR key={run.id}>
-                    <TD>
-                      <Link
-                        href={`/runs/${run.id}`}
-                        className="font-medium text-ink hover:text-brand"
-                      >
-                        {run.submissionTitle}
-                      </Link>
-                      <p className="mt-0.5 font-mono text-[10px] text-ink-faint">
-                        {run.model_id ?? "model pending"}
-                      </p>
-                    </TD>
-                    <TD>
-                      <RunStatusBadge status={run.status} />
-                    </TD>
-                    <TD className="font-mono text-xs">{run.findingsCount}</TD>
-                    <TD className="text-right text-xs text-ink-faint">
-                      {timeAgo(run.created_at)}
-                    </TD>
-                  </TR>
-                ))}
-              </TBody>
-            </Table>
-          </CardContent>
-        </Card>
-
-        {/* Right column: quota + open findings */}
-        <div className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Quota</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <QuotaMeter quota={ctx.quota} />
-              <Link
-                href="/billing"
-                className="block text-[11px] text-ink-faint hover:text-ink"
-              >
-                Manage plan →
-              </Link>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Needs your review</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {data.recentFindings.length === 0 && (
-                <p className="py-4 text-center text-xs text-ink-faint">
-                  No open findings. Clean queue.
+        title="Dashboard"
+        description={orgName ? `Compliance review activity for ${orgName}.` : undefined}
+        actions={
+          <Button href="/submissions/new">
+            <SquarePlus className="size-4" aria-hidden />
+            New review
+          </Button>
+        }
+      />
+      <PageBody>
+        {firstError ? (
+          <ErrorPanel
+            error={firstError}
+            onRetry={() => {
+              orgMe.refresh();
+              runs.refresh();
+              findings.refresh();
+              submissions.refresh();
+            }}
+          />
+        ) : (
+          <div className="space-y-6">
+            {/* stat row */}
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+              {/* credits */}
+              <div className="card p-4">
+                <p className="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-zinc-400 uppercase">
+                  <CircleDollarSign className="size-3.5" aria-hidden />
+                  Credit balance
                 </p>
-              )}
-              {data.recentFindings.map((f) => (
+                {orgMe.loading ? (
+                  <Skeleton className="mt-2 h-8 w-24" />
+                ) : (
+                  <>
+                    <p className="mt-1.5 text-3xl font-extrabold text-ink-900 tabular-nums">
+                      {formatNumber(credits?.total)}
+                    </p>
+                    <p className="mt-1 text-[12px] text-zinc-400 tabular-nums">
+                      {formatNumber(credits?.subscription_credits)} subscription
+                      · {formatNumber(credits?.purchased_credits)} purchased
+                    </p>
+                  </>
+                )}
                 <Link
-                  key={f.id}
-                  href={`/runs/${f.run_id}`}
-                  className="block rounded-xl border border-line bg-raised/50 p-3 transition-colors hover:border-line-bright"
+                  href="/billing"
+                  className="mt-3 inline-flex items-center gap-1 text-[12.5px] font-bold text-violet-700 hover:text-violet-900"
                 >
-                  <div className="flex items-center gap-2">
-                    <SeverityBadge severity={f.severity} />
-                    <VerdictBadge verdict={f.verdict} />
-                  </div>
-                  <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-ink-dim">
-                    <span className="font-medium text-ink">{f.framework}</span>
-                    {f.rule_ref ? ` · ${f.rule_ref}` : ""} — {f.message}
-                  </p>
+                  Manage credits
+                  <ArrowRight className="size-3.5" aria-hidden />
                 </Link>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+              </div>
+
+              {/* plan */}
+              <div className="card p-4">
+                <p className="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-zinc-400 uppercase">
+                  <Gauge className="size-3.5" aria-hidden />
+                  Plan
+                </p>
+                {orgMe.loading ? (
+                  <Skeleton className="mt-2 h-8 w-24" />
+                ) : (
+                  <>
+                    <p className="mt-1.5 text-3xl font-extrabold text-ink-900 capitalize">
+                      {orgMe.data?.tier}
+                    </p>
+                    <p className="mt-1 text-[12px] text-zinc-400">
+                      {orgMe.data?.entitlements.credits_per_month != null
+                        ? `${formatNumber(orgMe.data.entitlements.credits_per_month)} credits / month`
+                        : "Custom credit provisioning"}
+                      {" · "}
+                      {orgMe.data?.entitlements.max_upload_mb ?? 10} MB uploads
+                    </p>
+                  </>
+                )}
+                <Link
+                  href="/billing"
+                  className="mt-3 inline-flex items-center gap-1 text-[12.5px] font-bold text-violet-700 hover:text-violet-900"
+                >
+                  View plan
+                  <ArrowRight className="size-3.5" aria-hidden />
+                </Link>
+              </div>
+
+              {/* active runs */}
+              <div className="card p-4">
+                <p className="text-[11px] font-bold tracking-wider text-zinc-400 uppercase">
+                  Active runs
+                </p>
+                {runs.loading ? (
+                  <Skeleton className="mt-2 h-8 w-16" />
+                ) : (
+                  <>
+                    <p className="mt-1.5 text-3xl font-extrabold text-ink-900 tabular-nums">
+                      {activeRuns.length}
+                    </p>
+                    <p className="mt-1 text-[12px] text-zinc-400">
+                      {humanReview.length > 0 ? (
+                        <span className="font-bold text-amber-700">
+                          {humanReview.length} awaiting human review
+                        </span>
+                      ) : (
+                        "in the four-layer pipeline"
+                      )}
+                    </p>
+                  </>
+                )}
+                <Link
+                  href="/reports"
+                  className="mt-3 inline-flex items-center gap-1 text-[12.5px] font-bold text-violet-700 hover:text-violet-900"
+                >
+                  Run history
+                  <ArrowRight className="size-3.5" aria-hidden />
+                </Link>
+              </div>
+
+              {/* open findings */}
+              <div className="card p-4">
+                <p className="text-[11px] font-bold tracking-wider text-zinc-400 uppercase">
+                  Open findings
+                </p>
+                {findings.loading ? (
+                  <Skeleton className="mt-2 h-8 w-16" />
+                ) : (
+                  <>
+                    <p className="mt-1.5 text-3xl font-extrabold text-ink-900 tabular-nums">
+                      {openTotal}
+                    </p>
+                    <div className="mt-1.5 flex items-center gap-3 text-[12px] font-semibold text-zinc-500 tabular-nums">
+                      <span className="inline-flex items-center gap-1">
+                        <SeverityDot severity="high" /> {bySeverity.high}
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <SeverityDot severity="medium" /> {bySeverity.medium}
+                      </span>
+                      <span className="inline-flex items-center gap-1">
+                        <SeverityDot severity="low" /> {bySeverity.low}
+                      </span>
+                    </div>
+                  </>
+                )}
+                <Link
+                  href="/reports?tab=findings"
+                  className="mt-3 inline-flex items-center gap-1 text-[12.5px] font-bold text-violet-700 hover:text-violet-900"
+                >
+                  Review queue
+                  <ArrowRight className="size-3.5" aria-hidden />
+                </Link>
+              </div>
+            </div>
+
+            {isBrandNew ? (
+              <div className="card bg-grid-faint p-8 sm:p-10">
+                <div className="mx-auto max-w-2xl text-center">
+                  <h2 className="text-xl font-extrabold tracking-tight text-ink-900">
+                    Run your first compliance review
+                  </h2>
+                  <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-zinc-500">
+                    Paste ad copy or upload a creative. Four layers do the rest
+                    — and every finding arrives with its evidence.
+                  </p>
+                </div>
+                <div className="mx-auto mt-8 grid max-w-3xl gap-4 sm:grid-cols-4">
+                  {REVIEW_STEPS.map((s, i) => {
+                    const Icon = s.icon;
+                    return (
+                      <div key={s.title} className="text-center">
+                        <div className="mx-auto flex size-11 items-center justify-center rounded-2xl border border-violet-200 bg-violet-50 text-violet-600">
+                          <Icon className="size-5" aria-hidden />
+                        </div>
+                        <p className="mt-2.5 text-[13px] font-bold text-ink-900">
+                          {i + 1}. {s.title}
+                        </p>
+                        <p className="mt-1 text-[12px] leading-relaxed text-zinc-500">
+                          {s.text}
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="mt-8 flex justify-center">
+                  <Button href="/submissions/new" size="lg">
+                    Start a review
+                    <ArrowRight className="size-4" aria-hidden />
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
+                {/* recent runs */}
+                <section aria-label="Recent runs" className="card overflow-hidden">
+                  <div className="flex items-center justify-between border-b border-line px-4 py-3">
+                    <h2 className="text-[13px] font-extrabold tracking-wide text-ink-900 uppercase">
+                      Recent runs
+                    </h2>
+                    <Link
+                      href="/reports"
+                      className="text-[12.5px] font-bold text-violet-700 hover:text-violet-900"
+                    >
+                      View all
+                    </Link>
+                  </div>
+                  {runs.loading ? (
+                    <div className="space-y-3 p-4">
+                      <Skeleton className="h-10" />
+                      <Skeleton className="h-10" />
+                      <Skeleton className="h-10" />
+                    </div>
+                  ) : (runs.data?.runs.length ?? 0) === 0 ? (
+                    <div className="p-4">
+                      <EmptyState
+                        title="No runs yet"
+                        description="Submit a creative to start your first review."
+                      />
+                    </div>
+                  ) : (
+                    <ul className="divide-y divide-line">
+                      {runs.data!.runs.slice(0, 6).map((r) => (
+                        <li key={r.id}>
+                          <Link
+                            href={`/runs/${r.id}`}
+                            className="flex items-center gap-4 px-4 py-3 transition-colors hover:bg-cream/70"
+                          >
+                            <span className="min-w-0 flex-1">
+                              <span className="block truncate font-mono text-[12px] font-semibold text-ink-800">
+                                {r.id.slice(0, 8)}
+                              </span>
+                              <span className="mt-0.5 block text-[11.5px] text-zinc-400">
+                                {timeAgo(r.created_at)} · {r.tier}
+                              </span>
+                            </span>
+                            <RunStatusBadge status={r.status} />
+                            <ArrowRight className="size-4 text-zinc-300" aria-hidden />
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
+
+                {/* recent findings */}
+                <section aria-label="Recent findings" className="card overflow-hidden">
+                  <div className="flex items-center justify-between border-b border-line px-4 py-3">
+                    <h2 className="text-[13px] font-extrabold tracking-wide text-ink-900 uppercase">
+                      Recent open findings
+                    </h2>
+                    <Link
+                      href="/reports?tab=findings"
+                      className="text-[12.5px] font-bold text-violet-700 hover:text-violet-900"
+                    >
+                      Queue
+                    </Link>
+                  </div>
+                  {findings.loading ? (
+                    <div className="space-y-3 p-4">
+                      <Skeleton className="h-12" />
+                      <Skeleton className="h-12" />
+                    </div>
+                  ) : (findings.data?.findings.length ?? 0) === 0 ? (
+                    <div className="p-4">
+                      <EmptyState
+                        title="No open findings"
+                        description="Findings from completed reviews appear here for triage."
+                      />
+                    </div>
+                  ) : (
+                    <ul className="divide-y divide-line">
+                      {findings.data!.findings.slice(0, 6).map((f) => (
+                        <li key={f.id}>
+                          <Link
+                            href={`/runs/${f.run_id}`}
+                            className="block px-4 py-3 transition-colors hover:bg-cream/70"
+                          >
+                            <div className="flex items-center gap-2">
+                              <SeverityBadge severity={f.severity} />
+                              <span className="truncate text-[11.5px] font-semibold text-zinc-400">
+                                {frameworkLabel(f.framework)}
+                              </span>
+                            </div>
+                            <p className="mt-1.5 line-clamp-2 text-[13px] leading-snug text-ink-800">
+                              {truncate(f.message, 140)}
+                            </p>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
+              </div>
+            )}
+
+            <Disclaimer />
+          </div>
+        )}
+      </PageBody>
     </>
   );
 }

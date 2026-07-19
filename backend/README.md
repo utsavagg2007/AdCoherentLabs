@@ -16,18 +16,22 @@ first, then regenerate the backend env from the rotated values:
 
 ```powershell
 python supabase\harden.py          # rotates JWT/DB/API secrets, loopback-binds ports
-python scripts\sync_env.py         # regenerates root/.env, rag-engine/.env, backend/.env
+python scripts\sync_env.py         # regenerates the single root .env (backend+engine)
                                    # from the stack .env + the password the DB ACTUALLY
                                    # accepts (warns loudly if a rotation is half-applied)
 python -m engine.cli saas-selftest # confirm the data plane still passes
 ```
 
-`scripts/sync_env.py` is the single source of truth for every derived env file
-(`backend/scripts/gen_env.py` is now a thin `--only backend` shim over it). Run
-it after any secret rotation — it probes the DB so a partial rotation surfaces
-as a warning instead of silently breaking retrieval.
+**The project has exactly two env files:** the root `.env` (the WHOLE backend +
+engine) and `frontend/.env.local` (the Next.js app). `scripts/sync_env.py`
+regenerates both from the stack `.env`; it probes the DB so a partial rotation
+surfaces as a warning instead of silently breaking retrieval. Inside containers
+the host `127.0.0.1` endpoints are swapped for `supabase-db`/`supabase-kong`/
+`redis` by `backend/docker-entrypoint.sh` (APP_IN_CONTAINER=1) — so there is no
+`backend/.env` and no compose `${...}` interpolation. `backend/scripts/gen_env.py`
+is a deprecated alias for `sync_env.py --only root`.
 
-`gen_env.py` **refuses** to write an env from default secrets (override for
+`sync_env.py` **refuses** to write an env from default secrets (override for
 throwaway dev only with `--allow-defaults`). The API refuses to boot in
 `APP_ENV=prod` with default secrets.
 
@@ -35,9 +39,8 @@ throwaway dev only with `--allow-defaults`). The API refuses to boot in
 
 ```powershell
 cd supabase; ./apply.sh; cd ..            # migrations 0001–0010 (idempotent)
-cd backend
-python scripts\gen_env.py                  # after harden.py (see P0)
-docker compose -f docker-compose.backend.yml up -d --build
+python scripts\sync_env.py                 # after harden.py (see P0) - writes the single .env
+docker compose -f backend\docker-compose.backend.yml up -d --build
 # api → http://127.0.0.1:8080 (healthz/readyz/docs)  ·  worker + scheduler headless
 ```
 
@@ -125,9 +128,11 @@ backend/
   worker/       # lease loop + executor (reuses engine.saas persistence) + provider breaker/semaphores
   scheduler/    # watchdog · alerts · cycle grants · idempotency purge ·
                 # retention (DRY-RUN default) · ledger reconcile · chain verify · stripe sweep
-  scripts/gen_env.py            # stack .env → backend/.env (post-harden)
+  docker-entrypoint.sh          # host 127.0.0.1 -> service names when APP_IN_CONTAINER=1
   tests/        # 43 tests incl. the two red-line gates
   Dockerfile · docker-compose.backend.yml · requirements.txt (pinned)
+../scripts/sync_env.py          # THE env tool: writes root .env + frontend/.env.local
+../.env                         # the single backend+engine env (gitignored)
 supabase/migrations/0008..0010  # credits · job queue · billing events
 supabase/tests/credit_race_test.py  # standalone red-line race test
 ```

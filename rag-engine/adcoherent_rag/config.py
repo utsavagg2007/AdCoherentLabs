@@ -8,7 +8,12 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent  # rag-engine/
-load_dotenv(PROJECT_ROOT / ".env")
+# Single consolidated env: the monorepo root .env (one level above rag-engine).
+# override=False so anything already exported (e.g. by engine/_paths, or by the
+# container entrypoint) wins. Falls back to rag-engine/.env for a standalone
+# checkout outside the monorepo.
+_ROOT_ENV = PROJECT_ROOT.parent / ".env"
+load_dotenv(_ROOT_ENV if _ROOT_ENV.exists() else PROJECT_ROOT / ".env")
 
 
 def _resolve_manifest_path() -> Path:

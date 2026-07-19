@@ -18,11 +18,11 @@ Every command below was verified on this machine on 2026-07-14.
 |---|---|
 | Supabase stack up (11 containers) | Docker Desktop running; stack auto-starts. Check: `docker ps` → `supabase-db … healthy`, `adcoherent-rag-db-proxy` present |
 | Backend containers (SaaS path) | `cd backend && docker compose -f docker-compose.backend.yml up -d` → `curl http://127.0.0.1:8080/readyz` → `{"ready":true,…}` |
-| **LLM provider key** (real reviews) | Put in the **root `.env`**: `OPENROUTER_API_KEY=` (free/hobby tiers → `qwen/qwen3.7-plus` / `qwen/qwen3.7-max`) and/or `ANTHROPIC_API_KEY=` (pro/design/enterprise → Claude). Then run `python scripts/sync_env.py` (propagates the key + DB creds into every env file) and `docker compose -f backend/docker-compose.backend.yml restart worker` |
-| **One command for all env files** | `python scripts/sync_env.py` regenerates root `.env`, `rag-engine/.env`, and `backend/.env` from the stack `.env` + the password the DB actually accepts. Run it after any `harden.py` rotation — it also warns if a rotation is half-applied |
+| **LLM provider key** (real reviews) | Put in the **root `.env`**: `OPENROUTER_API_KEY=` (free/hobby tiers → `qwen/qwen3.7-plus` / `qwen/qwen3.7-max`) and/or `ANTHROPIC_API_KEY=` (pro/design/enterprise → Claude). Then run `python scripts/sync_env.py` (propagates the key + DB creds into the single root `.env`) and `docker compose -f backend/docker-compose.backend.yml restart worker` |
+| **Only two env files** | the root `.env` (whole backend + engine) and `frontend/.env.local` (the app). `python scripts/sync_env.py` regenerates both from the stack `.env` + the password the DB actually accepts. Run it after any `harden.py` rotation — it also warns if a rotation is half-applied |
 | No key yet? | Everything still runs with `--stub-llm` (CLI) — a deterministic offline Layer 3. Zero spend, real Layers 1/2/4 |
 | RAG grounding | Already loaded: 11,061 regulation chunks in the local corpus. Without a DB the engine degrades loudly (empty retrieval → reviews lean on `needs_review`) |
-| Security note | Before anything leaves localhost: `python supabase/harden.py` then `python backend/scripts/gen_env.py` (spec P0; see `AUTH_AUDIT_AND_PLAN.md`) |
+| Security note | Before anything leaves localhost: `python supabase/harden.py` then `python scripts/sync_env.py` (spec P0; see `AUTH_AUDIT_AND_PLAN.md`) |
 
 The Python for all host commands is the working venv:
 `CV-RULE_ENG-NLP\.venv\Scripts\python.exe` (run from the repo root).
@@ -276,7 +276,7 @@ can't complete (you'll see `refund.system_failure` in the ledger).
 |---|---|
 | `402 insufficient_credits` | `GET /v1/credits`; free = 25/mo. Top up: change tier, buy a pack (paid tiers), or dev: `select app.adjust_credits_manual('<org>', 100, 'subscription', null, 'dev top-up');` |
 | Run stuck `queued` | worker container down? `docker compose -f backend/docker-compose.backend.yml up -d worker`. Provider breaker open (no/bad API key) keeps jobs queued — check `docker logs adcoherent-backend-worker-1` |
-| Run `failed`, ledger shows a refund | provider errors after 3 attempts (missing key, outage). Fix the key in `backend/.env`, restart worker, resubmit — the failed run cost you nothing |
+| Run `failed`, ledger shows a refund | provider errors after 3 attempts (missing key, outage). Fix the key in the root `.env` (re-run `python scripts/sync_env.py` if needed), restart worker, resubmit — the failed run cost you nothing |
 | `403 Confirm your email` | email confirmation is required (and ONLY email — see AUTH_AUDIT_AND_PLAN.md W2). Dev: the SQL confirm in §2.1 |
 | `401` with a fresh token | token expired (1 h) or minted by a different environment (issuer check) — re-login |
 | `429` | per-plan rate walls (`X-RateLimit-*` headers, `Retry-After`); free tier = 5 submissions/day |

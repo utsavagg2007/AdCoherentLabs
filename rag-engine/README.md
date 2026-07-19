@@ -21,7 +21,9 @@ re-scrape hashing) plugs into.
 cd rag-engine
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
-cp .env.example .env      # then set DATABASE_URL to your Supabase Postgres
+# Config comes from the ONE monorepo-root .env (this package loads ../.env).
+# Generate/refresh it with:  python ../scripts/sync_env.py
+# DATABASE_URL there points at the Supabase Postgres.
 ```
 
 Use a **direct connection** (not a transaction pooler): DDL and the psycopg

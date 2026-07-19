@@ -1,21 +1,26 @@
-import type { RunStatus, Severity, Verdict } from "./types";
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
 
-export function cn(...classes: Array<string | false | null | undefined>) {
-  return classes.filter(Boolean).join(" ");
+export function cn(...inputs: ClassValue[]) {
+  return twMerge(clsx(inputs));
 }
 
-export function formatDate(iso: string | null | undefined) {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleDateString("en-US", {
+export function formatDate(value: string | null | undefined): string {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString(undefined, {
     month: "short",
     day: "numeric",
     year: "numeric",
   });
 }
 
-export function formatDateTime(iso: string | null | undefined) {
-  if (!iso) return "—";
-  return new Date(iso).toLocaleString("en-US", {
+export function formatDateTime(value: string | null | undefined): string {
+  if (!value) return "—";
+  const d = new Date(value);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleString(undefined, {
     month: "short",
     day: "numeric",
     hour: "numeric",
@@ -23,80 +28,49 @@ export function formatDateTime(iso: string | null | undefined) {
   });
 }
 
-export function timeAgo(iso: string | null | undefined) {
-  if (!iso) return "—";
-  const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+export function timeAgo(value: string | null | undefined): string {
+  if (!value) return "—";
+  const then = new Date(value).getTime();
+  if (Number.isNaN(then)) return "—";
+  const s = Math.max(0, Math.floor((Date.now() - then) / 1000));
   if (s < 60) return "just now";
-  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
-  if (s < 86400) return `${Math.floor(s / 3600)}h ago`;
-  return `${Math.floor(s / 86400)}d ago`;
+  const m = Math.floor(s / 60);
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 30) return `${d}d ago`;
+  return formatDate(value);
 }
 
-export function formatCents(cents: number | null | undefined) {
-  if (cents == null) return "—";
-  return `$${(cents / 100).toFixed(2)}`;
+export function formatNumber(n: number | null | undefined): string {
+  if (n === null || n === undefined) return "—";
+  return n.toLocaleString();
 }
 
-export function formatTokens(n: number | null | undefined) {
-  if (n == null) return "—";
-  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
-  if (n >= 1_000) return `${(n / 1_000).toFixed(1)}k`;
-  return String(n);
-}
-
-export function runDuration(
-  started: string | null,
-  finished: string | null,
+/** Duration between two ISO timestamps, humanized. */
+export function formatDuration(
+  start: string | null | undefined,
+  end: string | null | undefined
 ): string {
-  if (!started || !finished) return "—";
-  const ms = new Date(finished).getTime() - new Date(started).getTime();
-  if (ms < 1000) return `${ms}ms`;
-  if (ms < 60_000) return `${(ms / 1000).toFixed(1)}s`;
-  return `${Math.floor(ms / 60_000)}m ${Math.round((ms % 60_000) / 1000)}s`;
+  if (!start || !end) return "—";
+  const ms = new Date(end).getTime() - new Date(start).getTime();
+  if (!Number.isFinite(ms) || ms < 0) return "—";
+  const s = Math.round(ms / 1000);
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  return `${m}m ${s % 60}s`;
 }
 
-export const RUN_STATUS_LABEL: Record<RunStatus, string> = {
-  queued: "Queued",
-  running_cv: "Layer 1 · CV",
-  running_nlp: "Layer 2 · NLP",
-  running_llm: "Layer 3 · LLM",
-  running_rules: "Layer 4 · Rules",
-  reconciling: "Reconciling",
-  complete: "Complete",
-  failed: "Failed",
-};
-
-export function isRunActive(status: RunStatus) {
-  return status !== "complete" && status !== "failed";
+export function truncate(text: string, max: number): string {
+  if (text.length <= max) return text;
+  return text.slice(0, max - 1).trimEnd() + "…";
 }
 
-export const SEVERITY_ORDER: Severity[] = ["high", "medium", "low"];
-
-export const SEVERITY_STYLE: Record<Severity, string> = {
-  high: "bg-rose-500/15 text-rose-300 border-rose-500/30",
-  medium: "bg-amber-500/15 text-amber-300 border-amber-500/30",
-  low: "bg-sky-500/15 text-sky-300 border-sky-500/30",
-};
-
-export const VERDICT_LABEL: Record<Verdict, string> = {
-  potential_violation: "Potential violation",
-  needs_review: "Needs review",
-  compliant: "Compliant",
-};
-
-export const VERDICT_STYLE: Record<Verdict, string> = {
-  potential_violation: "bg-rose-500/15 text-rose-300 border-rose-500/30",
-  needs_review: "bg-amber-500/15 text-amber-300 border-amber-500/30",
-  compliant: "bg-emerald-500/15 text-emerald-300 border-emerald-500/30",
-};
-
-export const FRAMEWORKS = [
-  "FTC",
-  "SEC",
-  "SEBI",
-  "RBI",
-  "GDPR",
-  "TILA",
-  "CFPB",
-  "Reg_DD",
-] as const;
+/** Stable idempotency key for a pending submission payload. */
+export function newIdempotencyKey(): string {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return `idem-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}

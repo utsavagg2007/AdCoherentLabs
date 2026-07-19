@@ -1,15 +1,11 @@
-"""Write backend/.env from the (rotated) Supabase stack .env — spec P0.
+"""Deprecated alias — the backend no longer has its own env file.
 
-    python backend/scripts/gen_env.py [--stack-dir C:\\Users\\HP\\supabase-project]
-                                      [--allow-defaults]
+The whole backend + engine now read the single repo-root ``.env``. Use:
 
-This is now a thin shim over ``scripts/sync_env.py --only backend`` — the single
-implementation that also regenerates the root and rag-engine env files and,
-critically, probes the database for the password it ACTUALLY accepts (a
-half-applied rotation is detected instead of silently breaking DB access).
-Prefer ``python scripts/sync_env.py`` to regenerate every env file at once.
+    python scripts/sync_env.py
 
-Prints fingerprints only — never secret values.
+This shim regenerates just the root ``.env`` (``--only root``) and stays for
+muscle-memory / older docs. Prints fingerprints only — never secret values.
 """
 
 from __future__ import annotations
@@ -29,7 +25,8 @@ def main() -> int:
     ap.add_argument("--stack-dir", type=Path, default=DEFAULT_STACK)
     ap.add_argument("--allow-defaults", action="store_true")
     args = ap.parse_args()
-    return run(args.stack_dir, only={"backend"}, allow_defaults=args.allow_defaults)
+    print("note: backend/scripts/gen_env.py is deprecated - use scripts/sync_env.py")
+    return run(args.stack_dir, only={"root"}, allow_defaults=args.allow_defaults)
 
 
 if __name__ == "__main__":

@@ -18,7 +18,10 @@ PROJECT_ROOT = BACKEND_ROOT.parent
 
 class Settings(BaseSettings):
     model_config = SettingsConfigDict(
-        env_file=(BACKEND_ROOT / ".env",),
+        # ONE env file for the whole backend + engine: the repo-root .env.
+        # In containers the process env (set by docker-entrypoint.sh) wins over
+        # this file, so the same file serves host and container.
+        env_file=(PROJECT_ROOT / ".env",),
         env_file_encoding="utf-8",
         extra="ignore",
         case_sensitive=False,

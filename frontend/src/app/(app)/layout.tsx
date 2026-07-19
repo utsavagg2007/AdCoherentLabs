@@ -1,95 +1,112 @@
-import Link from "next/link";
-import { LogOut, Plus } from "lucide-react";
-import { requireContext } from "@/lib/data";
-import { signOut } from "@/app/actions";
-import { Logo } from "@/components/logo";
-import { SidebarNav } from "@/components/shell/sidebar-nav";
-import { OrgSwitcher } from "@/components/shell/org-switcher";
-import { QuotaMeter } from "@/components/quota-meter";
-import { Badge } from "@/components/ui/badge";
-import { buttonClasses } from "@/components/ui/button";
+"use client";
 
-export default async function AppLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const ctx = await requireContext();
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { Menu, X } from "lucide-react";
+import * as DialogPrimitive from "@radix-ui/react-dialog";
+import { Logo } from "@/components/logo";
+import { AppProviders, useAuth, useOrg } from "@/components/providers";
+import { SidebarBody } from "@/components/app/sidebar";
+import { ToastProvider } from "@/components/ui/toast";
+import { PageLoading } from "@/components/ui/feedback";
+
+function Shell({ children }: { children: React.ReactNode }) {
+  const { session, loading, configured } = useAuth();
+  const { orgs, loadingOrgs } = useOrg();
+  const router = useRouter();
+  const pathname = usePathname();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  useEffect(() => {
+    if (loading) return;
+    if (!configured || !session) {
+      router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+    }
+  }, [loading, configured, session, router, pathname]);
+
+  useEffect(() => {
+    if (loading || loadingOrgs || !session) return;
+    if (orgs.length === 0) router.replace("/onboarding");
+  }, [loading, loadingOrgs, orgs.length, session, router]);
+
+  if (loading || !session || loadingOrgs) {
+    return (
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-6 bg-paper">
+        <Logo tone="dark" />
+        <PageLoading label="Opening your workspace" />
+      </div>
+    );
+  }
+
+  if (orgs.length === 0) {
+    return (
+      <div className="flex min-h-dvh items-center justify-center bg-paper">
+        <PageLoading label="Checking workspace access" />
+      </div>
+    );
+  }
 
   return (
-    <div className="flex min-h-screen">
-      {/* Sidebar */}
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-line bg-surface/50 p-4 md:flex">
-        <Link href="/dashboard" className="px-1 py-2">
-          <Logo />
+    <div className="min-h-dvh bg-paper">
+      {/* mobile top bar */}
+      <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-line bg-paper/90 px-4 backdrop-blur-sm lg:hidden">
+        <Link href="/dashboard" className="rounded-lg">
+          <Logo tone="dark" />
         </Link>
+        <DialogPrimitive.Root open={drawerOpen} onOpenChange={setDrawerOpen}>
+          <DialogPrimitive.Trigger
+            aria-label="Open navigation"
+            className="rounded-lg p-2 text-ink-900 hover:bg-zinc-100"
+          >
+            <Menu className="size-5" />
+          </DialogPrimitive.Trigger>
+          <DialogPrimitive.Portal>
+            <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-ink-950/50 backdrop-blur-sm data-[state=open]:animate-fade-in" />
+            <DialogPrimitive.Content className="fixed inset-y-0 left-0 z-50 flex w-[min(19rem,85vw)] flex-col bg-paper p-4 shadow-2xl focus:outline-none">
+              <DialogPrimitive.Title className="sr-only">
+                Navigation
+              </DialogPrimitive.Title>
+              <div className="mb-5 flex items-center justify-between px-1">
+                <Logo tone="dark" />
+                <DialogPrimitive.Close
+                  aria-label="Close navigation"
+                  className="rounded-lg p-2 text-zinc-500 hover:bg-zinc-100"
+                >
+                  <X className="size-5" />
+                </DialogPrimitive.Close>
+              </div>
+              <div className="flex min-h-0 flex-1 flex-col">
+                <SidebarBody onNavigate={() => setDrawerOpen(false)} />
+              </div>
+            </DialogPrimitive.Content>
+          </DialogPrimitive.Portal>
+        </DialogPrimitive.Root>
+      </header>
 
-        <div className="mt-4">
-          <OrgSwitcher org={ctx.org} orgs={ctx.orgs} />
-        </div>
-
-        <Link
-          href="/submissions/new"
-          className={`${buttonClasses("primary", "sm")} mt-4 w-full`}
-        >
-          <Plus size={14} /> New submission
-        </Link>
-
-        <div className="mt-5 flex-1 overflow-y-auto">
-          <SidebarNav />
-        </div>
-
-        <div className="space-y-4 border-t border-line pt-4">
-          <QuotaMeter quota={ctx.quota} />
-          <div className="flex items-center justify-between gap-2">
-            <div className="min-w-0">
-              <p className="truncate text-xs font-medium">{ctx.user.email}</p>
-              <p className="text-[10px] uppercase tracking-wider text-ink-faint">
-                {ctx.quota.tier} plan
-              </p>
-            </div>
-            <form action={signOut}>
-              <button
-                type="submit"
-                title="Sign out"
-                className="grid size-8 place-items-center rounded-lg text-ink-faint transition-colors hover:bg-raised hover:text-ink"
-              >
-                <LogOut size={14} />
-              </button>
-            </form>
-          </div>
-        </div>
-      </aside>
-
-      {/* Main */}
-      <div className="flex min-w-0 flex-1 flex-col">
-        {ctx.demo && (
-          <div className="border-b border-brand/20 bg-brand/5 px-5 py-2 text-center">
-            <p className="text-[11px] text-brand">
-              Demo mode — sample data, writes disabled. Connect Supabase to go
-              live (README.md).
-            </p>
-          </div>
-        )}
-        {/* Mobile top bar */}
-        <header className="flex h-14 items-center justify-between border-b border-line px-4 md:hidden">
-          <Link href="/dashboard">
-            <Logo />
+      <div className="lg:grid lg:grid-cols-[248px_1fr]">
+        {/* desktop sidebar */}
+        <aside className="sticky top-0 hidden h-dvh flex-col border-r border-line bg-paper px-3 py-5 lg:flex">
+          <Link href="/dashboard" className="mb-6 block rounded-lg px-2">
+            <Logo tone="dark" />
           </Link>
-          <div className="flex items-center gap-2">
-            <Badge>{ctx.org.name}</Badge>
-            <Link
-              href="/submissions/new"
-              className={buttonClasses("primary", "sm")}
-            >
-              <Plus size={14} />
-            </Link>
+          <div className="flex min-h-0 flex-1 flex-col">
+            <SidebarBody />
           </div>
-        </header>
-        <main className="flex-1 px-5 py-8 sm:px-8">
-          <div className="mx-auto w-full max-w-6xl">{children}</div>
-        </main>
+        </aside>
+
+        <main className="min-w-0 pb-16">{children}</main>
       </div>
     </div>
+  );
+}
+
+export default function AppLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <AppProviders>
+      <ToastProvider>
+        <Shell>{children}</Shell>
+      </ToastProvider>
+    </AppProviders>
   );
 }

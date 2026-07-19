@@ -134,8 +134,11 @@ python -m venv .venv
 .venv\Scripts\python -m spacy download en_core_web_sm   # optional, better NER
 ```
 
-Configuration: `copy .env.example .env` at the **project root** and fill what
-you need (the engine loads the root `.env` first, then each repo's own):
+Configuration: there is ONE env file for the whole backend + engine — the
+**project-root `.env`** (regenerate it with `python scripts/sync_env.py`; the
+frontend has its own `frontend/.env.local`). Every layer and the RAG store read
+this single file — `engine/_paths.py`, `rag-engine`'s and CV's config all load
+it. Fill what you need:
 
 | variable | needed for | notes |
 |---|---|---|

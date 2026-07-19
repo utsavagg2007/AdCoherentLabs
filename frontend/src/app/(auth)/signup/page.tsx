@@ -1,117 +1,188 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
-import { isDemoMode } from "@/lib/env";
+import { useState } from "react";
+import { Eye, EyeOff, MailCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input, Label } from "@/components/ui/input";
-import { DemoNotice } from "@/components/auth/demo-notice";
+import { getSupabase, supabaseConfigured } from "@/lib/supabase";
 
 export default function SignupPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [pending, setPending] = useState(false);
+  const [confirm, setConfirm] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [done, setDone] = useState(false);
+  const configured = supabaseConfigured();
 
-  if (isDemoMode) {
+  const pwTooShort = password.length > 0 && password.length < 8;
+  const mismatch = confirm.length > 0 && confirm !== password;
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!configured || pwTooShort || password !== confirm) return;
+    setBusy(true);
+    setError(null);
+    const { data, error } = await getSupabase().auth.signUp({
+      email: email.trim(),
+      password,
+      options: {
+        emailRedirectTo:
+          typeof window !== "undefined"
+            ? `${window.location.origin}/login`
+            : undefined,
+      },
+    });
+    setBusy(false);
+    if (error) {
+      setError(error.message);
+      return;
+    }
+    // Supabase returns an obfuscated user for existing addresses — the copy
+    // stays neutral so account existence is never revealed.
+    if (data.user && !data.session) {
+      setDone(true);
+    } else if (data.session) {
+      window.location.assign("/onboarding");
+    } else {
+      setDone(true);
+    }
+  }
+
+  if (done) {
     return (
-      <div className="space-y-5">
-        <Heading />
-        <DemoNotice />
+      <div className="text-center">
+        <div className="mx-auto flex size-14 items-center justify-center rounded-2xl border border-violet-200 bg-violet-50 text-violet-600">
+          <MailCheck className="size-6" aria-hidden />
+        </div>
+        <h1 className="mt-5 text-2xl font-extrabold tracking-tight text-ink-900">
+          Check your email
+        </h1>
+        <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-zinc-500">
+          If an account can be created for{" "}
+          <span className="font-semibold text-ink-800">{email}</span>, a
+          confirmation link is on its way. Confirm it, then sign in.
+        </p>
+        <Button href="/login" variant="secondary" className="mt-7">
+          Back to sign in
+        </Button>
       </div>
     );
   }
 
-  async function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    setPending(true);
-    setError(null);
-    const supabase = createClient();
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        emailRedirectTo: `${window.location.origin}/auth/callback?next=/onboarding`,
-      },
-    });
-    if (error) {
-      setError(error.message);
-      setPending(false);
-      return;
-    }
-    // Email verification is required before analysis features (Phase 3).
-    if (data.user && !data.session) {
-      router.push(`/verify-email?email=${encodeURIComponent(email)}`);
-    } else {
-      router.push("/onboarding");
-      router.refresh();
-    }
-  }
-
   return (
-    <div className="space-y-5">
-      <Heading />
-      <form onSubmit={onSubmit} className="space-y-4">
-        <div className="space-y-1.5">
-          <Label htmlFor="email">Work email</Label>
-          <Input
+    <div>
+      <h1 className="text-2xl font-extrabold tracking-tight text-ink-900">
+        Create your account
+      </h1>
+      <p className="mt-1.5 text-sm text-zinc-500">
+        Start on the Free plan — 25 credits monthly, no card required.
+      </p>
+
+      {!configured && (
+        <div role="alert" className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-3.5 text-[13px] leading-relaxed text-amber-900">
+          Authentication isn&apos;t configured. Set the Supabase environment
+          variables, then restart the dev server.
+        </div>
+      )}
+
+      <form onSubmit={onSubmit} className="mt-7 space-y-4" noValidate>
+        <div>
+          <label htmlFor="email" className="label">
+            Work email
+          </label>
+          <input
             id="email"
             type="email"
-            required
             autoComplete="email"
-            placeholder="you@company.com"
+            required
+            className="input"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            placeholder="you@company.com"
           />
-          <p className="text-[11px] text-ink-faint">
-            Use your business domain — teams are organized by company.
-          </p>
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="password">Password</Label>
-          <Input
-            id="password"
-            type="password"
-            required
-            minLength={8}
+        <div>
+          <label htmlFor="password" className="label">
+            Password
+          </label>
+          <div className="relative">
+            <input
+              id="password"
+              type={showPw ? "text" : "password"}
+              autoComplete="new-password"
+              required
+              minLength={8}
+              className="input pr-11"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="At least 8 characters"
+              aria-describedby="pw-hint"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPw((s) => !s)}
+              aria-label={showPw ? "Hide password" : "Show password"}
+              className="absolute top-1/2 right-3 -translate-y-1/2 rounded-md p-1 text-zinc-400 hover:text-ink-800"
+            >
+              {showPw ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+            </button>
+          </div>
+          {pwTooShort && (
+            <p id="pw-hint" className="mt-1.5 text-[12.5px] text-red-600">
+              Use at least 8 characters.
+            </p>
+          )}
+        </div>
+        <div>
+          <label htmlFor="confirm" className="label">
+            Confirm password
+          </label>
+          <input
+            id="confirm"
+            type={showPw ? "text" : "password"}
             autoComplete="new-password"
-            placeholder="8+ characters"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
+            required
+            className="input"
+            value={confirm}
+            onChange={(e) => setConfirm(e.target.value)}
+            placeholder="Repeat your password"
           />
+          {mismatch && (
+            <p className="mt-1.5 text-[12.5px] text-red-600">
+              Passwords don&apos;t match.
+            </p>
+          )}
         </div>
 
         {error && (
-          <p className="rounded-lg border border-rose-500/30 bg-rose-500/10 px-3 py-2 text-xs text-rose-300">
+          <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3.5 text-[13px] leading-relaxed text-red-800">
             {error}
-          </p>
+          </div>
         )}
 
-        <Button type="submit" className="w-full" disabled={pending}>
-          {pending ? "Creating account…" : "Create account"}
+        <Button
+          type="submit"
+          className="w-full"
+          size="lg"
+          loading={busy}
+          disabled={
+            !configured || !email || !password || pwTooShort || password !== confirm
+          }
+        >
+          Create account
         </Button>
       </form>
-      <p className="text-center text-xs text-ink-dim">
+
+      <p className="mt-6 text-center text-[13.5px] text-zinc-500">
         Already have an account?{" "}
-        <Link href="/login" className="font-medium text-brand hover:underline">
+        <Link
+          href="/login"
+          className="font-bold text-violet-700 hover:text-violet-900"
+        >
           Sign in
         </Link>
-      </p>
-    </div>
-  );
-}
-
-function Heading() {
-  return (
-    <div className="text-center">
-      <h1 className="text-lg font-semibold tracking-tight">
-        Create your account
-      </h1>
-      <p className="mt-1 text-xs text-ink-dim">
-        Free tier: 20 scans a month, no card required.
       </p>
     </div>
   );

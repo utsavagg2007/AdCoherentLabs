@@ -1,48 +1,57 @@
 import { cn } from "@/lib/utils";
 
-export function LogoMark({ className }: { className?: string }) {
+/** Wordmark. `tone` controls text color for dark/light surfaces. */
+export function Logo({
+  tone = "light",
+  className,
+  compact,
+}: {
+  tone?: "light" | "dark";
+  className?: string;
+  compact?: boolean;
+}) {
   return (
-    <span
-      className={cn(
-        "grid size-8 shrink-0 place-items-center rounded-lg bg-brand/15 text-brand",
-        className,
-      )}
-      aria-hidden
-    >
-      {/* Four stacked layers — the engine */}
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+    <span className={cn("inline-flex items-center gap-2.5", className)}>
+      <svg
+        viewBox="0 0 28 28"
+        aria-hidden
+        className="size-7 shrink-0"
+        fill="none"
+      >
+        <rect x="2" y="2" width="24" height="24" rx="7" fill="#7c3aed" />
         <path
-          d="M12 3 21 7.5 12 12 3 7.5 12 3Z"
-          fill="currentColor"
-          fillOpacity="0.9"
-        />
-        <path
-          d="M3 12.25 12 16.75 21 12.25"
-          stroke="currentColor"
-          strokeWidth="1.8"
+          d="M8 17.5 12.2 8.5a1 1 0 0 1 1.8 0l1.6 3.4"
+          stroke="white"
+          strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
         <path
-          d="M3 16.75 12 21.25 21 16.75"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeOpacity="0.5"
+          d="m13.5 15.5 2 2.5 4.5-6"
+          stroke="#c4b5fd"
+          strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
         />
       </svg>
-    </span>
-  );
-}
-
-export function Logo({ className }: { className?: string }) {
-  return (
-    <span className={cn("flex items-center gap-2.5", className)}>
-      <LogoMark />
-      <span className="text-[15px] font-semibold tracking-tight">
-        AdCoherent<span className="text-brand"> Labs</span>
-      </span>
+      {!compact && (
+        <span
+          className={cn(
+            "text-[17px] leading-none font-extrabold tracking-tight",
+            tone === "light" ? "text-white" : "text-ink-900"
+          )}
+        >
+          AdCoherent{" "}
+          <span
+            className={cn(
+              "font-medium",
+              tone === "light" ? "text-white/60" : "text-zinc-400"
+            )}
+          >
+            Labs
+          </span>
+        </span>
+      )}
     </span>
   );
 }

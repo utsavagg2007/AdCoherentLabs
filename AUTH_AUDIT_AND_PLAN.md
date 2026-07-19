@@ -68,7 +68,7 @@ path: `ADMIN_EMAILS` allowlist, dual-logged, hidden (404) from tenants.
 
 | # | Severity | Weakness | Disposition |
 |---|---|---|---|
-| W1 | **Critical** | Stack still runs the **public default** `JWT_SECRET`/anon/service keys → anyone can mint a `service_role` JWT | Staged fix exists: `python supabase/harden.py` (**you must run it — P0**); backend refuses prod boot on defaults; `gen_env.py` refuses defaults |
+| W1 | **Critical** | Stack still runs the **public default** `JWT_SECRET`/anon/service keys → anyone can mint a `service_role` JWT | Staged fix exists: `python supabase/harden.py` (**you must run it — P0**); backend refuses prod boot on defaults; `sync_env.py` refuses defaults |
 | W2 | **High** | `ENABLE_PHONE_SIGNUP=true` + `ENABLE_PHONE_AUTOCONFIRM=true` → zero-verification accounts; backend/engine accepted `phone_confirmed_at` as "confirmed" → the email-verification gate was bypassable | **Fixed backend-side** (email-only confirmation, §8A); stack config change for you in §10C |
 | W3 | Medium | JWT `iss` was not validated → a token minted by any other GoTrue sharing the secret (staging vs prod) would verify | **Fixed**: exact-match `SUPABASE_JWT_ISSUER` (probed value `http://localhost:8000/auth/v1`); unset ⇒ boot warning (dev only) |
 | W4 | Medium | Frontend server actions hold the **service-role key** and write business data directly (bypasses backend authz, credits, rate limits, hash-chained audit) | Migration plan §8B — retire in favour of bearer calls to FastAPI (needs approval) |
@@ -107,7 +107,7 @@ Signing keys: the deployed GoTrue uses **legacy HS256** (verified). The
 backend validates with the shared secret server-side only (never merely
 decodes), and rejects `alg` ≠ HS256. When the stack moves to asymmetric
 signing, swap `auth/jwt.py` to the stack's JWKS endpoint with `kid`-based
-rotation; until then rotation = `harden.py` → `gen_env.py` → restart backend
+rotation; until then rotation = `harden.py` → `sync_env.py` → restart backend
 (all sessions invalidate — documented, §11).
 
 ## 6. Authentication & authorization sequence (target)
@@ -158,7 +158,7 @@ rotation; until then rotation = `harden.py` → `gen_env.py` → restart backend
 | `backend/app/auth/jwt.py` | exact `iss` validation (config-gated; warn-once when unset in dev) |
 | `backend/app/deps.py` | confirmation = `email_confirmed_at` **only**; `aal` claim + `mfa_verified` (cached) on AuthContext; `require_step_up()` |
 | `backend/app/routes/{api_keys,orgs,billing,admin}.py` | `require_step_up()` on key issue/revoke, member role change/remove, billing checkout/portal, admin credit adjust |
-| `backend/scripts/gen_env.py` + `backend/.env` | emit `SUPABASE_JWT_ISSUER` from the stack's `API_EXTERNAL_URL` |
+| `scripts/sync_env.py` + root `.env` | emit `SUPABASE_JWT_ISSUER` from the stack's `API_EXTERNAL_URL` |
 | `backend/tests/…` | wrong-iss → 401; phone-only-confirmed → 403; step-up 403/pass matrix |
 
 **B. Phase 3 (frontend migration — needs your approval, ~a day of work):**
@@ -209,10 +209,10 @@ SMTP_SENDER_NAME=AdCoherent Labs
 
 ## 11. Operational requirements
 
-1. **P0 first**: `python supabase/harden.py` → `python backend/scripts/gen_env.py`
+1. **P0 first**: `python supabase/harden.py` → `python scripts/sync_env.py`
    → restart backend compose → `python -m engine.cli saas-selftest`.
 2. **JWT rotation runbook** (HS256): harden.py mints a new secret → every
-   session invalidates (users re-login) → gen_env + backend restart. Rotate
+   session invalidates (users re-login) → sync_env + backend restart. Rotate
    on schedule and on suspicion; order: stack → backend → frontend anon key.
 3. **SMTP** (§10C) before any external user signs up.
 4. **GoTrue outage behaviour**: `/readyz` stays green (API auth is local);
