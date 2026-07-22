@@ -15,6 +15,7 @@ if [ "${APP_IN_CONTAINER:-}" = "1" ]; then
   : "${SUPABASE_DB_HOST:=supabase-db}"; : "${SUPABASE_DB_PORT:=5432}"
   : "${REDIS_HOST:=redis}";             : "${REDIS_PORT:=6379}"
   : "${KONG_HOST:=supabase-kong}";      : "${KONG_PORT:=8000}"
+  : "${CLAMAV_SERVICE_HOST:=clamav}"
   _db="postgresql://postgres:${POSTGRES_PASSWORD}@${SUPABASE_DB_HOST}:${SUPABASE_DB_PORT}/postgres"
   export SUPABASE_URL="http://${KONG_HOST}:${KONG_PORT}"
   export SUPABASE_DB_URL="$_db"
@@ -23,7 +24,11 @@ if [ "${APP_IN_CONTAINER:-}" = "1" ]; then
   export DATABASE_URL_WORKER="$_db"
   export DATABASE_URL_MIGRATIONS="$_db"
   export REDIS_URL="redis://:${REDIS_PASSWORD}@${REDIS_HOST}:${REDIS_PORT}/0"
-  export CLAMAV_HOST="${CLAMAV_HOST:-clamav}"
+  # The root .env carries CLAMAV_HOST=127.0.0.1 for HOST runs, so a
+  # "${CLAMAV_HOST:-clamav}" fallback would never fire and every containerised
+  # upload would fail closed with 503 scanner_unavailable. Override it the same
+  # way the URLs above are overridden; CLAMAV_SERVICE_HOST is the escape hatch.
+  export CLAMAV_HOST="${CLAMAV_SERVICE_HOST}"
 fi
 
 case "$1" in

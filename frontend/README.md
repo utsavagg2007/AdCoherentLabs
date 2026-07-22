@@ -14,7 +14,7 @@ a cinematic marketing site plus the authenticated review application.
 
 ```bash
 npm install
-cp .env.example .env.local   # fill in values (see below)
+python ../scripts/sync_env.py --only frontend   # generates .env.local from the stack env
 npm run dev                  # http://localhost:3000
 ```
 
@@ -63,37 +63,26 @@ not-ready, 413/415 upload rejections, 422 scanner issues, 429 with
 Retry-After, and 503 outages. Submissions carry an `Idempotency-Key` that is
 **never rotated silently** — an identical retry replays the identical key.
 
-## The three cinematic clips
+## Brand media
 
-The marketing page uses three ~8 s 1080p clips in `public/videos/`:
+`public/media/` holds the generated brand assets (2026-07-22, chrome
+monolith theme matched to `public/brand/` logos):
 
-1. `hero-assembly.mp4` — scroll-scrubbed hero (chaos → assembled dashboard)
-2. `signal-evidence.mp4` — pinned Extract/Ground/Defend backdrop
-3. `calm-review.mp4` — final CTA backdrop
+1. `hero-still.jpg` (+ `hero-blur.jpg` placeholder) — Runway nano-banana-pro
+   still; the SSR/reduced-motion hero state and the final-CTA backdrop
+2. `hero-loop.mp4` — a single ~5 s gen-4-turbo ambient loop animated from
+   that still; plain `autoplay muted loop playsInline`
 
-They are generated **deterministically** by `scripts/render-clips.js`
-(node-canvas → ffmpeg, dense keyframes for smooth `currentTime` scrubbing):
-
-```bash
-npm i -D @napi-rs/canvas ffmpeg-static     # generator-only deps
-node scripts/render-clips.js all public/videos
-```
-
-They were art-directed as stand-ins for the intended Higgsfield/Seedance 2.0
-renders (generation was blocked: the connected Higgsfield account is on the
-free plan — Seedance requires Pro/Ultimate). To swap in Seedance clips later,
-render with the prompts in the project brief and overwrite the three `.mp4`
-files (16:9, ~8 s, silent; keep filenames) plus the `*-poster.jpg` /
-`*-still.jpg` frames. No code changes needed — all UI text is DOM overlay by
-design.
+There is **no scroll-scrubbing anywhere** — the old scroll-to-video-time
+hero was removed deliberately (it read as lag). Scrolling never drives
+media; section reveals use one IntersectionObserver (`marketing/reveal.tsx`)
+and CSS transitions only.
 
 ## Motion & accessibility
 
-- The hero implements true scroll-to-video-time scrubbing
-  (`requestAnimationFrame` + passive scroll listener, metadata guards, eased
-  seeking). Scrolling is never trapped.
-- Every cinematic sequence has a `prefers-reduced-motion` fallback (static
-  stills, no counters, no scrub track) — the fallback is also the SSR state.
+- Motion budget: the hero loop + IO reveals + a CSS marquee (pauses on
+  hover). Every one respects `prefers-reduced-motion` (the still/final
+  states are also the SSR states).
 - Radix dialogs/accordions/tabs/dropdowns, labeled controls, focus-visible
   styles, semantic headings, keyboard-reachable everything.
 

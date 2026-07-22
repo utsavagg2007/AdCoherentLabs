@@ -16,6 +16,7 @@ import {
   RefreshCcw,
   UserRoundSearch,
 } from "lucide-react";
+import { ActivityFeed } from "@/components/app/activity-feed";
 import { PageBody, PageHeader } from "@/components/app/page-header";
 import { ReportView } from "@/components/report/report-view";
 import { useApi, useOrg } from "@/components/providers";
@@ -220,7 +221,7 @@ function RunView({ id }: { id: string }) {
       <PageBody>
         <div className="space-y-6">
           {run.resumed_from_run_id && (
-            <div className="flex items-center gap-2.5 rounded-xl border border-violet-200 bg-violet-50 px-4 py-3 text-[13px] text-violet-900">
+            <div className="flex items-center gap-2.5 rounded-xl border border-white/15 bg-white/6 px-4 py-3 text-[13px] text-ink-950">
               <UserRoundSearch className="size-4 shrink-0" aria-hidden />
               <p>
                 Resumed with reviewer guidance from{" "}
@@ -235,77 +236,63 @@ function RunView({ id }: { id: string }) {
             </div>
           )}
 
-          {/* ---------------- active: progress rail ---------------- */}
+          {/* ---------------- active: stage strip ---------------- */}
           {isActive && (
             <section
               aria-label="Review progress"
               className="card overflow-hidden"
             >
-              <div className="border-b border-line bg-cream/60 px-5 py-4">
+              <div className="border-b border-line px-5 py-4">
                 <div className="flex items-center justify-between gap-3">
                   <h2 className="flex items-center gap-2.5 text-[15px] font-extrabold text-ink-900">
                     <Spinner className="size-4" />
                     Review in progress
                   </h2>
-                  <p className="text-[12px] text-zinc-400">
+                  <p className="text-[12px] text-ink-500">
                     Updates automatically
                   </p>
                 </div>
               </div>
-              <ol className="p-5">
+              <ol className="flex flex-wrap items-center gap-x-1 gap-y-2 px-5 py-4">
                 {RUN_STAGES.map((stage, i) => {
                   const state =
                     i < stageIdx ? "done" : i === stageIdx ? "now" : "todo";
                   return (
-                    <li key={stage.status} className="flex gap-3.5">
-                      <div className="flex flex-col items-center">
-                        <span
-                          className={cn(
-                            "flex size-7 shrink-0 items-center justify-center rounded-full border-2 text-[11px] font-bold",
-                            state === "done" &&
-                              "border-violet-600 bg-violet-600 text-white",
-                            state === "now" &&
-                              "border-violet-600 bg-white text-violet-700",
-                            state === "todo" &&
-                              "border-zinc-200 bg-white text-zinc-300"
-                          )}
-                        >
-                          {state === "done" ? (
-                            <Check className="size-3.5" aria-hidden />
-                          ) : (
-                            i + 1
-                          )}
-                        </span>
-                        {i < RUN_STAGES.length - 1 && (
-                          <span
-                            className={cn(
-                              "w-0.5 flex-1",
-                              state === "done" ? "bg-violet-600" : "bg-zinc-200"
-                            )}
-                            aria-hidden
-                          />
+                    <li key={stage.status} className="flex items-center gap-1">
+                      <span
+                        className={cn(
+                          "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11.5px] font-bold whitespace-nowrap",
+                          state === "done" &&
+                            "border-emerald-400/25 bg-emerald-400/10 text-emerald-300",
+                          state === "now" &&
+                            "border-white/25 bg-white/10 text-ink-950",
+                          state === "todo" &&
+                            "border-white/10 bg-transparent text-ink-500"
                         )}
-                      </div>
-                      <div className={cn("pb-6", state === "todo" && "opacity-50")}>
-                        <p
+                      >
+                        {state === "done" && (
+                          <Check className="size-3" aria-hidden />
+                        )}
+                        {state === "now" && (
+                          <span className="size-1.5 animate-pulse-dot rounded-full bg-white" />
+                        )}
+                        {stage.label}
+                      </span>
+                      {i < RUN_STAGES.length - 1 && (
+                        <span
+                          aria-hidden
                           className={cn(
-                            "text-[14px] leading-7 font-bold",
-                            state === "now" ? "text-violet-800" : "text-ink-900"
+                            "h-px w-3",
+                            state === "done" ? "bg-emerald-400/40" : "bg-white/12"
                           )}
-                        >
-                          {stage.label}
-                          {state === "now" && (
-                            <span className="ml-2 inline-block size-1.5 animate-pulse-dot rounded-full bg-violet-500 align-middle" />
-                          )}
-                        </p>
-                        <p className="text-[12.5px] text-zinc-500">{stage.hint}</p>
-                      </div>
+                        />
+                      )}
                     </li>
                   );
                 })}
               </ol>
               {runResp!.queue?.attempts != null && runResp!.queue.attempts > 1 && (
-                <p className="border-t border-line px-5 py-3 text-[12px] text-zinc-400">
+                <p className="border-t border-line px-5 py-3 text-[12px] text-ink-500">
                   <Clock3 className="mr-1 inline size-3.5 align-[-2px]" aria-hidden />
                   Attempt {runResp!.queue.attempts} — transient issues retry
                   automatically.
@@ -314,28 +301,41 @@ function RunView({ id }: { id: string }) {
             </section>
           )}
 
+          {/* ---------------- live activity feed ---------------- */}
+          <ActivityFeed
+            runId={id}
+            active={isActive}
+            terminal={
+              status === "complete" ||
+              status === "human_review" ||
+              status === "failed"
+                ? status
+                : null
+            }
+          />
+
           {/* ---------------- failed ---------------- */}
           {status === "failed" && (
             <section aria-label="Run failed" className="card overflow-hidden">
               <div className="flex items-start gap-4 p-6">
-                <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl border border-red-200 bg-red-50 text-red-600">
+                <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl border border-red-400/25 bg-red-400/10 text-red-300">
                   <CircleAlert className="size-5" aria-hidden />
                 </div>
                 <div className="min-w-0 flex-1">
                   <h2 className="text-lg font-extrabold text-ink-900">
                     This review didn&apos;t finish
                   </h2>
-                  <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-zinc-600">
+                  <p className="mt-1.5 max-w-xl text-sm leading-relaxed text-ink-600">
                     {run.error?.startsWith("rejected:")
                       ? "The run was rejected because the credit balance couldn't cover it. Nothing was analyzed."
                       : "Something went wrong while processing this creative. If credits were charged for a failure on our side, they're refunded automatically. Submitting again is safe."}
                   </p>
                   {(run.error || runResp!.queue?.last_error) && (
                     <details className="mt-3">
-                      <summary className="cursor-pointer text-[12.5px] font-bold text-zinc-500 hover:text-ink-900">
+                      <summary className="cursor-pointer text-[12.5px] font-bold text-ink-500 hover:text-ink-900">
                         Technical details
                       </summary>
-                      <div className="mt-2 space-y-1.5 rounded-lg border border-line bg-cream p-3 font-mono text-[11.5px] break-words text-zinc-600">
+                      <div className="mt-2 space-y-1.5 rounded-lg border border-line bg-cream p-3 font-mono text-[11.5px] break-words text-ink-600">
                         {run.error && <p>error: {run.error}</p>}
                         {runResp!.queue?.last_error && (
                           <p>queue: {runResp!.queue.last_error}</p>
@@ -366,14 +366,14 @@ function RunView({ id }: { id: string }) {
           {status === "human_review" && (
             <section
               aria-label="Human review requested"
-              className="overflow-hidden rounded-2xl border border-amber-300 bg-white shadow-(--shadow-soft)"
+              className="overflow-hidden rounded-2xl border border-amber-400/30 bg-coal-800 shadow-(--shadow-soft)"
             >
-              <div className="border-b border-amber-200 bg-amber-50 px-6 py-4">
-                <h2 className="flex items-center gap-2.5 text-[16px] font-extrabold text-amber-950">
+              <div className="border-b border-amber-400/25 bg-amber-400/10 px-6 py-4">
+                <h2 className="flex items-center gap-2.5 text-[16px] font-extrabold text-amber-200">
                   <UserRoundSearch className="size-4.5" aria-hidden />
                   This run is waiting on your review team
                 </h2>
-                <p className="mt-1 text-[13px] leading-relaxed text-amber-900/80">
+                <p className="mt-1 text-[13px] leading-relaxed text-amber-200/80">
                   The automated loop used its callback budget without
                   converging. Add guidance below and resume — the follow-up run
                   is linked to this one and charges{" "}
@@ -385,7 +385,7 @@ function RunView({ id }: { id: string }) {
                   <div className="space-y-3">
                     {report.report.human_review.reason && (
                       <div>
-                        <p className="text-[11px] font-bold tracking-wider text-zinc-400 uppercase">
+                        <p className="text-[11px] font-bold tracking-wider text-ink-500 uppercase">
                           Why it stopped
                         </p>
                         <p className="mt-1 text-sm leading-relaxed text-ink-800">
@@ -395,17 +395,17 @@ function RunView({ id }: { id: string }) {
                     )}
                     {(report.report.human_review.instructions?.length ?? 0) > 0 && (
                       <div>
-                        <p className="text-[11px] font-bold tracking-wider text-zinc-400 uppercase">
+                        <p className="text-[11px] font-bold tracking-wider text-ink-500 uppercase">
                           Outstanding instructions
                         </p>
                         <ul className="mt-1.5 space-y-1.5">
                           {report.report.human_review.instructions!.map((ins, i) => (
                             <li
                               key={i}
-                              className="rounded-lg border border-amber-200 bg-amber-50/60 p-3 text-[13px] leading-relaxed text-amber-950"
+                              className="rounded-lg border border-amber-400/25 bg-amber-400/10 p-3 text-[13px] leading-relaxed text-amber-200"
                             >
                               {ins.check_id && (
-                                <span className="mr-1.5 font-mono text-[11px] font-bold text-amber-700">
+                                <span className="mr-1.5 font-mono text-[11px] font-bold text-amber-300">
                                   {String(ins.check_id)}
                                 </span>
                               )}
@@ -416,19 +416,19 @@ function RunView({ id }: { id: string }) {
                       </div>
                     )}
                     {report.report.human_review.how_to_resume && (
-                      <p className="text-[12.5px] leading-relaxed text-zinc-500">
+                      <p className="text-[12.5px] leading-relaxed text-ink-500">
                         {report.report.human_review.how_to_resume}
                       </p>
                     )}
                   </div>
                 ) : reportPending ? (
-                  <p className="flex items-center gap-2 text-sm text-zinc-500">
+                  <p className="flex items-center gap-2 text-sm text-ink-500">
                     <Spinner className="size-4" /> Loading the review context…
                   </p>
                 ) : null}
 
                 {role === "viewer" ? (
-                  <p className="rounded-xl bg-cream p-3.5 text-[13px] text-zinc-500">
+                  <p className="rounded-xl bg-cream p-3.5 text-[13px] text-ink-500">
                     A reviewer, admin, or owner can add guidance and resume this
                     run.
                   </p>
@@ -446,7 +446,7 @@ function RunView({ id }: { id: string }) {
                       maxLength={20000}
                     />
                     <div className="mt-3 flex items-center justify-between gap-3">
-                      <p className="text-[12px] text-zinc-400">
+                      <p className="text-[12px] text-ink-500">
                         Sent to the model alongside the original creative
                         evidence.
                       </p>
@@ -475,7 +475,7 @@ function RunView({ id }: { id: string }) {
                 disclaimer={report.disclaimer}
               />
             ) : reportPending ? (
-              <section className="card flex items-center gap-3 p-6 text-sm text-zinc-500">
+              <section className="card flex items-center gap-3 p-6 text-sm text-ink-500">
                 <Spinner className="size-4" />
                 The run finished — assembling the report…
               </section>

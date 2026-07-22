@@ -57,11 +57,17 @@ async def _parse_input(request: Request, ctx: AuthContext) -> tuple[list[uploads
         title = str(form.get("title") or "") or None
         juris_raw = str(form.get("target_jurisdictions") or "")
         jurisdictions = [j.strip() for j in juris_raw.split(",") if j.strip()]
+        allowed_kinds = list(ctx.entitlements.get("allowed_kinds")
+                             or ["text", "html", "image"])
+        max_video_s = ctx.entitlements.get("max_video_seconds")
         processed = []
         for f in files:
             data = await f.read()
             try:
-                processed.append(await uploads.process_file(data, f.filename or "", max_mb))
+                processed.append(await uploads.process_file(
+                    data, f.filename or "", max_mb,
+                    allowed_kinds=allowed_kinds,
+                    max_video_seconds=max_video_s))
             except ApiError as exc:
                 metrics.UPLOAD_REJECTS.labels(reason=exc.code).inc()
                 raise
@@ -164,6 +170,15 @@ async def create_submission(request: Request,
                 return JSONResponse(status_code=402, content=body)
 
             job_id = await queue.enqueue_tx(conn, run_id)
+            await conn.execute(
+                "insert into public.run_events "
+                "  (run_id, org_id, stage, event, message, detail) "
+                "values (%s, %s, 'queued', 'run.queued', %s, %s::jsonb)",
+                (run_id, ctx.org_id,
+                 f"Run accepted — {decision['charged']} credits reserved; "
+                 "waiting for an analysis worker.",
+                 json.dumps({"credits_charged": decision["charged"],
+                             "kind": pricing_kind, "cards": cards})))
             response_body = {
                 "submission_id": submission_id, "run_id": run_id,
                 "credits_charged": decision["charged"],

@@ -15,7 +15,8 @@ Does, in order (backups already at .env.bak-2026-07-13 / docker-compose.yml.bak-
      pooler reseeds itself with the new password on restart
   6. `docker compose up -d` (recreates only changed services; keeps the
      network so the adcoherent-rag-db-proxy socat container stays attached)
-  7. updates DATABASE_URL in the project's .env and rag-engine/.env
+  7. rewrites the DB password/URLs in the repo-root .env, then runs
+     scripts/sync_env.py to regenerate root .env + frontend/.env.local
   8. verifies: containers healthy, OLD demo anon key rejected (401), new
      anon key accepted, psql via the 54322 proxy works, ports loopback-only
 
@@ -105,16 +106,21 @@ def stack_env_candidates(env_path: Path, key: str) -> list[str]:
 
 
 def password_auth_works(password: str) -> bool:
+    # -h supabase-db forces a docker-network TCP connection => real scram
+    # auth. Loopback (127.0.0.1) inside the container is trust-authed and
+    # would accept ANY password, making the probe meaningless.
     cmd = ["docker", "exec", "-e", f"PGPASSWORD={password}", "supabase-db",
-           "psql", "-h", "127.0.0.1", "-U", "postgres", "-d", "postgres",
+           "psql", "-h", "supabase-db", "-U", "postgres", "-d", "postgres",
            "-tAc", "select 1;"]
     p = run(cmd, redact=(password,))
     return p.returncode == 0 and p.stdout.strip() == "1"
 
 
 def current_role_is_superuser() -> bool | None:
-    p = run(["docker", "exec", "supabase-db", "psql", "-U", "postgres",
-             "-d", "postgres", "-tAc",
+    # -h 127.0.0.1 = container-loopback TCP (trust auth); the unix socket
+    # requires a password and would fail here.
+    p = run(["docker", "exec", "supabase-db", "psql", "-h", "127.0.0.1",
+             "-U", "postgres", "-d", "postgres", "-tAc",
              "select rolsuper from pg_roles where rolname = current_user;"])
     if p.returncode != 0:
         print("ABORT: could not inspect postgres role:", p.stderr[-500:])
@@ -193,8 +199,9 @@ def main() -> int:
             f"if exists (select 1 from pg_roles where rolname = '{r}') then "
             f"execute format('alter role {r} with password %L', "
             f"'{new['POSTGRES_PASSWORD']}'); end if;\n" for r in ROLES) + "end $$;"
-        p = run(["docker", "exec", "-i", "supabase-db", "psql", "-U", "postgres",
-                 "-d", "postgres", "-v", "ON_ERROR_STOP=1", "-c", sql])
+        p = run(["docker", "exec", "-i", "supabase-db", "psql", "-h", "127.0.0.1",
+                 "-U", "postgres", "-d", "postgres", "-v", "ON_ERROR_STOP=1",
+                 "-c", sql])
         if p.returncode != 0:
             print("ABORT: role rotation failed:", p.stderr[-500:])
             print("nothing secret was written to stack .env; fix the DB role "
@@ -220,8 +227,8 @@ def main() -> int:
     # ---- 5. pooler tenant reseed ------------------------------------------
     print("== 5. dropping supavisor tenant (reseeds on restart) ==")
     if rotated_db_password:
-        p = run(["docker", "exec", "supabase-db", "psql", "-U", "postgres",
-                 "-d", "_supabase", "-c",
+        p = run(["docker", "exec", "supabase-db", "psql", "-h", "127.0.0.1",
+                 "-U", "postgres", "-d", "_supabase", "-c",
                  "delete from _supavisor.tenants where external_id = 'your-tenant-id';"])
         print("  ", (p.stdout or p.stderr).strip())
     else:
@@ -236,14 +243,27 @@ def main() -> int:
     run(["docker", "restart", "adcoherent-rag-db-proxy"])
 
     # ---- 7. project env files ---------------------------------------------
-    print("== 7. updating project DATABASE_URLs ==")
-    url = (f"postgresql://postgres:{new['POSTGRES_PASSWORD']}"
-           "@127.0.0.1:54322/postgres")
-    for env_file in (PROJECT / ".env", PROJECT / "rag-engine" / ".env"):
-        text = env_file.read_text(encoding="utf-8")
-        text = re.sub(r"(?m)^DATABASE_URL=.*$", f"DATABASE_URL={url}", text)
-        env_file.write_text(text, encoding="utf-8", newline="\n")
-        print("  updated", env_file)
+    # The project has exactly TWO env files: the repo-root .env and
+    # frontend/.env.local, both owned by scripts/sync_env.py. Rewrite the
+    # root .env's password/URLs here (stdlib, always works), then let
+    # sync_env.py do the canonical regeneration of both files.
+    print("== 7. regenerating project env files ==")
+    root_env = PROJECT / ".env"
+    text = root_env.read_text(encoding="utf-8")
+    text = re.sub(r"(?m)^POSTGRES_PASSWORD=.*$",
+                  f"POSTGRES_PASSWORD={new['POSTGRES_PASSWORD']}", text)
+    text = re.sub(r"postgresql://postgres:[^@]*@",
+                  f"postgresql://postgres:{new['POSTGRES_PASSWORD']}@", text)
+    root_env.write_text(text, encoding="utf-8", newline="\n")
+    print("  updated", root_env)
+    p = run([sys.executable, str(PROJECT / "scripts" / "sync_env.py")],
+            cwd=str(PROJECT))
+    if p.returncode == 0:
+        for line in p.stdout.strip().splitlines():
+            print("  " + line)
+    else:
+        print("  WARNING: scripts/sync_env.py failed - run it yourself to "
+              "realign root .env + frontend/.env.local:\n", p.stderr[-400:])
 
     # ---- 8. verify ---------------------------------------------------------
     print("== 8. verification ==")
@@ -276,8 +296,10 @@ def main() -> int:
     print(f"  old demo anon key -> HTTP {old_status} (want 401)")
     print(f"  new anon key      -> HTTP {new_status} (want 200)")
 
+    # -h supabase-db => scram auth: proves the NEW password really works
+    # (loopback would be trust-authed and prove nothing).
     p = run(["docker", "exec", "-e", f"PGPASSWORD={new['POSTGRES_PASSWORD']}",
-             "supabase-db", "psql", "-h", "127.0.0.1", "-U", "postgres",
+             "supabase-db", "psql", "-h", "supabase-db", "-U", "postgres",
              "-tAc", "select count(*) from rag_chunks;"],
             redact=(new["POSTGRES_PASSWORD"],))
     print("  rag_chunks reachable:", p.stdout.strip() or p.stderr.strip())

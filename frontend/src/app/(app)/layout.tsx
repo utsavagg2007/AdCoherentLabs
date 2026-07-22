@@ -57,12 +57,12 @@ function Shell({ children }: { children: React.ReactNode }) {
         <DialogPrimitive.Root open={drawerOpen} onOpenChange={setDrawerOpen}>
           <DialogPrimitive.Trigger
             aria-label="Open navigation"
-            className="rounded-lg p-2 text-ink-900 hover:bg-zinc-100"
+            className="rounded-lg p-2 text-ink-900 hover:bg-white/8"
           >
             <Menu className="size-5" />
           </DialogPrimitive.Trigger>
           <DialogPrimitive.Portal>
-            <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-ink-950/50 backdrop-blur-sm data-[state=open]:animate-fade-in" />
+            <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-coal-950/50 backdrop-blur-sm data-[state=open]:animate-fade-in" />
             <DialogPrimitive.Content className="fixed inset-y-0 left-0 z-50 flex w-[min(19rem,85vw)] flex-col bg-paper p-4 shadow-2xl focus:outline-none">
               <DialogPrimitive.Title className="sr-only">
                 Navigation
@@ -71,7 +71,7 @@ function Shell({ children }: { children: React.ReactNode }) {
                 <Logo tone="dark" />
                 <DialogPrimitive.Close
                   aria-label="Close navigation"
-                  className="rounded-lg p-2 text-zinc-500 hover:bg-zinc-100"
+                  className="rounded-lg p-2 text-ink-500 hover:bg-white/8"
                 >
                   <X className="size-5" />
                 </DialogPrimitive.Close>

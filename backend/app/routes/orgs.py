@@ -10,7 +10,8 @@ import json
 from fastapi import APIRouter, Depends
 
 from .. import db
-from ..deps import AuthContext, auth_context, get_entitlements
+from ..deps import (AuthContext, auth_context, get_entitlements,
+                    invalidate_user_cache, user_only_context)
 from ..errors import ApiError, not_found
 from ..ratelimit_deps import rate_limited
 from ..schemas import MemberAdd, MemberPatch, OrgCreate
@@ -18,11 +19,21 @@ from ..services import credits
 
 router = APIRouter(prefix="/v1/orgs", tags=["orgs"])
 
+_MAX_SELF_SERVE_ORGS = 3   # each org auto-grants free credits — cap the farm
+
 
 @router.post("", status_code=201)
-async def create_org(body: OrgCreate, ctx: AuthContext = Depends(auth_context)):
+async def create_org(body: OrgCreate,
+                     ctx: AuthContext = Depends(user_only_context)):
+    """First-org (and self-serve additional-org) creation: the ONE route a
+    zero-membership user can call. app.create_org is atomic — org + owner
+    membership + free subscription + first cycle grant."""
     if ctx.principal != "user":
         raise ApiError(403, "forbidden", "Org creation requires a user session.")
+    if len(ctx.memberships or []) >= _MAX_SELF_SERVE_ORGS:
+        raise ApiError(403, "forbidden",
+                       f"Self-serve accounts are capped at {_MAX_SELF_SERVE_ORGS} "
+                       "organizations - contact support for more.")
     async with db.transaction() as conn:
         await conn.execute("select set_config('request.jwt.claims', %s, true)",
                            (json.dumps({"sub": ctx.user_id, "role": "authenticated"}),))
@@ -32,6 +43,7 @@ async def create_org(body: OrgCreate, ctx: AuthContext = Depends(auth_context)):
         await conn.execute(
             "select app.log_audit_event(%s, %s, 'org.created', %s, %s::jsonb)",
             (org_id, ctx.user_id, f"org:{org_id}", json.dumps({"name": body.name})))
+    await invalidate_user_cache(ctx.user_id)
     return {"org_id": org_id, "name": body.name, "tier": "free"}
 
 
@@ -47,7 +59,8 @@ async def current_org(ctx: AuthContext = Depends(rate_limited)):
                 "llm_model", "max_output_tokens", "credits_per_month",
                 "api_rpm", "api_burst", "user_rpm", "max_concurrent_runs",
                 "max_upload_mb", "submissions_per_day", "credit_packs_allowed",
-                "api_access", "seats", "sso", "sla")},
+                "api_access", "seats", "sso", "sla",
+                "allowed_kinds", "max_video_seconds")},
             "credits": await credits.balance(ctx.org_id),
             "memberships": ctx.memberships}
 
@@ -91,6 +104,7 @@ async def add_member(body: MemberAdd, ctx: AuthContext = Depends(rate_limited)):
             "select app.log_audit_event(%s, %s, 'member.added', %s, %s::jsonb)",
             (ctx.org_id, ctx.user_id, f"user:{user['id']}",
              json.dumps({"role": body.role})))
+    await invalidate_user_cache(user["id"])
     return {"user_id": user["id"], "role": body.role}
 
 

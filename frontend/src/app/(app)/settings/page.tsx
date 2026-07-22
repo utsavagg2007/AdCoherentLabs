@@ -26,10 +26,10 @@ const ROLE_HELP: { role: Role; text: string }[] = [
 ];
 
 const ROLE_BADGE: Record<Role, string> = {
-  owner: "border-violet-300 bg-violet-50 text-violet-800",
-  admin: "border-violet-200 bg-violet-50 text-violet-700",
-  reviewer: "border-emerald-200 bg-emerald-50 text-emerald-700",
-  viewer: "border-zinc-200 bg-zinc-50 text-zinc-600",
+  owner: "border-white/20 bg-white/6 text-ink-850",
+  admin: "border-sky-400/25 bg-sky-400/10 text-sky-300",
+  reviewer: "border-emerald-400/25 bg-emerald-400/10 text-emerald-300",
+  viewer: "border-white/12 bg-white/5 text-ink-600",
 };
 
 export default function SettingsPage() {
@@ -119,13 +119,13 @@ export default function SettingsPage() {
             ) : (
               <dl className="mt-3 grid gap-x-6 gap-y-3 text-[13.5px] sm:grid-cols-3">
                 <div>
-                  <dt className="text-[10.5px] font-bold tracking-wider text-zinc-400 uppercase">
+                  <dt className="text-[10.5px] font-bold tracking-wider text-ink-500 uppercase">
                     Name
                   </dt>
                   <dd className="mt-0.5 font-bold text-ink-900">{orgName}</dd>
                 </div>
                 <div>
-                  <dt className="text-[10.5px] font-bold tracking-wider text-zinc-400 uppercase">
+                  <dt className="text-[10.5px] font-bold tracking-wider text-ink-500 uppercase">
                     Plan
                   </dt>
                   <dd className="mt-0.5 font-bold text-ink-900 capitalize">
@@ -133,7 +133,7 @@ export default function SettingsPage() {
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-[10.5px] font-bold tracking-wider text-zinc-400 uppercase">
+                  <dt className="text-[10.5px] font-bold tracking-wider text-ink-500 uppercase">
                     Created
                   </dt>
                   <dd className="mt-0.5 font-bold text-ink-900">
@@ -142,7 +142,7 @@ export default function SettingsPage() {
                 </div>
               </dl>
             )}
-            <p className="mt-3 text-[12px] text-zinc-400">
+            <p className="mt-3 text-[12px] text-ink-500">
               Your role here: <span className="font-bold capitalize">{role}</span>
               {session?.user.email ? ` · signed in as ${session.user.email}` : ""}
             </p>
@@ -151,14 +151,14 @@ export default function SettingsPage() {
           {/* roles explainer */}
           <section aria-label="Roles" className="card p-5">
             <h2 className="flex items-center gap-2 text-[13px] font-extrabold tracking-wide text-ink-900 uppercase">
-              <Users className="size-4 text-violet-600" aria-hidden />
+              <Users className="size-4 text-ink-600" aria-hidden />
               Roles
             </h2>
             <ul className="mt-3 grid gap-2.5 sm:grid-cols-2">
               {ROLE_HELP.map((r) => (
                 <li key={r.role} className="rounded-xl bg-cream p-3">
                   <Badge className={ROLE_BADGE[r.role]}>{r.role}</Badge>
-                  <p className="mt-1.5 text-[12.5px] leading-relaxed text-zinc-600">
+                  <p className="mt-1.5 text-[12.5px] leading-relaxed text-ink-600">
                     {r.text}
                   </p>
                 </li>
@@ -172,7 +172,7 @@ export default function SettingsPage() {
               <h2 className="text-[13px] font-extrabold tracking-wide text-ink-900 uppercase">
                 Team
               </h2>
-              <p className="text-[12px] text-zinc-400 tabular-nums">
+              <p className="text-[12px] text-ink-500 tabular-nums">
                 {seatCount}
                 {seats != null ? ` / ${seats}` : ""} seats used
               </p>
@@ -189,19 +189,19 @@ export default function SettingsPage() {
                   const canEdit = isAdmin && m.role !== "owner" && !isSelf;
                   return (
                     <div key={m.user_id} className="flex items-center gap-3 px-4 py-3">
-                      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-ink-800 text-[12px] font-extrabold text-white">
+                      <span className="flex size-8 shrink-0 items-center justify-center rounded-full bg-coal-800 text-[12px] font-extrabold text-white">
                         {m.email.slice(0, 1).toUpperCase()}
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-[13.5px] font-bold text-ink-900">
                           {m.email}
                           {isSelf && (
-                            <span className="ml-1.5 text-[11px] font-semibold text-zinc-400">
+                            <span className="ml-1.5 text-[11px] font-semibold text-ink-500">
                               (you)
                             </span>
                           )}
                         </span>
-                        <span className="block text-[11.5px] text-zinc-400">
+                        <span className="block text-[11.5px] text-ink-500">
                           Since {formatDate(m.created_at)}
                         </span>
                       </span>
@@ -227,7 +227,7 @@ export default function SettingsPage() {
                             type="button"
                             onClick={() => setRemoving(m)}
                             aria-label={`Remove ${m.email}`}
-                            className="rounded-lg p-2 text-zinc-400 hover:bg-red-50 hover:text-red-600"
+                            className="rounded-lg p-2 text-ink-500 hover:bg-red-400/10 hover:text-red-300"
                           >
                             <Trash2 className="size-4" />
                           </button>
@@ -245,10 +245,10 @@ export default function SettingsPage() {
             {isAdmin && (
               <form onSubmit={addMember} className="card mt-4 p-4">
                 <h3 className="flex items-center gap-2 text-[12.5px] font-extrabold tracking-wide text-ink-900 uppercase">
-                  <UserPlus className="size-4 text-violet-600" aria-hidden />
+                  <UserPlus className="size-4 text-ink-600" aria-hidden />
                   Add a member
                 </h3>
-                <p className="mt-1.5 text-[12.5px] leading-relaxed text-zinc-500">
+                <p className="mt-1.5 text-[12.5px] leading-relaxed text-ink-500">
                   They need an AdCoherent account already — no invitation email
                   is sent. Ask them to sign up first, then add their address
                   here.
@@ -282,7 +282,7 @@ export default function SettingsPage() {
                 {addError != null && (
                   <div
                     role="alert"
-                    className="mt-3 flex items-start gap-2.5 rounded-xl border border-amber-300 bg-amber-50 p-3.5 text-[13px] leading-relaxed text-amber-900"
+                    className="mt-3 flex items-start gap-2.5 rounded-xl border border-amber-400/30 bg-amber-400/10 p-3.5 text-[13px] leading-relaxed text-amber-200"
                   >
                     <ShieldAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
                     <div>

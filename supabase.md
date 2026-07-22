@@ -41,7 +41,7 @@ and lives **only** in the API/worker environment.
 | Next.js app / browser | `http://localhost:8000` (Kong) + `ANON_KEY` | Prod: your HTTPS domain |
 | API routes / AI worker | Kong + `SERVICE_ROLE_KEY`, or Postgres via pooler | Service role = root: server-side only |
 | App DB pools (many short conns) | `postgresql://postgres.<POOLER_TENANT_ID>:<PW>@host:6543/postgres` | Transaction mode — no prepared statements/LISTEN |
-| Long-lived worker / RAG engine | Pooler session port `5432` (current `rag-engine/.env`) | Session mode behaves like direct |
+| Long-lived worker / RAG engine | dev: socat `127.0.0.1:54322` (root `.env` `DATABASE_URL`); prod: pooler session port `5432` | Session mode behaves like direct |
 | Migrations, DDL, backups | socat proxy `127.0.0.1:54322` (direct to `supabase-db`) | Bypasses the pooler entirely |
 
 ---
@@ -55,7 +55,12 @@ and lives **only** in the API/worker environment.
 - RAG corpus loaded (11,061 chunks) and locked away from the public API (§4.6).
 - socat DB proxy recreated on this device (`adcoherent-rag-db-proxy`,
   `127.0.0.1:54322 → supabase-db:5432`, restart unless-stopped) — it does
-  NOT survive a machine move; recreate with the command in `rag-engine/.env`.
+  NOT survive a machine move; recreate with:
+  ```
+  docker run -d --name adcoherent-rag-db-proxy --restart unless-stopped \
+    --network supabase_default -p 127.0.0.1:54322:5432 alpine/socat \
+    tcp-listen:5432,fork,reuseaddr tcp-connect:supabase-db:5432
+  ```
 - **Engine fully integrated** (`engine/saas.py` + migration 0007): tier from
   `app.org_tier`, quota-before-work, run/layer/finding persistence, audit —
   `python -m engine.cli saas-selftest` passes all 32 live checks.
@@ -124,8 +129,9 @@ After rotation:
 
 - Every client holding the old `ANON_KEY`/`SERVICE_ROLE_KEY` must be updated
   (Next.js env, worker env). Existing user sessions are invalidated.
-- `rag-engine/.env` is unaffected (it authenticates with the Postgres
-  password, not JWTs) unless you also rotate `POSTGRES_PASSWORD`.
+- The root `.env` DB URLs are unaffected (they authenticate with the Postgres
+  password, not JWTs) unless you also rotate `POSTGRES_PASSWORD` — then
+  re-run `python scripts/sync_env.py`.
 - Keep the `service_role` key out of anything client-side, forever. Treat it
   like a root password.
 - Put real values only in per-environment secret stores; never commit them.
@@ -157,6 +163,10 @@ Forward-only; take a backup before destructive changes (playbook Phase 11).
 | `0005_storage_and_realtime.sql` | Private `assets` bucket + org-scoped storage policies; realtime publication for `analysis_runs` and `findings` |
 | `0006_lock_rag_tables.sql` | RLS (no policies) on all `rag_*` tables → invisible through the public API; RAG engine unaffected (direct owner connection) |
 | `0007_engine_integration.sql` | `analysis_runs.status` gains first-class `human_review`; `engine_run_id` (correlates DB rows to `EngineRunResult.run_id` / report files); `resumed_from_run_id` (operator-resume lineage); active-runs index rebuilt |
+| `0008_credits.sql` | Credits replace scan quota: `credit_balances`, append-only `credit_ledger`, published `credit_costs`, `app.credit_cost/consume_credits/ensure_cycle_grant/grant_purchased_credits/refund_credits/credit_balance`, cycle-key derivation |
+| `0009_job_queue.sql` | `app.job_queue` + lease/heartbeat/complete/fail/requeue functions (FOR UPDATE SKIP LOCKED, tier priority, per-org concurrency) |
+| `0010_billing_events.sql` | `app.billing_events` (webhook replay guard), `app.idempotency_keys`, `subscriptions.grace_until`, `analysis_runs.operator_guidance`, `api_keys.rate_limit_rpm`, `layer_outputs` 'report' layer |
+| `0011_pricing_events_media_tokens.sql` | **Backend-owned pricing** (`plan_pricing`, `pack_pricing` — what `GET /v1/plans` publishes); `run_events` (sanitized live-activity feed, member-read RLS, service-only writes); media entitlements (`plan_entitlements.allowed_kinds`, `max_video_seconds`) + `credit_costs` rows for pdf/docx/video + `assets.kind`/storage-bucket MIME allowlist widened; **token metering** (`token_rates`, `app.settle_run_tokens`, ledger reason `consume.tokens`) |
 
 ### Tier → entitlements (single source of truth: `plan_entitlements`)
 
@@ -431,7 +441,8 @@ Troubleshooting notes specific to this install:
   `_supabase` DB + `_analytics`/`_supavisor` schemas from `volumes/db/*.sql`,
   restart `supabase-pooler`. The socat proxy (54322) keeps working meanwhile.
 - **Pooler username** is `postgres.<POOLER_TENANT_ID>` — the tenant id is
-  currently the literal string `your-tenant-id`; if you change it in `.env`,
-  update `rag-engine/.env` too.
+  currently the literal string `your-tenant-id`; if you change it in the
+  stack `.env`, re-run `python scripts/sync_env.py` so the root `.env`
+  follows.
 - **PostgREST 404s on new tables**: `docker compose restart supabase-rest`
   (schema cache), or `notify pgrst, 'reload schema';`.

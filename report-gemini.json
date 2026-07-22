@@ -1,0 +1,384 @@
+{
+  "run_id": "run_aaa6f78e615d",
+  "asset_id": "ad_d08b66f7d00d",
+  "tier": "free",
+  "status": "passed",
+  "llm_rounds_used": 2,
+  "max_llm_rounds": 3,
+  "llm_review": {
+    "asset_id": "ad_d08b66f7d00d",
+    "findings": [
+      {
+        "finding_id": "llmf_001",
+        "framework": "TILA",
+        "severity": "high",
+        "verdict": "potential_violation",
+        "cited_segment_ids": [
+          "seg_1"
+        ],
+        "cited_entity_ids": [
+          "ent_1"
+        ],
+        "quoted_evidence": "Get 5.99% APR",
+        "claim_candidate_id": "clm_2",
+        "regulation_citations": [
+          "12 CFR § 1026.16"
+        ],
+        "reasoning": "The advertisement promotes a specific APR (5.99%) without providing the required accompanying disclosures for credit advertising, such as the promotional period duration, the rate that applies after the promotional period, or any applicable finance charges, which are required to prevent misleading consumers about the true cost of credit.",
+        "scope_of_improvement": "Include clear and conspicuous disclosures of the APR, the duration of the promotional rate, the post-promotional rate, and any applicable finance charges or fees as required by TILA advertising standards."
+      },
+      {
+        "finding_id": "llmf_002",
+        "framework": "CFPB",
+        "severity": "high",
+        "verdict": "potential_violation",
+        "cited_segment_ids": [
+          "seg_1"
+        ],
+        "cited_entity_ids": [
+          "ent_2"
+        ],
+        "quoted_evidence": "guaranteed approval!",
+        "claim_candidate_id": "clm_1",
+        "regulation_citations": [
+          "12 U.S.C. § 5531"
+        ],
+        "reasoning": "The claim 'guaranteed approval' is inherently deceptive as credit approval is subject to underwriting criteria. This constitutes a potentially unfair or deceptive act by misleading consumers about the nature of the credit product and the likelihood of approval, which may cause substantial injury by inducing consumers to apply for credit under false pretenses.",
+        "scope_of_improvement": "Remove the 'guaranteed approval' claim immediately. Replace with language that accurately reflects that credit is subject to credit approval and underwriting standards."
+      },
+      {
+        "finding_id": "llmf_003",
+        "framework": "STATE_UDAP",
+        "severity": "high",
+        "verdict": "potential_violation",
+        "cited_segment_ids": [
+          "seg_1"
+        ],
+        "cited_entity_ids": [
+          "ent_2"
+        ],
+        "quoted_evidence": "guaranteed approval!",
+        "claim_candidate_id": "clm_1",
+        "regulation_citations": [
+          "Cal. Bus. & Prof. Code § 17508"
+        ],
+        "reasoning": "For the California market (US-CA), the claim 'guaranteed approval' is a factual assertion that likely cannot be substantiated. Under California law, advertisers must be able to substantiate claims regarding the performance or characteristics of a product or service. A 'guaranteed' credit approval claim is misleading and violates state-level prohibitions against false advertising.",
+        "scope_of_improvement": "Remove the 'guaranteed' claim. If the advertiser intends to make claims about approval, they must be qualified by the actual underwriting criteria and must be able to provide substantiation for any such claims as required by California law."
+      }
+    ],
+    "reviewed_clear": [],
+    "frameworks_evaluated": [
+      "FTC",
+      "TILA",
+      "CFPB",
+      "STATE_UDAP"
+    ],
+    "llm_meta": {
+      "tier": "free",
+      "model": "gemini-3.1-flash-lite",
+      "prompt_version": "compliance-review-v1.0",
+      "rag_corpus_hash": "ce113cdbbd3e6910",
+      "retrieved_chunks": 23,
+      "input_tokens": 5100,
+      "output_tokens": 849,
+      "max_output_tokens": 4000,
+      "reviewed_at": "2026-07-20T18:34:17.344446Z",
+      "latency_ms": 6766
+    }
+  },
+  "verification": {
+    "review_passed": true,
+    "checks_run": 50,
+    "failed_checks": [],
+    "asset_defects": [
+      {
+        "check_id": "FTC5-STR-001",
+        "passed": false,
+        "evidence": {
+          "trigger_entities": [
+            {
+              "entity_id": "ent_2",
+              "type": "guarantee_term",
+              "raw_text": "guaranteed",
+              "segment_id": "seg_1",
+              "char_span": [
+                15,
+                25
+              ]
+            }
+          ],
+          "trigger_claim_ids": [
+            "clm_1"
+          ],
+          "segment_role_census": {
+            "headline": 1
+          }
+        },
+        "message": "absolute claims with no disclosure/fine-print/legal segment anywhere in the asset",
+        "severity": "medium",
+        "scope": "asset"
+      }
+    ],
+    "advisories": [
+      {
+        "check_id": "ADV-cfpb-cms",
+        "passed": true,
+        "evidence": {
+          "source": "cfpb-cms",
+          "citation": "CFPB Supervision & Examination Manual — Compliance Management System",
+          "frameworks_enum": "CFPB",
+          "routing_trigger": "CFPB routed -> advisory flag",
+          "note": "organizational compliance program expectation",
+          "coverage_matrix_version": "1.0.0"
+        },
+        "message": "CFPB Supervision & Examination Manual — Compliance Management System applies to the advertiser's compliance program (e.g. retention obligations apply to this material); out of creative scope — informational applicability flag",
+        "severity": "low",
+        "scope": "advisory"
+      },
+      {
+        "check_id": "ADV-nist-privacy-framework",
+        "passed": true,
+        "evidence": {
+          "source": "nist-privacy-framework",
+          "citation": "NIST Privacy Framework v1.0",
+          "frameworks_enum": "NIST_PRIVACY",
+          "routing_trigger": "always (voluntary governance baseline)",
+          "note": "process rule per directory architecture notes",
+          "coverage_matrix_version": "1.0.0"
+        },
+        "message": "NIST Privacy Framework v1.0 applies to the advertiser's compliance program (e.g. retention obligations apply to this material); out of creative scope — informational applicability flag",
+        "severity": "low",
+        "scope": "advisory"
+      },
+      {
+        "check_id": "ADV-pci-dss",
+        "passed": true,
+        "evidence": {
+          "source": "pci-dss",
+          "citation": "PCI DSS v4.0",
+          "frameworks_enum": "PCI_DSS",
+          "routing_trigger": "always (advertiser-level payment-card program)",
+          "note": "process rule per directory architecture notes",
+          "coverage_matrix_version": "1.0.0"
+        },
+        "message": "PCI DSS v4.0 applies to the advertiser's compliance program (e.g. retention obligations apply to this material); out of creative scope — informational applicability flag",
+        "severity": "low",
+        "scope": "advisory"
+      }
+    ],
+    "ruleset_version": "1.7.0",
+    "ruleset_hash": "bad2a49239b87b66"
+  },
+  "rounds": [
+    {
+      "round": 1,
+      "was_rule_engine_callback": false,
+      "had_human_guidance": false,
+      "feedback_sent_to_llm": null,
+      "llm_review": {
+        "asset_id": "ad_d08b66f7d00d",
+        "findings": [
+          {
+            "finding_id": "llmf_001",
+            "framework": "CFPB",
+            "severity": "high",
+            "verdict": "potential_violation",
+            "cited_segment_ids": [
+              "seg_1"
+            ],
+            "cited_entity_ids": [
+              "ent_2"
+            ],
+            "quoted_evidence": "guaranteed approval!",
+            "claim_candidate_id": "clm_1",
+            "regulation_citations": [
+              "12 U.S.C. § 5531(d)"
+            ],
+            "reasoning": "The claim 'guaranteed approval' is inherently deceptive and potentially abusive under 12 U.S.C. § 5531(d). It misleads consumers regarding the nature of the credit underwriting process, which cannot be guaranteed without a review of creditworthiness. This interferes with the consumer's ability to understand the material conditions of the product.",
+            "scope_of_improvement": "Remove the word 'guaranteed' immediately. Replace with language that accurately reflects that approval is subject to credit review (e.g., 'Subject to credit approval')."
+          },
+          {
+            "finding_id": "llmf_002",
+            "framework": "TILA",
+            "severity": "high",
+            "verdict": "potential_violation",
+            "cited_segment_ids": [
+              "seg_1"
+            ],
+            "cited_entity_ids": [
+              "ent_1"
+            ],
+            "quoted_evidence": "5.99% APR",
+            "claim_candidate_id": "clm_2",
+            "regulation_citations": [
+              "12 CFR § 1026.16(i)",
+              "12 CFR § 1026.16(ii)"
+            ],
+            "reasoning": "The advertisement promotes a specific APR ('5.99% APR') without providing the required disclosures for promotional rates or variable rate terms, such as when the rate ends or what the rate will be after the promotional period, as required by 12 CFR § 1026.16.",
+            "scope_of_improvement": "Include clear and conspicuous disclosures adjacent to the APR, including the duration of the rate, the APR that will apply after the promotional period, and any minimum or transaction charges if applicable."
+          }
+        ],
+        "reviewed_clear": [],
+        "frameworks_evaluated": [
+          "FTC",
+          "TILA",
+          "CFPB",
+          "STATE_UDAP"
+        ],
+        "llm_meta": {
+          "tier": "free",
+          "model": "gemini-3.1-flash-lite",
+          "prompt_version": "compliance-review-v1.0",
+          "rag_corpus_hash": "ce113cdbbd3e6910",
+          "retrieved_chunks": 23,
+          "input_tokens": 4995,
+          "output_tokens": 611,
+          "max_output_tokens": 4000,
+          "reviewed_at": "2026-07-20T18:34:10.473943Z",
+          "latency_ms": 19094
+        }
+      },
+      "adapter_notes": [],
+      "rule_engine_passed": false,
+      "failed_checks": [
+        {
+          "check_id": "STATE-COV-002",
+          "passed": false,
+          "evidence": {
+            "unmentioned_states": [
+              {
+                "state": "US-CA",
+                "statute": "Cal. Bus. & Prof. Code §§ 17200 (UCL), 17500 (False Advertising Law); Civ. Code § 1750 (CLRA)"
+              }
+            ],
+            "mentioned_states": [],
+            "exempt_skipped": [],
+            "state_table_version": "v1"
+          },
+          "message": "targeted states were never individually considered in any STATE_UDAP finding",
+          "severity": "medium",
+          "scope": "review"
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "was_rule_engine_callback": true,
+      "had_human_guidance": false,
+      "feedback_sent_to_llm": "Your previous review FAILED the deterministic rule engine's verification. Fix every item below and return a corrected, complete review (the full JSON document, not a diff):\n\n1. [STATE-COV-002 | severity=medium] targeted states were never individually considered in any STATE_UDAP finding\n   Required fix: resolve and resubmit: targeted states were never individually considered in any STATE_UDAP finding",
+      "llm_review": {
+        "asset_id": "ad_d08b66f7d00d",
+        "findings": [
+          {
+            "finding_id": "llmf_001",
+            "framework": "TILA",
+            "severity": "high",
+            "verdict": "potential_violation",
+            "cited_segment_ids": [
+              "seg_1"
+            ],
+            "cited_entity_ids": [
+              "ent_1"
+            ],
+            "quoted_evidence": "Get 5.99% APR",
+            "claim_candidate_id": "clm_2",
+            "regulation_citations": [
+              "12 CFR § 1026.16"
+            ],
+            "reasoning": "The advertisement promotes a specific APR (5.99%) without providing the required accompanying disclosures for credit advertising, such as the promotional period duration, the rate that applies after the promotional period, or any applicable finance charges, which are required to prevent misleading consumers about the true cost of credit.",
+            "scope_of_improvement": "Include clear and conspicuous disclosures of the APR, the duration of the promotional rate, the post-promotional rate, and any applicable finance charges or fees as required by TILA advertising standards."
+          },
+          {
+            "finding_id": "llmf_002",
+            "framework": "CFPB",
+            "severity": "high",
+            "verdict": "potential_violation",
+            "cited_segment_ids": [
+              "seg_1"
+            ],
+            "cited_entity_ids": [
+              "ent_2"
+            ],
+            "quoted_evidence": "guaranteed approval!",
+            "claim_candidate_id": "clm_1",
+            "regulation_citations": [
+              "12 U.S.C. § 5531"
+            ],
+            "reasoning": "The claim 'guaranteed approval' is inherently deceptive as credit approval is subject to underwriting criteria. This constitutes a potentially unfair or deceptive act by misleading consumers about the nature of the credit product and the likelihood of approval, which may cause substantial injury by inducing consumers to apply for credit under false pretenses.",
+            "scope_of_improvement": "Remove the 'guaranteed approval' claim immediately. Replace with language that accurately reflects that credit is subject to credit approval and underwriting standards."
+          },
+          {
+            "finding_id": "llmf_003",
+            "framework": "STATE_UDAP",
+            "severity": "high",
+            "verdict": "potential_violation",
+            "cited_segment_ids": [
+              "seg_1"
+            ],
+            "cited_entity_ids": [
+              "ent_2"
+            ],
+            "quoted_evidence": "guaranteed approval!",
+            "claim_candidate_id": "clm_1",
+            "regulation_citations": [
+              "Cal. Bus. & Prof. Code § 17508"
+            ],
+            "reasoning": "For the California market (US-CA), the claim 'guaranteed approval' is a factual assertion that likely cannot be substantiated. Under California law, advertisers must be able to substantiate claims regarding the performance or characteristics of a product or service. A 'guaranteed' credit approval claim is misleading and violates state-level prohibitions against false advertising.",
+            "scope_of_improvement": "Remove the 'guaranteed' claim. If the advertiser intends to make claims about approval, they must be qualified by the actual underwriting criteria and must be able to provide substantiation for any such claims as required by California law."
+          }
+        ],
+        "reviewed_clear": [],
+        "frameworks_evaluated": [
+          "FTC",
+          "TILA",
+          "CFPB",
+          "STATE_UDAP"
+        ],
+        "llm_meta": {
+          "tier": "free",
+          "model": "gemini-3.1-flash-lite",
+          "prompt_version": "compliance-review-v1.0",
+          "rag_corpus_hash": "ce113cdbbd3e6910",
+          "retrieved_chunks": 23,
+          "input_tokens": 5100,
+          "output_tokens": 849,
+          "max_output_tokens": 4000,
+          "reviewed_at": "2026-07-20T18:34:17.344446Z",
+          "latency_ms": 6766
+        }
+      },
+      "adapter_notes": [],
+      "rule_engine_passed": true,
+      "failed_checks": []
+    }
+  ],
+  "human_review": null,
+  "llm_error": null,
+  "warnings": [],
+  "provenance": {
+    "tier": "free",
+    "llm_provider": "openrouter",
+    "llm_model": "qwen/qwen3.7-plus",
+    "llm_effort": null,
+    "prompt_version": "compliance-review-v1.0",
+    "rag_corpus_hash": "ce113cdbbd3e6910",
+    "rag_online": true,
+    "ruleset_version": "1.7.0",
+    "asset_provenance": {
+      "cv_version": "cv-0.1.0",
+      "nlp_version": "nlp-0.1.0",
+      "ruleset_hash": "2ebb768be9c8c562",
+      "timestamp": "2026-07-20T18:33:49.642273Z",
+      "embedding_model_version": null,
+      "ocr_backend": null
+    },
+    "ocr_backend": null,
+    "as_of": null
+  },
+  "timings_ms": {
+    "review_and_verify": 27593,
+    "prepare_asset": 358
+  },
+  "resumed_from_run_id": null,
+  "asset": null
+}

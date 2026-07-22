@@ -150,6 +150,15 @@ async def invalidate_org_caches(org_id: str) -> None:
         redis_client.mark_failure()
 
 
+async def invalidate_user_cache(user_id: str) -> None:
+    """Membership set changed (org created / member added) — drop the 60 s
+    authn cache so the next request sees it immediately."""
+    try:
+        await redis_client.client().delete(f"authn:{user_id}")
+    except Exception:
+        redis_client.mark_failure()
+
+
 # ---------------------------------------------------------------------------
 # The dependency.
 
@@ -203,6 +212,29 @@ async def auth_context(request: Request) -> AuthContext:
 
     raise ApiError(401, "unauthenticated",
                    "Provide a Bearer token or X-API-Key.")
+
+
+async def user_only_context(request: Request) -> AuthContext:
+    """A verified user session WITHOUT the org-membership requirement —
+    exclusively for first-org creation (POST /v1/orgs), where demanding a
+    membership would be circular. Email must be confirmed; org-scoped
+    fields are deliberately blank and must not be read by the route."""
+    authz = request.headers.get("Authorization", "")
+    if not authz.lower().startswith("bearer "):
+        raise ApiError(401, "unauthenticated", "Provide a Bearer token.")
+    claims = verify_supabase_jwt(authz[7:].strip(),
+                                 settings.supabase_jwt_secret,
+                                 settings.supabase_jwt_issuer)
+    ctx_data = await _user_context(claims.user_id)
+    if not ctx_data["confirmed"]:
+        raise ApiError(403, "forbidden",
+                       "Confirm your email before creating an organization.")
+    return AuthContext(
+        principal="user", org_id="", role="owner", tier="free",
+        entitlements={}, user_id=claims.user_id, email=ctx_data["email"],
+        email_confirmed=True, aal=claims.aal,
+        mfa_verified=bool(ctx_data.get("mfa_verified")),
+        memberships=ctx_data["memberships"])
 
 
 async def confirmed_reviewer(ctx: AuthContext = Depends(auth_context)) -> AuthContext:

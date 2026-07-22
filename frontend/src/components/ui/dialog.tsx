@@ -23,10 +23,10 @@ export function DialogContent({
 }) {
   return (
     <DialogPrimitive.Portal>
-      <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-ink-950/55 backdrop-blur-[3px] data-[state=open]:animate-fade-in" />
+      <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-coal-950/55 backdrop-blur-[3px] data-[state=open]:animate-fade-in" />
       <DialogPrimitive.Content
         className={cn(
-          "fixed top-1/2 left-1/2 z-50 w-[calc(100vw-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-line bg-white p-6 shadow-(--shadow-float) focus:outline-none data-[state=open]:animate-fade-up",
+          "fixed top-1/2 left-1/2 z-50 w-[calc(100vw-2rem)] max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-line bg-coal-800 p-6 shadow-(--shadow-float) focus:outline-none data-[state=open]:animate-fade-up",
           className
         )}
       >
@@ -34,7 +34,7 @@ export function DialogContent({
           {title}
         </DialogPrimitive.Title>
         {description ? (
-          <DialogPrimitive.Description className="mt-1 text-sm text-zinc-500">
+          <DialogPrimitive.Description className="mt-1 text-sm text-ink-500">
             {description}
           </DialogPrimitive.Description>
         ) : (
@@ -46,7 +46,7 @@ export function DialogContent({
         {!hideClose && (
           <DialogPrimitive.Close
             aria-label="Close dialog"
-            className="absolute top-4 right-4 rounded-full p-1.5 text-zinc-400 transition-colors hover:bg-zinc-100 hover:text-ink-800"
+            className="absolute top-4 right-4 rounded-full p-1.5 text-ink-500 transition-colors hover:bg-white/8 hover:text-ink-800"
           >
             <X className="size-4" />
           </DialogPrimitive.Close>

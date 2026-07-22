@@ -67,6 +67,52 @@ wall, least-recently-served-org fairness), heartbeat every 30 s, retry with
 refund**. Tier and model are re-fetched from the DB (`app.org_tier`) at
 execution time — never from the job payload.
 
+### Accepted media, per plan (migration 0011)
+
+The upload pipeline accepts images, text, HTML, **PDF, DOCX and video**
+(mp4/mov/webm). *Which* of those a tenant may submit is a plan entitlement
+checked before any expensive work and before anything is charged:
+
+| Tier | `allowed_kinds` | `max_video_seconds` |
+|---|---|---|
+| free | text · html · image · pdf · docx | — (no video) |
+| hobby | + video | 60 |
+| pro · design · enterprise | + video | unlimited (MB cap still applies) |
+
+Structural probes run in the API: PDFs must parse and are capped at 40 pages
+(password-protected → 422), DOCX must contain `word/document.xml`, video must
+decode and report a duration (absolute ceiling 900 s regardless of tier).
+Rejections are `403 plan_restricted` / `413 payload_too_large` /
+`415 unsupported_media_type`, and never charge. `engine/media.py` converts
+each format for the CV/NLP layers (see `ENGINE.md` §5).
+
+### What a run costs
+
+Two components, both published by `GET /v1/plans` (no prices in the frontend):
+
+1. **Base price**, charged at enqueue from `credit_costs` — covers extraction,
+   retrieval and verification. It is what the confirm dialog quotes.
+2. **Metered model usage**, settled after the run by `app.settle_run_tokens`
+   from the tokens actually consumed **summed across every LLM round**, at the
+   tier's `token_rates` (ledger reason `consume.tokens`). The charge clamps to
+   the available balance — the report already exists, so a shortfall is
+   audited rather than failing the run.
+
+`GET /v1/runs/{id}/events` streams the sanitized live-activity feed the
+workspace renders while a run executes: fixed message templates plus
+aggregate counts only — never ad content, retrieved regulation text, prompts,
+or model reasoning.
+
+`POST /v1/orgs` is the one route a zero-membership user may call (dependency
+`user_only_context`: verified JWT + confirmed email, no org required), so a
+fresh signup can create its first workspace; self-serve accounts are capped at
+3 orgs.
+
+When `STRIPE_SECRET_KEY` is empty **and** `APP_ENV != prod`, the checkout
+routes simulate the purchase directly (`services/dev_billing.py`, audited
+`simulated: true`) instead of 503-ing, so the full billing UX is exercisable
+before Stripe is wired.
+
 ## Gates run on 2026-07-14 (all green)
 
 | Gate | Result |

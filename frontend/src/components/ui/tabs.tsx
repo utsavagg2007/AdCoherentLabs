@@ -41,7 +41,7 @@ export function TabsTrigger({
     <TabsPrimitive.Trigger
       value={value}
       className={cn(
-        "rounded-full px-3.5 py-1.5 text-[13px] font-semibold text-zinc-500 transition-colors hover:text-ink-800 data-[state=active]:bg-white data-[state=active]:text-ink-900 data-[state=active]:shadow-(--shadow-soft)",
+        "rounded-full px-3.5 py-1.5 text-[13px] font-semibold text-ink-500 transition-colors hover:text-ink-800 data-[state=active]:bg-coal-800 data-[state=active]:text-ink-900 data-[state=active]:shadow-(--shadow-soft)",
         className
       )}
     >

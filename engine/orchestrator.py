@@ -34,6 +34,7 @@ from . import _paths  # noqa: F401  (sys.path bootstrap - must be first)
 from pipeline import analyze_asset
 from rule_engine.orchestrator import build_retry_payload, evaluate_with_retry
 
+from . import media
 from .llm_layer import LLMLayer, RagConnection
 from .report import (
     EngineRunResult,
@@ -66,27 +67,65 @@ def prepare_asset(
     image_path: str | list[str] | None = None,
     text: str | None = None,
     html: str | None = None,
+    pdf_path: str | None = None,
+    docx_path: str | None = None,
+    video_path: str | None = None,
     product_tier: str = "free",
     target_jurisdictions: list[str] | None = None,
+    media_workdir: str | None = None,
 ) -> dict:
     """Layers 1+2: raw creative -> validated AssetRepresentation dict.
 
-    Exactly one of image_path / text / html. ``image_path`` may be a
-    list (carousel ads). The product tier only selects the OCR backend
-    here (PaddleOCR for every tier, for now).
+    Exactly one of image_path / text / html / pdf_path / docx_path /
+    video_path. ``image_path`` may be a list (carousel ads). PDF pages
+    and video keyframes convert to the multi-image path (engine.media);
+    DOCX converts to the text path. ``media_workdir`` receives the
+    intermediate page/frame files (a temp dir is created and cleaned up
+    when omitted). The product tier only selects the OCR backend here
+    (PaddleOCR for every tier, for now).
     """
-    provided = [v is not None for v in (image_path, text, html)]
+    provided = [v is not None
+                for v in (image_path, text, html, pdf_path, docx_path, video_path)]
     if sum(provided) != 1:
-        raise ValueError("provide exactly one of image_path, text, or html")
-    rep = analyze_asset(
-        asset_id or ("ad_" + uuid.uuid4().hex[:12]),
-        image_path=image_path,
-        text=text,
-        html=html,
-        tier=ocr_tier_for(product_tier),
-        target_jurisdictions=target_jurisdictions,
-    )
-    return rep.model_dump(mode="json")
+        raise ValueError("provide exactly one of image_path, text, html, "
+                         "pdf_path, docx_path, or video_path")
+
+    media_meta: dict | None = None
+    workdir = media_workdir
+    created_workdir = False
+    if pdf_path is not None or video_path is not None:
+        if workdir is None:
+            import tempfile
+            workdir = tempfile.mkdtemp(prefix="engine-media-")
+            created_workdir = True
+
+    try:
+        if pdf_path is not None:
+            image_path, media_meta = media.pdf_to_images(pdf_path, workdir)
+        elif docx_path is not None:
+            text, media_meta = media.docx_to_text(docx_path)
+        elif video_path is not None:
+            image_path, media_meta = media.video_to_frames(video_path, workdir)
+
+        rep = analyze_asset(
+            asset_id or ("ad_" + uuid.uuid4().hex[:12]),
+            image_path=image_path,
+            text=text,
+            html=html,
+            tier=ocr_tier_for(product_tier),
+            target_jurisdictions=target_jurisdictions,
+        )
+    finally:
+        if created_workdir:
+            import shutil
+            shutil.rmtree(workdir, ignore_errors=True)
+
+    dump = rep.model_dump(mode="json")
+    if media_meta:
+        # Extra provenance key: survives the dict pipeline (layer_outputs,
+        # report assembly); pydantic re-validation simply ignores it.
+        dump.setdefault("provenance", {})["media"] = media_meta
+    return dump
 
 
 def review_and_verify(
@@ -103,13 +142,15 @@ def review_and_verify(
     manage_rag_connection: bool = True,
     resumed_from_run_id: str | None = None,
     include_asset: bool = False,
+    progress: Callable[[str, str, str, dict], None] | None = None,
 ) -> EngineRunResult:
     """Layers 3+4 over a prepared asset: review, verify, callback loop.
 
     ``conn``/``embedder``/``retriever``/``provider`` are injectable (tests,
     stubs). When none are given and ``manage_rag_connection`` is True the
     production RAG store is wired from DATABASE_URL (degrading to empty
-    retrieval with a warning when unreachable).
+    retrieval with a warning when unreachable). ``progress`` receives
+    sanitized (stage, event, message, detail) live-activity events.
     """
     tier_name = normalize_tier(product_tier)
     tier = get_tier(tier_name)
@@ -117,11 +158,29 @@ def review_and_verify(
     warnings: list[str] = []
     timings: dict[str, int] = {}
 
+    def _emit(stage: str, event: str, message: str, detail: dict) -> None:
+        if progress is None:
+            return
+        try:
+            progress(stage, event, message, detail)
+        except Exception:  # noqa: BLE001 — a broken sink never breaks a run
+            logger.warning("progress sink failed for %s/%s", stage, event)
+
     rag: RagConnection | None = None
     if conn is None and retriever is None and manage_rag_connection:
+        _emit("retrieval", "retrieval.connecting",
+              "Connecting to the regulation corpus.", {})
         rag = RagConnection().connect()
         conn, embedder = rag.conn, rag.embedder
         warnings.extend(rag.warnings)
+    frameworks = (asset.get("routing") or {}).get("frameworks") or []
+    _emit("retrieval", "retrieval.ready",
+          ("Regulation retrieval online — grounding the review for "
+           f"{len(frameworks)} framework{'s' if len(frameworks) != 1 else ''}."
+           if (conn is not None or retriever is not None)
+           else "Running without regulation retrieval (degraded grounding)."),
+          {"frameworks": frameworks,
+           "online": bool(conn is not None or retriever is not None)})
 
     llm = LLMLayer(
         tier_name,
@@ -132,6 +191,8 @@ def review_and_verify(
         target_jurisdictions=asset.get("target_jurisdictions") or None,
         as_of=as_of,
         human_guidance=human_guidance,
+        progress=progress,
+        max_rounds=max_llm_rounds,
     )
 
     t0 = time.monotonic()
@@ -141,6 +202,19 @@ def review_and_verify(
         if rag is not None:
             rag.close()
     timings["review_and_verify"] = int((time.monotonic() - t0) * 1000)
+
+    if final.final_report is not None:
+        rep0 = final.final_report
+        _emit("rules", "rules.final",
+              (f"Deterministic verification complete — {len(rep0.results)} "
+               f"checks run, {len(rep0.failed_checks)} failed.")
+              if not rep0.passed else
+              (f"Deterministic verification passed all "
+               f"{len(rep0.results)} checks."),
+              {"checks_run": len(rep0.results),
+               "failed_checks": len(rep0.failed_checks),
+               "passed": rep0.passed,
+               "rounds_used": len(llm.rounds)})
 
     # ---- zip Layer-3 and Layer-4 audit trails ------------------------
     rounds: list[RoundAudit] = []
@@ -227,6 +301,9 @@ def run_compliance_engine(
     image_path: str | list[str] | None = None,
     text: str | None = None,
     html: str | None = None,
+    pdf_path: str | None = None,
+    docx_path: str | None = None,
+    video_path: str | None = None,
     product_tier: str = "free",
     target_jurisdictions: list[str] | None = None,
     as_of: date | None = None,
@@ -249,6 +326,9 @@ def run_compliance_engine(
         image_path=image_path,
         text=text,
         html=html,
+        pdf_path=pdf_path,
+        docx_path=docx_path,
+        video_path=video_path,
         product_tier=product_tier,
         target_jurisdictions=target_jurisdictions,
     )
@@ -281,6 +361,7 @@ def resume_with_human_guidance(
     retriever: Callable | None = None,
     provider: Any = None,
     include_asset: bool = False,
+    progress: Callable[[str, str, str, dict], None] | None = None,
 ) -> EngineRunResult:
     """Operator interference: one more LLM round steered by a human.
 
@@ -299,4 +380,5 @@ def resume_with_human_guidance(
         conn=conn, embedder=embedder, retriever=retriever, provider=provider,
         resumed_from_run_id=(previous.run_id if previous else None),
         include_asset=include_asset,
+        progress=progress,
     )

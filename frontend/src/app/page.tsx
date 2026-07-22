@@ -1,9 +1,9 @@
 import { MarketingNav } from "@/components/marketing/nav";
-import { ScrubHero } from "@/components/marketing/scrub-hero";
+import { Hero } from "@/components/marketing/hero";
 import { FrameworkRail } from "@/components/marketing/framework-rail";
-import { EvidencePinned } from "@/components/marketing/evidence-pinned";
 import { Metrics } from "@/components/marketing/metrics";
-import { ProductPreview } from "@/components/marketing/product-preview";
+import { HowItWorks } from "@/components/marketing/how-it-works";
+import { LiveReview } from "@/components/marketing/live-review";
 import { Pricing } from "@/components/marketing/pricing";
 import { Faq } from "@/components/marketing/faq";
 import { FinalCta } from "@/components/marketing/final-cta";
@@ -14,12 +14,11 @@ export default function MarketingPage() {
     <>
       <MarketingNav />
       <main>
-        <ScrubHero />
-        <div className="h-px seam-violet" aria-hidden />
+        <Hero />
         <FrameworkRail />
         <Metrics />
-        <EvidencePinned />
-        <ProductPreview />
+        <HowItWorks />
+        <LiveReview />
         <Pricing />
         <Faq />
         <FinalCta />

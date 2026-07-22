@@ -80,7 +80,7 @@ function RunsTab() {
   return (
     <div>
       <div className="mb-4 flex items-center gap-2.5">
-        <Filter className="size-4 text-zinc-400" aria-hidden />
+        <Filter className="size-4 text-ink-500" aria-hidden />
         <label htmlFor="run-status" className="sr-only">
           Filter by status
         </label>
@@ -121,7 +121,7 @@ function RunsTab() {
         <div className="card overflow-x-auto">
           <table className="w-full min-w-[640px] text-left">
             <thead>
-              <tr className="border-b border-line text-[11px] font-bold tracking-wider text-zinc-400 uppercase">
+              <tr className="border-b border-line text-[11px] font-bold tracking-wider text-ink-500 uppercase">
                 <th className="px-4 py-3">Run</th>
                 <th className="px-4 py-3">Created</th>
                 <th className="px-4 py-3">Duration</th>
@@ -135,16 +135,16 @@ function RunsTab() {
                   <td className="px-4 py-3.5">
                     <Link
                       href={`/runs/${r.id}`}
-                      className="font-mono text-[12.5px] font-bold text-ink-900 group-hover:text-violet-800"
+                      className="font-mono text-[12.5px] font-bold text-ink-900 group-hover:text-ink-850"
                     >
                       {r.id.slice(0, 8)}
                     </Link>
-                    <span className="ml-2 text-[11px] text-zinc-400">{r.tier}</span>
+                    <span className="ml-2 text-[11px] text-ink-500">{r.tier}</span>
                   </td>
-                  <td className="px-4 py-3.5 text-[12.5px] whitespace-nowrap text-zinc-500">
+                  <td className="px-4 py-3.5 text-[12.5px] whitespace-nowrap text-ink-500">
                     {formatDateTime(r.created_at)}
                   </td>
-                  <td className="px-4 py-3.5 text-[12.5px] text-zinc-500 tabular-nums">
+                  <td className="px-4 py-3.5 text-[12.5px] text-ink-500 tabular-nums">
                     {formatDuration(r.started_at, r.finished_at)}
                   </td>
                   <td className="px-4 py-3.5">
@@ -153,7 +153,7 @@ function RunsTab() {
                   <td className="px-4 py-3.5 text-right">
                     <Link
                       href={`/runs/${r.id}`}
-                      className="inline-flex items-center gap-1 text-[12.5px] font-bold text-violet-700 hover:text-violet-900"
+                      className="inline-flex items-center gap-1 text-[12.5px] font-bold text-ink-900 hover:text-white"
                     >
                       Open
                       <ArrowRight className="size-3.5" aria-hidden />
@@ -214,7 +214,7 @@ function FindingsTab() {
   return (
     <div>
       <div className="mb-4 flex flex-wrap items-center gap-2.5">
-        <Filter className="size-4 text-zinc-400" aria-hidden />
+        <Filter className="size-4 text-ink-500" aria-hidden />
         <label htmlFor="f-status" className="sr-only">
           Filter by workflow status
         </label>
@@ -266,24 +266,24 @@ function FindingsTab() {
               <div className="flex flex-wrap items-center gap-1.5">
                 <SeverityBadge severity={f.severity} />
                 <VerdictBadge verdict={f.verdict} />
-                <span className="text-[12px] font-bold text-zinc-500">
+                <span className="text-[12px] font-bold text-ink-500">
                   {frameworkLabel(f.framework)}
                 </span>
                 <span className="ml-auto flex items-center gap-2">
                   <FindingStatusBadge status={f.status} />
                   <Link
                     href={`/runs/${f.run_id}`}
-                    className="text-[12px] font-bold text-violet-700 hover:text-violet-900"
+                    className="text-[12px] font-bold text-ink-900 hover:text-white"
                   >
                     View run
                   </Link>
                 </span>
               </div>
-              <p className="mt-2.5 text-[13.5px] leading-relaxed text-zinc-700">
+              <p className="mt-2.5 text-[13.5px] leading-relaxed text-ink-700">
                 {truncate(f.message, 280)}
               </p>
               {f.rule_ref && (
-                <p className="mt-1.5 font-mono text-[11px] text-zinc-400">
+                <p className="mt-1.5 font-mono text-[11px] text-ink-500">
                   {f.rule_ref}
                 </p>
               )}

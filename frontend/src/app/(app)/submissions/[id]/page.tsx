@@ -72,7 +72,7 @@ export default function SubmissionDetailPage({
           <section className="card p-4" aria-label="Submission details">
             <dl className="grid gap-x-6 gap-y-3 text-[13px] sm:grid-cols-4">
               <div>
-                <dt className="text-[10.5px] font-bold tracking-wider text-zinc-400 uppercase">
+                <dt className="text-[10.5px] font-bold tracking-wider text-ink-500 uppercase">
                   Format
                 </dt>
                 <dd className="mt-0.5 font-bold text-ink-900 capitalize">
@@ -81,7 +81,7 @@ export default function SubmissionDetailPage({
                 </dd>
               </div>
               <div>
-                <dt className="text-[10.5px] font-bold tracking-wider text-zinc-400 uppercase">
+                <dt className="text-[10.5px] font-bold tracking-wider text-ink-500 uppercase">
                   Jurisdictions
                 </dt>
                 <dd className="mt-0.5 font-bold text-ink-900">
@@ -91,7 +91,7 @@ export default function SubmissionDetailPage({
                 </dd>
               </div>
               <div>
-                <dt className="text-[10.5px] font-bold tracking-wider text-zinc-400 uppercase">
+                <dt className="text-[10.5px] font-bold tracking-wider text-ink-500 uppercase">
                   Assets
                 </dt>
                 <dd className="mt-0.5 font-bold text-ink-900 tabular-nums">
@@ -99,7 +99,7 @@ export default function SubmissionDetailPage({
                 </dd>
               </div>
               <div>
-                <dt className="text-[10.5px] font-bold tracking-wider text-zinc-400 uppercase">
+                <dt className="text-[10.5px] font-bold tracking-wider text-ink-500 uppercase">
                   Runs
                 </dt>
                 <dd className="mt-0.5 font-bold text-ink-900 tabular-nums">
@@ -119,9 +119,9 @@ export default function SubmissionDetailPage({
                 {assets.map((a, i) => (
                   <li
                     key={a.id}
-                    className="flex items-center gap-3 rounded-xl border border-line bg-white p-3"
+                    className="flex items-center gap-3 rounded-xl border border-line bg-coal-800 p-3"
                   >
-                    <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-cream text-zinc-400">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-cream text-ink-500">
                       {a.kind === "image" ? (
                         <FileImage className="size-4.5" aria-hidden />
                       ) : (
@@ -133,11 +133,11 @@ export default function SubmissionDetailPage({
                         {a.kind}
                         {assets.length > 1 ? ` · card ${i + 1}` : ""}
                       </span>
-                      <span className="block truncate font-mono text-[11px] text-zinc-400">
+                      <span className="block truncate font-mono text-[11px] text-ink-500">
                         sha256 {a.checksum.slice(0, 16)}…
                       </span>
                     </span>
-                    <Chip className="border-emerald-200 bg-emerald-50 text-emerald-700">
+                    <Chip className="border-emerald-400/25 bg-emerald-400/10 text-emerald-300">
                       <ShieldCheck className="size-3" aria-hidden />
                       {a.scan_status}
                     </Chip>
@@ -154,7 +154,7 @@ export default function SubmissionDetailPage({
             </h2>
             <div className="card divide-y divide-line">
               {runs.length === 0 && (
-                <p className="p-4 text-[13px] text-zinc-500">
+                <p className="p-4 text-[13px] text-ink-500">
                   No runs recorded for this submission.
                 </p>
               )}
@@ -168,18 +168,18 @@ export default function SubmissionDetailPage({
                     <span className="block font-mono text-[12px] font-bold text-ink-800">
                       {r.id.slice(0, 8)}
                       {r.resumed_from_run_id && (
-                        <span className="ml-2 rounded-md bg-violet-50 px-1.5 py-0.5 text-[10px] font-bold text-violet-700">
+                        <span className="ml-2 rounded-md bg-white/6 px-1.5 py-0.5 text-[10px] font-bold text-ink-900">
                           resumed
                         </span>
                       )}
                     </span>
-                    <span className="mt-0.5 block text-[11.5px] text-zinc-400">
+                    <span className="mt-0.5 block text-[11.5px] text-ink-500">
                       {formatDateTime(r.created_at)} ·{" "}
                       {formatDuration(r.started_at, r.finished_at)}
                     </span>
                   </span>
                   <RunStatusBadge status={r.status} />
-                  <ArrowRight className="size-4 text-zinc-300" aria-hidden />
+                  <ArrowRight className="size-4 text-ink-700" aria-hidden />
                 </Link>
               ))}
             </div>

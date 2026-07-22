@@ -104,10 +104,13 @@ async def test_full_async_pipeline(client, tenant, stub_engine):
                            json={"status": "approved"}, headers=auth(tok, org))
     assert r.status_code == 200 and r.json()["finding"]["status"] == "approved"
 
-    # 5. credits: charged once, never refunded (the run succeeded)
+    # 5. credits: the base charge, optionally followed by the post-run token
+    # settlement (0011) — and never a refund (the run succeeded)
     ledger = q_all("select reason from public.credit_ledger where run_id = %s",
                    (run_id,))
-    assert [l["reason"] for l in ledger] == ["consume.run"]
+    reasons = [l["reason"] for l in ledger]
+    assert reasons[0] == "consume.run"
+    assert set(reasons) <= {"consume.run", "consume.tokens"}
 
 
 async def test_human_review_resume_roundtrip(client, tenant, stub_engine):

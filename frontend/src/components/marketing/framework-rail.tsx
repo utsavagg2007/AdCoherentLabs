@@ -1,4 +1,7 @@
-/** Framework/context rail — deliberately not a social-proof strip. */
+/** Framework/context rail — a slow chrome marquee on brushed metal.
+ * Deliberately not a social-proof strip: these are the frameworks the
+ * engine grounds against, duplicated once for a seamless CSS loop
+ * (pauses on hover; static wrap under reduced motion). */
 
 const FRAMEWORKS = [
   "FTC",
@@ -7,29 +10,50 @@ const FRAMEWORKS = [
   "CFPB / UDAAP",
   "State UDAP",
   "FDIC advertising",
+  "SEC marketing",
+  "FINRA 2210",
 ];
+
+function Chip({ label }: { label: string }) {
+  return (
+    <li className="shrink-0 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 font-mono text-[13px] font-semibold tracking-tight whitespace-nowrap text-ink-700">
+      {label}
+    </li>
+  );
+}
 
 export function FrameworkRail() {
   return (
     <section
       aria-label="Regulatory frameworks in scope"
-      className="border-b border-line bg-paper"
+      className="relative overflow-hidden border-b border-line bg-brushed"
     >
-      <div className="container-page py-12 sm:py-14">
-        <p className="eyebrow text-center text-zinc-400">
+      <div className="py-12 sm:py-14">
+        <p className="eyebrow text-center">
           Reviews grounded in the frameworks fintech ads answer to
         </p>
-        <ul className="mt-6 flex flex-wrap items-center justify-center gap-x-3 gap-y-3">
-          {FRAMEWORKS.map((f) => (
-            <li
-              key={f}
-              className="rounded-full border border-line bg-white px-4 py-2 font-mono text-[13px] font-semibold tracking-tight text-ink-700 shadow-(--shadow-soft)"
-            >
-              {f}
-            </li>
-          ))}
-        </ul>
-        <p className="mx-auto mt-6 max-w-xl text-center text-[13px] leading-relaxed text-zinc-400">
+        <div
+          className="relative mt-7 overflow-hidden"
+          style={{
+            maskImage:
+              "linear-gradient(90deg, transparent, black 12%, black 88%, transparent)",
+            WebkitMaskImage:
+              "linear-gradient(90deg, transparent, black 12%, black 88%, transparent)",
+          }}
+        >
+          <ul
+            className="animate-marquee flex w-max items-center gap-3 motion-reduce:w-full motion-reduce:flex-wrap motion-reduce:justify-center"
+            style={{ "--marquee-duration": "36s" } as React.CSSProperties}
+          >
+            {FRAMEWORKS.map((f) => (
+              <Chip key={f} label={f} />
+            ))}
+            {FRAMEWORKS.map((f) => (
+              <Chip key={`${f}-dup`} label={f} />
+            ))}
+          </ul>
+        </div>
+        <p className="mx-auto mt-7 max-w-xl px-5 text-center text-[13px] leading-relaxed text-ink-500">
           Applicable coverage for any given review is determined by the
           creative, detected product signals, target jurisdictions, and your
           plan&apos;s framework scope.

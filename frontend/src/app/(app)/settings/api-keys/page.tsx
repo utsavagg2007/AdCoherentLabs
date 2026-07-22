@@ -182,12 +182,12 @@ export default function ApiKeysPage() {
                         {k.name}
                       </span>
                       {revoked && (
-                        <Badge className="border-red-200 bg-red-50 text-red-700">
+                        <Badge className="border-red-400/25 bg-red-400/10 text-red-300">
                           Revoked {formatDate(k.revoked_at)}
                         </Badge>
                       )}
                     </span>
-                    <span className="mt-0.5 block text-[11.5px] text-zinc-400">
+                    <span className="mt-0.5 block text-[11.5px] text-ink-500">
                       Created {formatDate(k.created_at)} · last used{" "}
                       {k.last_used_at ? timeAgo(k.last_used_at) : "never"}
                       {k.rate_limit_rpm ? ` · ${k.rate_limit_rpm} rpm cap` : ""}
@@ -197,7 +197,7 @@ export default function ApiKeysPage() {
                     {(k.scopes ?? []).map((s) => (
                       <Badge
                         key={s}
-                        className="border-violet-200 bg-violet-50 font-mono text-violet-800"
+                        className="border-white/15 bg-white/6 font-mono text-ink-850"
                       >
                         {s}
                       </Badge>
@@ -208,7 +208,7 @@ export default function ApiKeysPage() {
                       type="button"
                       onClick={() => setRevoking(k)}
                       aria-label={`Revoke ${k.name}`}
-                      className="rounded-lg p-2 text-zinc-400 hover:bg-red-50 hover:text-red-600"
+                      className="rounded-lg p-2 text-ink-500 hover:bg-red-400/10 hover:text-red-300"
                     >
                       <Trash2 className="size-4" />
                     </button>
@@ -265,7 +265,7 @@ export default function ApiKeysPage() {
                         <span className="font-mono text-[13px] font-bold text-ink-900">
                           {s.label}
                         </span>
-                        <span className="block text-[12px] text-zinc-500">
+                        <span className="block text-[12px] text-ink-500">
                           {s.help}
                         </span>
                       </span>
@@ -277,7 +277,7 @@ export default function ApiKeysPage() {
             <div>
               <label htmlFor="key-rpm" className="label">
                 Rate limit{" "}
-                <span className="font-normal text-zinc-400">
+                <span className="font-normal text-ink-500">
                   (requests/minute, optional)
                 </span>
               </label>
@@ -295,7 +295,7 @@ export default function ApiKeysPage() {
             {createError != null && (
               <div
                 role="alert"
-                className="flex items-start gap-2.5 rounded-xl border border-amber-300 bg-amber-50 p-3.5 text-[13px] leading-relaxed text-amber-900"
+                className="flex items-start gap-2.5 rounded-xl border border-amber-400/30 bg-amber-400/10 p-3.5 text-[13px] leading-relaxed text-amber-200"
               >
                 <ShieldAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
                 <p>
@@ -340,8 +340,8 @@ export default function ApiKeysPage() {
         >
           {created && (
             <div className="space-y-4">
-              <div className="rounded-xl border border-violet-200 bg-violet-50/60 p-3.5">
-                <p className="text-[11px] font-bold tracking-wider text-violet-700 uppercase">
+              <div className="rounded-xl border border-white/15 bg-white/6 p-3.5">
+                <p className="text-[11px] font-bold tracking-wider text-ink-900 uppercase">
                   {created.prefix ? `Key · prefix ${created.prefix}` : "API key"}
                 </p>
                 <code className="mt-1.5 block font-mono text-[12.5px] break-all text-ink-900 select-all">
@@ -351,13 +351,13 @@ export default function ApiKeysPage() {
               <div className="flex items-center gap-2.5">
                 <Button variant="secondary" onClick={copySecret}>
                   {copied ? (
-                    <Check className="size-4 text-emerald-600" aria-hidden />
+                    <Check className="size-4 text-emerald-300" aria-hidden />
                   ) : (
                     <Copy className="size-4" aria-hidden />
                   )}
                   {copied ? "Copied" : "Copy key"}
                 </Button>
-                <p className="text-[12px] text-zinc-500">
+                <p className="text-[12px] text-ink-500">
                   Send it with the <code className="font-mono">X-API-Key</code>{" "}
                   header.
                 </p>
@@ -369,7 +369,7 @@ export default function ApiKeysPage() {
                   onChange={(e) => setConfirmedStored(e.target.checked)}
                   className="mt-0.5 size-4 accent-violet-600"
                 />
-                <span className="text-[13px] leading-relaxed text-zinc-600">
+                <span className="text-[13px] leading-relaxed text-ink-600">
                   I&apos;ve stored this key somewhere safe and understand it
                   won&apos;t be shown again.
                 </span>

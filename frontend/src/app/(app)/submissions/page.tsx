@@ -95,7 +95,7 @@ export default function SubmissionsPage() {
           <div className="card overflow-x-auto">
             <table className="w-full min-w-[640px] text-left">
               <thead>
-                <tr className="border-b border-line text-[11px] font-bold tracking-wider text-zinc-400 uppercase">
+                <tr className="border-b border-line text-[11px] font-bold tracking-wider text-ink-500 uppercase">
                   <th className="px-4 py-3">Title</th>
                   <th className="px-4 py-3">Jurisdictions</th>
                   <th className="px-4 py-3">Submitted</th>
@@ -111,21 +111,21 @@ export default function SubmissionsPage() {
                       <td className="px-4 py-3.5">
                         <Link
                           href={`/submissions/${s.id}`}
-                          className="font-bold text-ink-900 group-hover:text-violet-800"
+                          className="font-bold text-ink-900 group-hover:text-ink-850"
                         >
                           {s.title || (
-                            <span className="font-mono text-[12px] font-semibold text-zinc-500">
+                            <span className="font-mono text-[12px] font-semibold text-ink-500">
                               {s.id.slice(0, 8)}
                             </span>
                           )}
                         </Link>
                       </td>
-                      <td className="px-4 py-3.5 text-[12.5px] text-zinc-500">
+                      <td className="px-4 py-3.5 text-[12.5px] text-ink-500">
                         {s.target_jurisdictions?.length
                           ? s.target_jurisdictions.join(", ")
                           : "Nationwide"}
                       </td>
-                      <td className="px-4 py-3.5 text-[12.5px] whitespace-nowrap text-zinc-500">
+                      <td className="px-4 py-3.5 text-[12.5px] whitespace-nowrap text-ink-500">
                         {formatDateTime(s.created_at)}
                       </td>
                       <td className="px-4 py-3.5">
@@ -134,7 +134,7 @@ export default function SubmissionsPage() {
                         ) : runs.loading ? (
                           <Skeleton className="h-5 w-20" />
                         ) : (
-                          <span className="text-[12px] text-zinc-400">—</span>
+                          <span className="text-[12px] text-ink-500">—</span>
                         )}
                       </td>
                       <td className="px-4 py-3.5 text-right">
@@ -142,7 +142,7 @@ export default function SubmissionsPage() {
                           href={
                             latest ? `/runs/${latest.id}` : `/submissions/${s.id}`
                           }
-                          className="inline-flex items-center gap-1 text-[12.5px] font-bold text-violet-700 hover:text-violet-900"
+                          className="inline-flex items-center gap-1 text-[12.5px] font-bold text-ink-900 hover:text-white"
                         >
                           Open
                           <ArrowRight className="size-3.5" aria-hidden />

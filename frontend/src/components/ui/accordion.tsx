@@ -24,17 +24,17 @@ export function AccordionItem({
     >
       <AccordionPrimitive.Header asChild>
         <h3 className="m-0">
-          <AccordionPrimitive.Trigger className="group flex w-full items-center justify-between gap-4 py-5 text-left text-[15px] font-bold text-ink-900 transition-colors hover:text-violet-700">
+          <AccordionPrimitive.Trigger className="group flex w-full cursor-pointer items-center justify-between gap-4 py-5 text-left text-[15px] font-bold text-ink-850 transition-colors duration-200 hover:text-ink-950">
             {question}
             <Plus
               aria-hidden
-              className="size-4 shrink-0 text-zinc-400 transition-transform duration-300 group-hover:text-violet-600 group-data-[state=open]:rotate-45"
+              className="size-4 shrink-0 text-ink-500 transition-transform duration-300 group-hover:text-ink-800 group-data-[state=open]:rotate-45"
             />
           </AccordionPrimitive.Trigger>
         </h3>
       </AccordionPrimitive.Header>
       <AccordionPrimitive.Content className="overflow-hidden data-[state=closed]:animate-[accordion-up_0.25s_ease-out] data-[state=open]:animate-[accordion-down_0.3s_ease-out]">
-        <div className="pb-5 text-[15px] leading-relaxed text-zinc-600">
+        <div className="pb-5 text-[15px] leading-relaxed text-ink-600">
           {children}
         </div>
       </AccordionPrimitive.Content>

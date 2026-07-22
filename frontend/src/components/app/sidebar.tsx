@@ -62,12 +62,12 @@ export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
               "flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13.5px] font-semibold transition-colors",
               item.nested && "ml-6",
               active
-                ? "bg-violet-50 text-violet-800"
-                : "text-zinc-500 hover:bg-zinc-100 hover:text-ink-900"
+                ? "bg-white/6 text-ink-850"
+                : "text-ink-500 hover:bg-white/8 hover:text-ink-900"
             )}
           >
             <Icon
-              className={cn("size-4", active ? "text-violet-600" : "text-zinc-400")}
+              className={cn("size-4", active ? "text-ink-600" : "text-ink-500")}
               aria-hidden
             />
             {item.label}
@@ -87,24 +87,24 @@ export function OrgSwitcher() {
       <DropdownTrigger
         disabled={!multi}
         className={cn(
-          "flex w-full items-center gap-2.5 rounded-xl border border-line bg-white px-3 py-2.5 text-left shadow-(--shadow-soft)",
-          multi && "hover:border-zinc-300"
+          "flex w-full items-center gap-2.5 rounded-xl border border-line bg-coal-800 px-3 py-2.5 text-left shadow-(--shadow-soft)",
+          multi && "hover:border-white/20"
         )}
         aria-label={`Organization: ${orgName ?? "workspace"}${multi ? " — switch" : ""}`}
       >
-        <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-violet-600 text-[12px] font-extrabold text-white">
+        <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-white/90 text-[12px] font-extrabold text-coal-950">
           {(orgName ?? "W").slice(0, 1).toUpperCase()}
         </span>
         <span className="min-w-0 flex-1">
           <span className="block truncate text-[13px] leading-tight font-bold text-ink-900">
             {orgName}
           </span>
-          <span className="block text-[11px] font-semibold text-zinc-400 capitalize">
+          <span className="block text-[11px] font-semibold text-ink-500 capitalize">
             {role}
           </span>
         </span>
         {multi && (
-          <ChevronsUpDown className="size-3.5 shrink-0 text-zinc-400" aria-hidden />
+          <ChevronsUpDown className="size-3.5 shrink-0 text-ink-500" aria-hidden />
         )}
       </DropdownTrigger>
       {multi && (
@@ -112,12 +112,12 @@ export function OrgSwitcher() {
           <DropdownLabel>Organizations</DropdownLabel>
           {orgs.map((o) => (
             <DropdownItem key={o.org_id} onSelect={() => selectOrg(o.org_id)}>
-              <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-violet-100 text-[11px] font-extrabold text-violet-700">
+              <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-white/10 text-[11px] font-extrabold text-ink-900">
                 {o.name.slice(0, 1).toUpperCase()}
               </span>
               <span className="min-w-0 flex-1 truncate">{o.name}</span>
               {o.org_id === orgId && (
-                <Check className="size-4 text-violet-600" aria-hidden />
+                <Check className="size-4 text-ink-600" aria-hidden />
               )}
             </DropdownItem>
           ))}
@@ -157,14 +157,14 @@ export function CreditsWidget() {
   return (
     <Link
       href="/billing"
-      className="block rounded-xl border border-line bg-white p-3 shadow-(--shadow-soft) transition-colors hover:border-violet-200"
+      className="block rounded-xl border border-line bg-coal-800 p-3 shadow-(--shadow-soft) transition-colors hover:border-white/15"
     >
       <div className="flex items-center justify-between">
-        <p className="text-[11px] font-bold tracking-wider text-zinc-400 uppercase">
+        <p className="text-[11px] font-bold tracking-wider text-ink-500 uppercase">
           Credits
         </p>
         {credits && (
-          <span className="rounded-md bg-violet-50 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-violet-700 uppercase">
+          <span className="rounded-md bg-white/6 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-ink-900 uppercase">
             {credits.tier}
           </span>
         )}
@@ -173,7 +173,7 @@ export function CreditsWidget() {
         {credits ? formatNumber(credits.total) : "—"}
       </p>
       {credits && (
-        <p className="mt-0.5 text-[11px] text-zinc-400 tabular-nums">
+        <p className="mt-0.5 text-[11px] text-ink-500 tabular-nums">
           {formatNumber(credits.subscription_credits)} plan ·{" "}
           {formatNumber(credits.purchased_credits)} purchased
         </p>
@@ -188,13 +188,13 @@ export function UserMenu() {
   return (
     <Dropdown>
       <DropdownTrigger
-        className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left hover:bg-zinc-100"
+        className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left hover:bg-white/8"
         aria-label={`Account menu for ${email}`}
       >
-        <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-ink-800 text-[11px] font-extrabold text-white">
+        <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-coal-800 text-[11px] font-extrabold text-white">
           {email.slice(0, 1).toUpperCase()}
         </span>
-        <span className="min-w-0 flex-1 truncate text-[12.5px] font-semibold text-zinc-600">
+        <span className="min-w-0 flex-1 truncate text-[12.5px] font-semibold text-ink-600">
           {email}
         </span>
       </DropdownTrigger>
@@ -209,7 +209,7 @@ export function UserMenu() {
             void signOut().then(() => window.location.assign("/login"));
           }}
         >
-          <LogOut className="size-4 text-zinc-400" aria-hidden />
+          <LogOut className="size-4 text-ink-500" aria-hidden />
           Sign out
         </DropdownItem>
       </DropdownContent>
@@ -228,12 +228,12 @@ export function SidebarBody({ onNavigate }: { onNavigate?: () => void }) {
       </div>
       <div className="space-y-3 px-1 pt-3">
         <CreditsWidget />
-        <div className="rounded-xl bg-violet-50/70 p-3">
-          <p className="flex items-center gap-1.5 text-[11px] font-bold text-violet-800">
+        <div className="rounded-xl bg-white/6 p-3">
+          <p className="flex items-center gap-1.5 text-[11px] font-bold text-ink-850">
             <Sparkles className="size-3.5" aria-hidden />
             Decision support
           </p>
-          <p className="mt-1 text-[11px] leading-relaxed text-violet-900/60">
+          <p className="mt-1 text-[11px] leading-relaxed text-ink-950/60">
             Reports inform your compliance process — they are not legal advice.
           </p>
         </div>

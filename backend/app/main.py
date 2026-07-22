@@ -26,7 +26,7 @@ from .middleware.ratelimit_ip import IpRateLimitMiddleware
 from .middleware.request_id import RequestIdMiddleware
 from .middleware.security_headers import SecurityHeadersMiddleware
 from .routes import (admin, api_keys, billing, credits, findings, health,
-                     orgs, runs, submissions)
+                     orgs, plans, runs, submissions)
 
 logger = structlog.get_logger("app.main")
 
@@ -81,6 +81,7 @@ def create_app() -> FastAPI:
     install_error_handlers(app)
 
     app.include_router(health.router)
+    app.include_router(plans.router)
     app.include_router(orgs.router)
     app.include_router(credits.router)
     app.include_router(submissions.router)

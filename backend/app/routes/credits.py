@@ -9,7 +9,7 @@ from ..deps import AuthContext
 from ..errors import ApiError
 from ..ratelimit_deps import rate_limited
 from ..schemas import PackCheckout
-from ..services import credits, stripe_sync
+from ..services import credits, dev_billing, stripe_sync
 
 router = APIRouter(prefix="/v1/credits", tags=["credits"])
 
@@ -37,5 +37,11 @@ async def pack_checkout(body: PackCheckout,
         raise ApiError(403, "forbidden",
                        f"The '{ctx.tier}' plan cannot purchase credit packs.",
                        {"packs": "paid tiers only"})
+    # Packs also require the subscription itself to be in good standing.
+    await dev_billing.require_active_subscription(ctx.org_id)
+    if dev_billing.enabled():      # Stripe unconfigured + non-prod: simulate
+        url = await dev_billing.simulate_pack_checkout(
+            ctx.org_id, ctx.user_id, body.pack)
+        return {"checkout_url": url, "simulated": True}
     url = await stripe_sync.create_pack_checkout(ctx.org_id, body.pack)
     return {"checkout_url": url}

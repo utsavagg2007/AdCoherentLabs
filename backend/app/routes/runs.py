@@ -67,6 +67,26 @@ async def get_run(run_id: uuid.UUID, ctx: AuthContext = Depends(rate_limited)):
     return {"run": run, "queue": job, "disclaimer": DISCLAIMER}
 
 
+@router.get("/{run_id}/events")
+async def get_run_events(run_id: uuid.UUID,
+                         ctx: AuthContext = Depends(rate_limited),
+                         after_id: int = 0, limit: int = 200):
+    """The sanitized live-activity feed (0011): what the engine is doing
+    right now, as fixed message templates + aggregate counts. Poll with
+    after_id = the last id you have; run_status rides along so a client
+    can stop polling on a terminal state."""
+    ctx.require_scope("read")
+    run = await _own_run(str(run_id), ctx.org_id)
+    rows = await db.fetch_all(
+        "select id, stage, event, message, detail, created_at "
+        "from public.run_events "
+        "where run_id = %s and org_id = %s and id > %s "
+        "order by id asc limit %s",
+        (str(run_id), ctx.org_id, after_id, min(max(limit, 1), 500)))
+    return {"events": rows, "run_status": run["status"],
+            "last_id": rows[-1]["id"] if rows else after_id}
+
+
 @router.get("/{run_id}/report")
 async def get_report(run_id: uuid.UUID, ctx: AuthContext = Depends(rate_limited)):
     ctx.require_scope("read")

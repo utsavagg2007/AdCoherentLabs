@@ -1,0 +1,40 @@
+{
+  "run_id": "run_6093434deb86",
+  "asset_id": "ad_6207ef04108a",
+  "tier": "free",
+  "status": "llm_error",
+  "llm_rounds_used": 0,
+  "max_llm_rounds": 3,
+  "llm_review": null,
+  "verification": null,
+  "rounds": [],
+  "human_review": null,
+  "llm_error": "ProviderError: openrouter call failed: Error code: 401 - {'error': {'message': 'User not found.', 'code': 401}}",
+  "warnings": [],
+  "provenance": {
+    "tier": "free",
+    "llm_provider": "openrouter",
+    "llm_model": "qwen/qwen3.7-plus",
+    "llm_effort": null,
+    "prompt_version": null,
+    "rag_corpus_hash": null,
+    "rag_online": true,
+    "ruleset_version": "1.7.0",
+    "asset_provenance": {
+      "cv_version": "cv-0.1.0",
+      "nlp_version": "nlp-0.1.0",
+      "ruleset_hash": "2ebb768be9c8c562",
+      "timestamp": "2026-07-20T17:43:36.221077Z",
+      "embedding_model_version": null,
+      "ocr_backend": null
+    },
+    "ocr_backend": null,
+    "as_of": null
+  },
+  "timings_ms": {
+    "review_and_verify": 27108,
+    "prepare_asset": 422
+  },
+  "resumed_from_run_id": null,
+  "asset": null
+}

@@ -46,6 +46,8 @@ export interface Entitlements {
   seats?: number | null;
   sso?: boolean | null;
   sla?: string | null;
+  allowed_kinds?: string[] | null;
+  max_video_seconds?: number | null;
 }
 
 export interface Membership {
@@ -76,6 +78,9 @@ export interface PriceList {
   image?: number;
   html?: number;
   carousel_card?: number;
+  pdf?: number;
+  docx?: number;
+  video?: number;
 }
 
 export interface CreditBalance {
@@ -177,6 +182,65 @@ export interface RunResponse {
   run: RunDetail;
   queue: QueueInfo | null;
   disclaimer: string;
+}
+
+// ------------------------------------------------------------ public plans
+
+export interface PublicPlan {
+  tier: Tier;
+  name: string;
+  tagline: string;
+  monthly_usd_cents: number | null;
+  credits_per_month: number | null;
+  max_upload_mb: number;
+  seats: number | null;
+  api_access: boolean;
+  credit_packs_allowed: boolean;
+  allowed_kinds: string[];
+  max_video_seconds: number | null;
+  max_concurrent_runs: number;
+  submissions_per_day: number | null;
+  credit_costs: Record<string, number>;
+}
+
+export interface PublicPlansResponse {
+  plans: PublicPlan[];
+  packs: { pack: string; credits: number; usd_cents: number }[];
+  token_rates: {
+    tier: Tier;
+    in_per_1k: number;
+    out_per_1k: number;
+    min_credits: number;
+  }[];
+}
+
+// ------------------------------------------------------------ live activity
+
+export type RunEventStage =
+  | "queued"
+  | "ingest"
+  | "cv"
+  | "nlp"
+  | "retrieval"
+  | "llm"
+  | "rules"
+  | "report"
+  | "done"
+  | "error";
+
+export interface RunEvent {
+  id: number;
+  stage: RunEventStage;
+  event: string;
+  message: string;
+  detail: Record<string, unknown>;
+  created_at: string;
+}
+
+export interface RunEventsResponse {
+  events: RunEvent[];
+  run_status: RunStatus;
+  last_id: number;
 }
 
 // ---------------------------------------------------------------- report

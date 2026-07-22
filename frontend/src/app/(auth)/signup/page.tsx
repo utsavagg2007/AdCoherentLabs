@@ -53,13 +53,13 @@ export default function SignupPage() {
   if (done) {
     return (
       <div className="text-center">
-        <div className="mx-auto flex size-14 items-center justify-center rounded-2xl border border-violet-200 bg-violet-50 text-violet-600">
+        <div className="mx-auto flex size-14 items-center justify-center rounded-2xl border border-white/15 bg-white/6 text-ink-600">
           <MailCheck className="size-6" aria-hidden />
         </div>
         <h1 className="mt-5 text-2xl font-extrabold tracking-tight text-ink-900">
           Check your email
         </h1>
-        <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-zinc-500">
+        <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-ink-500">
           If an account can be created for{" "}
           <span className="font-semibold text-ink-800">{email}</span>, a
           confirmation link is on its way. Confirm it, then sign in.
@@ -76,12 +76,12 @@ export default function SignupPage() {
       <h1 className="text-2xl font-extrabold tracking-tight text-ink-900">
         Create your account
       </h1>
-      <p className="mt-1.5 text-sm text-zinc-500">
+      <p className="mt-1.5 text-sm text-ink-500">
         Start on the Free plan — 25 credits monthly, no card required.
       </p>
 
       {!configured && (
-        <div role="alert" className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-3.5 text-[13px] leading-relaxed text-amber-900">
+        <div role="alert" className="mt-6 rounded-xl border border-amber-400/25 bg-amber-400/10 p-3.5 text-[13px] leading-relaxed text-amber-200">
           Authentication isn&apos;t configured. Set the Supabase environment
           variables, then restart the dev server.
         </div>
@@ -124,13 +124,13 @@ export default function SignupPage() {
               type="button"
               onClick={() => setShowPw((s) => !s)}
               aria-label={showPw ? "Hide password" : "Show password"}
-              className="absolute top-1/2 right-3 -translate-y-1/2 rounded-md p-1 text-zinc-400 hover:text-ink-800"
+              className="absolute top-1/2 right-3 -translate-y-1/2 rounded-md p-1 text-ink-500 hover:text-ink-800"
             >
               {showPw ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
             </button>
           </div>
           {pwTooShort && (
-            <p id="pw-hint" className="mt-1.5 text-[12.5px] text-red-600">
+            <p id="pw-hint" className="mt-1.5 text-[12.5px] text-red-300">
               Use at least 8 characters.
             </p>
           )}
@@ -150,14 +150,14 @@ export default function SignupPage() {
             placeholder="Repeat your password"
           />
           {mismatch && (
-            <p className="mt-1.5 text-[12.5px] text-red-600">
+            <p className="mt-1.5 text-[12.5px] text-red-300">
               Passwords don&apos;t match.
             </p>
           )}
         </div>
 
         {error && (
-          <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3.5 text-[13px] leading-relaxed text-red-800">
+          <div role="alert" className="rounded-xl border border-red-400/25 bg-red-400/10 p-3.5 text-[13px] leading-relaxed text-red-300">
             {error}
           </div>
         )}
@@ -175,11 +175,11 @@ export default function SignupPage() {
         </Button>
       </form>
 
-      <p className="mt-6 text-center text-[13.5px] text-zinc-500">
+      <p className="mt-6 text-center text-[13.5px] text-ink-500">
         Already have an account?{" "}
         <Link
           href="/login"
-          className="font-bold text-violet-700 hover:text-violet-900"
+          className="font-bold text-ink-900 hover:text-white"
         >
           Sign in
         </Link>

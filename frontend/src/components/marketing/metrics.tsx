@@ -21,11 +21,11 @@ const METRICS = [
       "Rule-engine checks audit every AI review for soundness, coverage, and asset-level defects before it reaches you.",
   },
   {
-    value: 10,
+    value: 6,
     suffix: "",
-    label: "Carousel cards per review",
+    label: "Creative formats",
     detail:
-      "Multi-card creatives are reviewed as one submission, card by card, with per-card evidence.",
+      "Images, carousels, video, PDF, Word documents, and raw copy all flow through the same four-layer review.",
   },
 ];
 
@@ -58,9 +58,9 @@ function Counter({
   const display = animate ? Math.round(value * progress) : value;
 
   return (
-    <span className="text-6xl font-extrabold tracking-[-0.04em] text-ink-900 tabular-nums sm:text-7xl">
+    <span className="text-chrome font-display text-6xl font-bold tracking-[-0.04em] tabular-nums sm:text-7xl">
       {display}
-      <span className="text-violet-600">{suffix}</span>
+      {suffix}
     </span>
   );
 }
@@ -87,7 +87,7 @@ export function Metrics() {
   }, []);
 
   return (
-    <section aria-label="Product facts" className="bg-paper">
+    <section aria-label="Product facts" className="bg-spotlight">
       <div ref={ref} className="container-page py-20 sm:py-28">
         <div className="grid gap-12 sm:grid-cols-3 sm:gap-8">
           {METRICS.map((m) => (
@@ -97,16 +97,16 @@ export function Metrics() {
                 suffix={m.suffix}
                 animate={inView && !reduced}
               />
-              <p className="mt-3 text-[15px] font-bold text-ink-800">
+              <p className="mt-3 text-[15px] font-bold text-ink-850">
                 {m.label}
               </p>
-              <p className="mx-auto mt-2 max-w-xs text-[13.5px] leading-relaxed text-zinc-500 sm:mx-0">
+              <p className="mx-auto mt-2 max-w-xs text-[13.5px] leading-relaxed text-ink-500 sm:mx-0">
                 {m.detail}
               </p>
             </div>
           ))}
         </div>
-        <p className="mt-12 text-center text-[12px] text-zinc-400">
+        <p className="mt-12 text-center text-[12px] text-ink-500">
           Facts describe the analysis pipeline, not legal coverage. Findings
           always ship with their evidence.
         </p>

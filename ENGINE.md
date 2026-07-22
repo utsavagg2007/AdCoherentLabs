@@ -316,11 +316,32 @@ and the Realtime publication, against a throwaway org it deletes after.
 
 ## 5. The run lifecycle in detail
 
-1. **`prepare_asset`** (Layers 1+2). Exactly one of `image_path | text | html`.
+1. **`prepare_asset`** (Layers 1+2). Exactly one of
+   `image_path | text | html | pdf_path | docx_path | video_path`.
    Images go through OCR (`cv/ocr.py`, PaddleOCR preferred; backend recorded
    in provenance because accuracy floors differ per backend). Segmentation,
    entities, claims, routing produce a validated **`AssetRepresentation`**.
    Carousel ads: pass a list of image paths; segments are namespaced per card.
+
+   Richer media converts at the engine boundary (`engine/media.py`) rather
+   than teaching every layer new formats — so OCR geometry, contrast and
+   disclosure-proximity measurements keep working unchanged:
+
+   | Input | Conversion | Lands on |
+   | --- | --- | --- |
+   | `pdf_path` | one PNG render per page (150 dpi, ≤40 pages) | the multi-image path |
+   | `docx_path` | paragraph + table text extraction | the text path |
+   | `video_path` | uniformly sampled keyframes (≤12, ~1 per 5 s) | the multi-image path |
+
+   A `provenance.media` block records what happened (`pages`, or
+   `duration_seconds` + a `frames[]` card→timestamp map so a finding can be
+   traced back to a moment in the ad). Audio is **not** transcribed in v1.
+   `media_workdir=` receives the intermediate page/frame files (a temp dir is
+   created and cleaned up when omitted).
+
+   Which formats a given tenant may submit is a plan entitlement enforced in
+   the API before anything is charged (`plan_entitlements.allowed_kinds`,
+   `max_video_seconds`) — see `backend/README.md`.
 
 2. **Round 1 review** (Layer 3). `review_asset(asset, tier)`:
    * builds retrieval queries from claims + key segments,

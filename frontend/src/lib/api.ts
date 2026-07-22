@@ -18,8 +18,10 @@ import type {
   LedgerEntry,
   MemberRow,
   OrgMe,
+  PublicPlansResponse,
   ReportResponse,
   Role,
+  RunEventsResponse,
   RunResponse,
   RunRow,
   SubmissionAccepted,
@@ -292,6 +294,11 @@ export class ApiClient {
 
   // -- billing --------------------------------------------------------------
 
+  /** PUBLIC pricing + entitlements document (plan_pricing et al). */
+  plans(signal?: AbortSignal) {
+    return this.request<PublicPlansResponse>("/v1/plans", { signal });
+  }
+
   subscriptionCheckout(tier: "hobby" | "pro" | "design" | "enterprise") {
     // interval intentionally omitted — the backend defaults to monthly and
     // annual pricing is not implemented; we never send users down that path.
@@ -391,6 +398,14 @@ export class ApiClient {
   getReport(id: string, signal?: AbortSignal) {
     return this.request<ReportResponse>(
       `/v1/runs/${encodeURIComponent(id)}/report`,
+      { signal }
+    );
+  }
+
+  /** Sanitized live-activity feed — poll with the last id you have. */
+  runEvents(id: string, afterId: number, signal?: AbortSignal) {
+    return this.request<RunEventsResponse>(
+      `/v1/runs/${encodeURIComponent(id)}/events?after_id=${afterId}`,
       { signal }
     );
   }

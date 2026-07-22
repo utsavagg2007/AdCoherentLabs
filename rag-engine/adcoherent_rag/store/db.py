@@ -33,7 +33,9 @@ def get_connection() -> psycopg.Connection:
     if not config.DATABASE_URL:
         raise RuntimeError(
             "DATABASE_URL is not set. Put your Supabase direct connection "
-            "string (port 5432) in rag-engine/.env — see .env.example."
+            "string in the repo-root .env (dev: the socat proxy, "
+            "postgresql://postgres:<pw>@127.0.0.1:54322/postgres) — "
+            "regenerate it with `python scripts/sync_env.py`."
         )
     conn = psycopg.connect(config.DATABASE_URL, row_factory=dict_row)
     try:

@@ -129,6 +129,8 @@ class LLMLayer:
         target_jurisdictions: list[str] | None = None,
         as_of: date | None = None,
         human_guidance: str | None = None,
+        progress: Callable[[str, str, str, dict], None] | None = None,
+        max_rounds: int | None = None,
     ) -> None:
         self.tier_name = normalize_tier(tier_name)
         self.tier = get_tier(self.tier_name)
@@ -139,7 +141,20 @@ class LLMLayer:
         self.jurisdictions = retrieval_jurisdictions(target_jurisdictions)
         self.as_of = as_of
         self.human_guidance = human_guidance
+        self.progress = progress          # (stage, event, message, detail) — sanitized
+        self.max_rounds = max_rounds
         self.rounds: list[dict[str, Any]] = []
+
+    def _emit(self, stage: str, event: str, message: str, detail: dict) -> None:
+        """Progress events carry TEMPLATES + COUNTS only — never ad text,
+        retrieved regulation chunks, prompts, or model reasoning. A broken
+        sink must never break a run."""
+        if self.progress is None:
+            return
+        try:
+            self.progress(stage, event, message, detail)
+        except Exception:  # noqa: BLE001
+            logger.warning("progress sink failed for %s/%s", stage, event)
 
     def _resolve_provider(self) -> ReviewProvider:
         if self.provider is None:
@@ -174,6 +189,22 @@ class LLMLayer:
                     round_no, self.tier_name, self.tier.model,
                     prior_report is not None, bool(guidance))
 
+        rounds_of = f"{round_no}/{self.max_rounds}" if self.max_rounds else str(round_no)
+        if prior_report is not None:
+            failed_n = len(getattr(prior_report, "failed_checks", []) or [])
+            self._emit("rules", "rules.callback",
+                       f"Deterministic verification flagged {failed_n} "
+                       f"check{'s' if failed_n != 1 else ''} — sending fix "
+                       "instructions back to the model.",
+                       {"failed_checks": failed_n, "round": round_no})
+        self._emit("llm", "llm.round_started",
+                   f"Review round {rounds_of} — grounded model review "
+                   f"of {len(asset.get('claim_candidates', []))} claim "
+                   "candidates in progress.",
+                   {"round": round_no, "max_rounds": self.max_rounds,
+                    "callback": prior_report is not None,
+                    "guided": bool(guidance)})
+
         review_doc = review_asset(
             asset,
             self.tier_name,
@@ -186,6 +217,13 @@ class LLMLayer:
             feedback=feedback,
         )
         adapted = adapt_review_for_rule_engine(review_doc)
+
+        findings_n = len((review_doc or {}).get("findings") or [])
+        self._emit("llm", "llm.round_done",
+                   f"Round {rounds_of} returned {findings_n} "
+                   f"finding{'s' if findings_n != 1 else ''}; handing off "
+                   "to deterministic verification.",
+                   {"round": round_no, "findings": findings_n})
         self.rounds.append({
             "round": round_no,
             "was_rule_engine_callback": prior_report is not None,

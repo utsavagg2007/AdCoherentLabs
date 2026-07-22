@@ -1,0 +1,529 @@
+{
+  "run_id": "run_f364cf919d5b",
+  "asset_id": "ad_8dd7020d2cb7",
+  "tier": "pro",
+  "status": "passed",
+  "llm_rounds_used": 2,
+  "max_llm_rounds": 3,
+  "llm_review": {
+    "asset_id": "ad_8dd7020d2cb7",
+    "findings": [
+      {
+        "finding_id": "llmf_001",
+        "framework": "FTC",
+        "severity": "medium",
+        "verdict": "needs_review",
+        "cited_segment_ids": [
+          "seg_1"
+        ],
+        "cited_entity_ids": [
+          "ent_2"
+        ],
+        "quoted_evidence": "Get 5.99% APR, guaranteed approval!",
+        "claim_candidate_id": "clm_1",
+        "regulation_citations": [
+          "16 CFR § 255.0(a)"
+        ],
+        "reasoning": "The phrase \"guaranteed approval\" suggests that all consumers will be approved, regardless of creditworthiness or other underwriting criteria. Under FTC Section 5 guidance (as interpreted by the Endorsement Guides at 16 CFR § 255.0(a)), advertising must avoid deceptive representations. However, the supplied excerpts do not provide specific standards for what constitutes a deceptive guarantee or approval claim, nor do they address required qualifications for such claims. Without more specific FTC advertising deception standards in the excerpts, it is not possible to definitively determine whether this superlative guarantee is a violation.",
+        "scope_of_improvement": "If approval is not literally guaranteed for all applicants, revise the headline to a qualified, accurate description (for example, \"fast approval decisions\" or \"high approval rates for qualified applicants\") and add clear, proximate qualifiers stating key eligibility criteria. If approval truly is guaranteed, maintain documentation establishing that 100% of applicants who meet clearly disclosed basic conditions are approved."
+      },
+      {
+        "finding_id": "llmf_002",
+        "framework": "TILA",
+        "severity": "medium",
+        "verdict": "needs_review",
+        "cited_segment_ids": [
+          "seg_1"
+        ],
+        "cited_entity_ids": [
+          "ent_1"
+        ],
+        "quoted_evidence": "Get 5.99% APR, guaranteed approval!",
+        "claim_candidate_id": "clm_2",
+        "regulation_citations": [
+          "12 CFR § 1026.16(i)",
+          "12 CFR § 1026.16(ii)",
+          "12 CFR § 1026.24(d)"
+        ],
+        "reasoning": "The ad states a specific \"5.99% APR\" but provides no additional terms such as whether this is a promotional rate, when it ends, what APR applies afterward, or any minimum or other finance charges. Under 12 CFR § 1026.16(i)–(ii), when an advertisement presents a promotional rate or APR, it must also disclose when the promotional rate will end and the rate that will apply afterward. Under 12 CFR § 1026.24(d), use of specific credit terms can trigger additional required disclosures. The excerpts provided, however, do not specify exactly which APR advertisements are deemed \"promotional\" or precisely what combination of triggering terms applies to this situation. It is therefore unclear from the excerpts alone whether the 5.99% APR here is treated as a promotional rate or as a standard APR, and what exact additional disclosures are required.",
+        "scope_of_improvement": "Clarify in the ad whether 5.99% APR is a standard or promotional rate. If it is promotional, add proximate, clear disclosures stating (1) when the promotional 5.99% APR will end, (2) the APR (or range of APRs, if creditworthiness-based) that will apply afterward, and (3) any minimum, fixed, transaction, or activity finance charges that could be imposed. Confirm against the full text of 12 CFR §§ 1026.16 and 1026.24 which triggering terms are used and ensure all corresponding disclosures appear with equal prominence to the APR statement."
+      },
+      {
+        "finding_id": "llmf_003",
+        "framework": "CFPB",
+        "severity": "medium",
+        "verdict": "needs_review",
+        "cited_segment_ids": [
+          "seg_1"
+        ],
+        "cited_entity_ids": [
+          "ent_1",
+          "ent_2"
+        ],
+        "quoted_evidence": "Get 5.99% APR, guaranteed approval!",
+        "claim_candidate_id": "clm_1",
+        "regulation_citations": [
+          "12 U.S.C. § 5531(a)",
+          "12 U.S.C. § 5531(c)",
+          "12 U.S.C. § 5531(d)"
+        ],
+        "reasoning": "The combination of a precise APR and the phrase \"guaranteed approval\" in connection with a consumer financial product or service could be considered deceptive or abusive under the CFPB's UDAAP authority if consumers are led to believe that everyone can obtain credit at 5.99% APR with guaranteed approval when that is not the case, or if material limitations are omitted. However, the supplied statutory excerpts define the CFPB's authority and general standards for unfairness and abusiveness but do not elaborate concrete advertising requirements or specify how phrases like \"guaranteed approval\" and APR claims must be qualified. Without more detailed CFPB guidance or implementing regulations in the record, it is not possible to conclusively determine from these excerpts alone whether the ad constitutes an unfair, deceptive, or abusive act or practice.",
+        "scope_of_improvement": "Ensure that the APR and approval claims accurately reflect the terms most consumers will receive and do not omit material limitations. If approval is subject to underwriting, avoid absolute language like \"guaranteed approval\" and replace it with accurate, non-misleading phrasing (for example, \"easy application\" or \"quick approval decisions for qualified applicants\") and disclose key eligibility criteria clearly. Review the ad against the CFPB's full UDAAP guidance and enforcement precedents to confirm that no substantial, unavoidable consumer injury is likely and that consumers can understand the material risks, costs, and conditions of the product."
+      },
+      {
+        "finding_id": "llmf_004",
+        "framework": "STATE_UDAP",
+        "severity": "medium",
+        "verdict": "needs_review",
+        "cited_segment_ids": [
+          "seg_1"
+        ],
+        "cited_entity_ids": [
+          "ent_1",
+          "ent_2"
+        ],
+        "quoted_evidence": "Get 5.99% APR, guaranteed approval!",
+        "claim_candidate_id": "clm_1",
+        "regulation_citations": [
+          "Cal. Bus. & Prof. Code § 17508",
+          "Cal. Bus. & Prof. Code § 17509",
+          "Cal. Fin. Code § 90001",
+          "Cal. Fin. Code § 90002",
+          "Cal. Fin. Code § 90003",
+          "Cal. Fin. Code § 90005",
+          "Cal. Fin. Code § 90009"
+        ],
+        "reasoning": "The ad is targeted to California (US-CA). The absolute phrase \"guaranteed approval\" combined with a specific \"5.99% APR\" may implicate California unfair or deceptive advertising standards if the guarantee is not literally true for California consumers or if significant conditions (such as minimum credit scores or income requirements) are not disclosed. However, the supplied California statutory excerpts are labeled only as \"Code Section\" and do not set forth any operative standards, definitions, or specific prohibitions regarding deceptive advertising, substantiation, or particular finance advertising practices. Without operative text from Cal. Bus. & Prof. Code §§ 17508, 17509 or Cal. Fin. Code §§ 90001–90005, 90009, it is not possible to determine how California specifically treats guarantee and APR claims in this context or what substantiation or disclosures are required.",
+        "scope_of_improvement": "Obtain and review the full operative text of Cal. Bus. & Prof. Code §§ 17508, 17509 and Cal. Fin. Code §§ 90001–90005, 90009 to determine California-specific requirements for advertising guarantees and credit terms. In the meantime, mitigate risk by (1) avoiding absolute approval language for California-targeted ads unless approval is truly unconditional for California consumers, and (2) clearly disclosing any material conditions or limitations on both the 5.99% APR and approval eligibility within the ad, in close proximity and comparable prominence to the headline. Maintain substantiation demonstrating that California consumers experience the advertised approval and APR terms as represented."
+      }
+    ],
+    "reviewed_clear": [],
+    "frameworks_evaluated": [
+      "FTC",
+      "TILA",
+      "CFPB",
+      "STATE_UDAP"
+    ],
+    "llm_meta": {
+      "tier": "pro",
+      "model": "gpt-5.1-2025-11-13",
+      "prompt_version": "compliance-review-v1.0",
+      "rag_corpus_hash": "1a276d64704c42d0",
+      "retrieved_chunks": 32,
+      "input_tokens": 5578,
+      "output_tokens": 1834,
+      "max_output_tokens": 8000,
+      "reviewed_at": "2026-07-20T18:33:59.287597Z",
+      "latency_ms": 21422
+    }
+  },
+  "verification": {
+    "review_passed": true,
+    "checks_run": 50,
+    "failed_checks": [],
+    "asset_defects": [
+      {
+        "check_id": "FTC5-STR-001",
+        "passed": false,
+        "evidence": {
+          "trigger_entities": [
+            {
+              "entity_id": "ent_2",
+              "type": "guarantee_term",
+              "raw_text": "guaranteed",
+              "segment_id": "seg_1",
+              "char_span": [
+                15,
+                25
+              ]
+            }
+          ],
+          "trigger_claim_ids": [
+            "clm_1"
+          ],
+          "segment_role_census": {
+            "headline": 1
+          }
+        },
+        "message": "absolute claims with no disclosure/fine-print/legal segment anywhere in the asset",
+        "severity": "medium",
+        "scope": "asset"
+      }
+    ],
+    "advisories": [
+      {
+        "check_id": "ADV-cfpb-cms",
+        "passed": true,
+        "evidence": {
+          "source": "cfpb-cms",
+          "citation": "CFPB Supervision & Examination Manual — Compliance Management System",
+          "frameworks_enum": "CFPB",
+          "routing_trigger": "CFPB routed -> advisory flag",
+          "note": "organizational compliance program expectation",
+          "coverage_matrix_version": "1.0.0"
+        },
+        "message": "CFPB Supervision & Examination Manual — Compliance Management System applies to the advertiser's compliance program (e.g. retention obligations apply to this material); out of creative scope — informational applicability flag",
+        "severity": "low",
+        "scope": "advisory"
+      },
+      {
+        "check_id": "ADV-nist-privacy-framework",
+        "passed": true,
+        "evidence": {
+          "source": "nist-privacy-framework",
+          "citation": "NIST Privacy Framework v1.0",
+          "frameworks_enum": "NIST_PRIVACY",
+          "routing_trigger": "always (voluntary governance baseline)",
+          "note": "process rule per directory architecture notes",
+          "coverage_matrix_version": "1.0.0"
+        },
+        "message": "NIST Privacy Framework v1.0 applies to the advertiser's compliance program (e.g. retention obligations apply to this material); out of creative scope — informational applicability flag",
+        "severity": "low",
+        "scope": "advisory"
+      },
+      {
+        "check_id": "ADV-pci-dss",
+        "passed": true,
+        "evidence": {
+          "source": "pci-dss",
+          "citation": "PCI DSS v4.0",
+          "frameworks_enum": "PCI_DSS",
+          "routing_trigger": "always (advertiser-level payment-card program)",
+          "note": "process rule per directory architecture notes",
+          "coverage_matrix_version": "1.0.0"
+        },
+        "message": "PCI DSS v4.0 applies to the advertiser's compliance program (e.g. retention obligations apply to this material); out of creative scope — informational applicability flag",
+        "severity": "low",
+        "scope": "advisory"
+      }
+    ],
+    "ruleset_version": "1.7.0",
+    "ruleset_hash": "bad2a49239b87b66"
+  },
+  "rounds": [
+    {
+      "round": 1,
+      "was_rule_engine_callback": false,
+      "had_human_guidance": false,
+      "feedback_sent_to_llm": null,
+      "llm_review": {
+        "asset_id": "ad_8dd7020d2cb7",
+        "findings": [
+          {
+            "finding_id": "llmf_001",
+            "framework": "TILA",
+            "severity": "high",
+            "verdict": "needs_review",
+            "cited_segment_ids": [
+              "seg_1"
+            ],
+            "cited_entity_ids": [
+              "ent_1"
+            ],
+            "quoted_evidence": "Get 5.99% APR, guaranteed approval!",
+            "claim_candidate_id": "clm_2",
+            "regulation_citations": [
+              "12 CFR § 1026.24(d)",
+              "12 CFR § 1026.16(i)",
+              "12 CFR § 1026.16(ii)"
+            ],
+            "reasoning": "The headline advertises a specific APR (\"5.99% APR\"), which is a pricing term that can trigger additional disclosure requirements in TILA’s advertising provisions. However, the provided excerpts only partially describe triggering-term rules (12 CFR § 1026.24(d)) and certain required disclosures for promotional rates (12 CFR § 1026.16(i)–(ii)), without clearly stating: (1) whether and how an APR alone in an ad for this (unspecified) product type triggers additional disclosures; and (2) what precise co-disclosures (e.g., term, variable index, post‑promo rate, fees, other key terms) must accompany such an APR in this context. The asset contains no other disclosures, so a compliance assessment requires the full text of § 1026.16 and § 1026.24 (b)–(d) beyond the limited excerpts. Without those, it is not possible to conclude definitively whether omitting further APR-related disclosures is a violation.",
+            "scope_of_improvement": "Obtain and review the full text of 12 CFR §§ 1026.16 and 1026.24, including all provisions on triggering terms and required co-disclosures. If those provisions require additional disclosures when advertising a specific APR, revise the headline and accompanying copy so that: (a) any required information about the APR (e.g., whether it is promotional or standard, variable/index and margin, when any promotional period ends, the APR that will apply afterward, and any minimum or transaction charges that are finance charges) appears clearly and conspicuously with the 5.99% APR; or (b) if such disclosures cannot be accommodated in the headline, remove the specific \"5.99% APR\" from the ad or relocate it into a context where the full set of required TILA disclosures can be provided together."
+          },
+          {
+            "finding_id": "llmf_002",
+            "framework": "CFPB",
+            "severity": "high",
+            "verdict": "potential_violation",
+            "cited_segment_ids": [
+              "seg_1"
+            ],
+            "cited_entity_ids": [
+              "ent_1",
+              "ent_2"
+            ],
+            "quoted_evidence": "Get 5.99% APR, guaranteed approval!",
+            "claim_candidate_id": "clm_1",
+            "regulation_citations": [
+              "12 U.S.C. § 5531(a)",
+              "12 U.S.C. § 5531(c)",
+              "12 U.S.C. § 5531(d)"
+            ],
+            "reasoning": "The phrase \"guaranteed approval\" in conjunction with a specific APR strongly implies that any consumer will be approved for credit at a 5.99% APR with no meaningful conditions. In practice, credit approvals and APRs almost always depend on underwriting criteria (creditworthiness, income, etc.), and there is no indication of any limitations or eligibility requirements. Presenting unconditional, universal approval and rate eligibility where material conditions almost certainly apply is likely deceptive under the CFPB’s UDAAP authority, because it misleads reasonable consumers about (1) the certainty of being approved for a financial product and (2) the likelihood of receiving the advertised APR. Such a representation materially interferes with consumers’ understanding of key terms and exploits consumers’ lack of understanding of material risks and conditions, meeting the \"deceptive\" and potentially \"abusive\" standards under 12 U.S.C. § 5531(a), (c), and (d).",
+            "scope_of_improvement": "Eliminate the unconditional language or clearly disclose material conditions. For example, revise the headline to: \"Get APRs as low as 5.99%—approval based on creditworthiness\" and replace \"guaranteed approval\" with a more accurate statement such as \"Fast approval decisions\" or \"Approval not guaranteed; subject to credit review.\" Ensure any eligibility criteria and rate-determination factors are explained in nearby copy in clear, conspicuous language so consumers are not led to believe that everyone will be approved at 5.99% APR."
+          },
+          {
+            "finding_id": "llmf_003",
+            "framework": "FTC",
+            "severity": "high",
+            "verdict": "potential_violation",
+            "cited_segment_ids": [
+              "seg_1"
+            ],
+            "cited_entity_ids": [
+              "ent_1",
+              "ent_2"
+            ],
+            "quoted_evidence": "Get 5.99% APR, guaranteed approval!",
+            "claim_candidate_id": "clm_1",
+            "regulation_citations": [
+              "16 CFR § 255.0(a)"
+            ],
+            "reasoning": "Under section 5 of the FTC Act, as interpreted by the FTC’s Guides in 16 CFR part 255, advertising must not be deceptive or misleading. Even though the supplied excerpt focuses on endorsements and testimonials, it reflects the general principle that practices inconsistent with the Guides may trigger corrective action under section 5. A claim of \"guaranteed approval\" combined with a specific APR suggests that all consumers will be approved on those terms without conditions, which is highly unlikely for a credit product. Omitting material qualifications (such as underwriting criteria, income requirements, or risk-based pricing) can mislead consumers about their ability to obtain credit and the applicable rate. Such a representation is likely to be considered deceptive because it conveys a net impression that is false or materially misleading, and is likely to affect consumers’ decisions about applying for the product.",
+            "scope_of_improvement": "Remove or qualify the \"guaranteed approval\" claim so it does not overstate eligibility or certainty. For example, change the headline to \"Check your eligibility for APRs as low as 5.99%\" or \"Many approved in minutes—APR based on credit profile.\" Add clear, proximate disclosures that approval is not guaranteed and that actual APRs depend on creditworthiness and other factors. Avoid any phrasing that implies universal approval or that everyone will receive the 5.99% APR."
+          },
+          {
+            "finding_id": "llmf_004",
+            "framework": "STATE_UDAP",
+            "severity": "high",
+            "verdict": "needs_review",
+            "cited_segment_ids": [
+              "seg_1"
+            ],
+            "cited_entity_ids": [
+              "ent_1",
+              "ent_2"
+            ],
+            "quoted_evidence": "Get 5.99% APR, guaranteed approval!",
+            "claim_candidate_id": "clm_1",
+            "regulation_citations": [
+              "Cal. Bus. & Prof. Code § 17508",
+              "Cal. Bus. & Prof. Code § 17509"
+            ],
+            "reasoning": "The ad makes a strong, unqualified promise of \"guaranteed approval\" and a specific APR, which under general UDAP principles could be viewed as false or misleading if consumers in fact must meet material conditions or if many will be denied or receive higher rates. However, the provided California code excerpts are only placeholders labeled \"Code Section\" and do not contain operative language defining what constitutes a deceptive or misleading statement, what substantiation is required under § 17508, or how guarantees are regulated under § 17509. Without that operative text, it is not possible to definitively determine whether this specific phrasing violates California’s advertising statutes, or what substantiation standard would apply.",
+            "scope_of_improvement": "Obtain the full operative text of Cal. Bus. & Prof. Code §§ 17508 and 17509 (and any related Cal. Fin. Code sections cited) to confirm how California defines deceptive claims and regulates guarantees in advertising. If those provisions require substantiation for performance or guarantee claims or prohibit unqualified guarantees without clear terms, revise the ad to: (a) remove \"guaranteed approval\" or replace it with a qualified statement (e.g., \"you may qualify for\" or \"many applicants approved, subject to credit review\"); and (b) ensure any guarantee-related language is fully supported by written policies and data demonstrating that consumers generally receive what is promised under clearly disclosed conditions."
+          }
+        ],
+        "reviewed_clear": [],
+        "frameworks_evaluated": [
+          "FTC",
+          "TILA",
+          "CFPB",
+          "STATE_UDAP"
+        ],
+        "llm_meta": {
+          "tier": "pro",
+          "model": "gpt-5.1-2025-11-13",
+          "prompt_version": "compliance-review-v1.0",
+          "rag_corpus_hash": "1a276d64704c42d0",
+          "retrieved_chunks": 32,
+          "input_tokens": 5481,
+          "output_tokens": 1861,
+          "max_output_tokens": 8000,
+          "reviewed_at": "2026-07-20T18:33:37.713500Z",
+          "latency_ms": 37953
+        }
+      },
+      "adapter_notes": [
+        {
+          "finding_id": "llmf_001",
+          "action": "verdict_remapped",
+          "from": "needs_review",
+          "to": "potential_violation"
+        },
+        {
+          "finding_id": "llmf_004",
+          "action": "verdict_remapped",
+          "from": "needs_review",
+          "to": "potential_violation"
+        }
+      ],
+      "rule_engine_passed": false,
+      "failed_checks": [
+        {
+          "check_id": "STATE-COV-002",
+          "passed": false,
+          "evidence": {
+            "unmentioned_states": [
+              {
+                "state": "US-CA",
+                "statute": "Cal. Bus. & Prof. Code §§ 17200 (UCL), 17500 (False Advertising Law); Civ. Code § 1750 (CLRA)"
+              }
+            ],
+            "mentioned_states": [],
+            "exempt_skipped": [],
+            "state_table_version": "v1"
+          },
+          "message": "targeted states were never individually considered in any STATE_UDAP finding",
+          "severity": "medium",
+          "scope": "review"
+        }
+      ]
+    },
+    {
+      "round": 2,
+      "was_rule_engine_callback": true,
+      "had_human_guidance": false,
+      "feedback_sent_to_llm": "Your previous review FAILED the deterministic rule engine's verification. Fix every item below and return a corrected, complete review (the full JSON document, not a diff):\n\n1. [STATE-COV-002 | severity=medium] targeted states were never individually considered in any STATE_UDAP finding\n   Required fix: resolve and resubmit: targeted states were never individually considered in any STATE_UDAP finding",
+      "llm_review": {
+        "asset_id": "ad_8dd7020d2cb7",
+        "findings": [
+          {
+            "finding_id": "llmf_001",
+            "framework": "FTC",
+            "severity": "medium",
+            "verdict": "needs_review",
+            "cited_segment_ids": [
+              "seg_1"
+            ],
+            "cited_entity_ids": [
+              "ent_2"
+            ],
+            "quoted_evidence": "Get 5.99% APR, guaranteed approval!",
+            "claim_candidate_id": "clm_1",
+            "regulation_citations": [
+              "16 CFR § 255.0(a)"
+            ],
+            "reasoning": "The phrase \"guaranteed approval\" suggests that all consumers will be approved, regardless of creditworthiness or other underwriting criteria. Under FTC Section 5 guidance (as interpreted by the Endorsement Guides at 16 CFR § 255.0(a)), advertising must avoid deceptive representations. However, the supplied excerpts do not provide specific standards for what constitutes a deceptive guarantee or approval claim, nor do they address required qualifications for such claims. Without more specific FTC advertising deception standards in the excerpts, it is not possible to definitively determine whether this superlative guarantee is a violation.",
+            "scope_of_improvement": "If approval is not literally guaranteed for all applicants, revise the headline to a qualified, accurate description (for example, \"fast approval decisions\" or \"high approval rates for qualified applicants\") and add clear, proximate qualifiers stating key eligibility criteria. If approval truly is guaranteed, maintain documentation establishing that 100% of applicants who meet clearly disclosed basic conditions are approved."
+          },
+          {
+            "finding_id": "llmf_002",
+            "framework": "TILA",
+            "severity": "medium",
+            "verdict": "needs_review",
+            "cited_segment_ids": [
+              "seg_1"
+            ],
+            "cited_entity_ids": [
+              "ent_1"
+            ],
+            "quoted_evidence": "Get 5.99% APR, guaranteed approval!",
+            "claim_candidate_id": "clm_2",
+            "regulation_citations": [
+              "12 CFR § 1026.16(i)",
+              "12 CFR § 1026.16(ii)",
+              "12 CFR § 1026.24(d)"
+            ],
+            "reasoning": "The ad states a specific \"5.99% APR\" but provides no additional terms such as whether this is a promotional rate, when it ends, what APR applies afterward, or any minimum or other finance charges. Under 12 CFR § 1026.16(i)–(ii), when an advertisement presents a promotional rate or APR, it must also disclose when the promotional rate will end and the rate that will apply afterward. Under 12 CFR § 1026.24(d), use of specific credit terms can trigger additional required disclosures. The excerpts provided, however, do not specify exactly which APR advertisements are deemed \"promotional\" or precisely what combination of triggering terms applies to this situation. It is therefore unclear from the excerpts alone whether the 5.99% APR here is treated as a promotional rate or as a standard APR, and what exact additional disclosures are required.",
+            "scope_of_improvement": "Clarify in the ad whether 5.99% APR is a standard or promotional rate. If it is promotional, add proximate, clear disclosures stating (1) when the promotional 5.99% APR will end, (2) the APR (or range of APRs, if creditworthiness-based) that will apply afterward, and (3) any minimum, fixed, transaction, or activity finance charges that could be imposed. Confirm against the full text of 12 CFR §§ 1026.16 and 1026.24 which triggering terms are used and ensure all corresponding disclosures appear with equal prominence to the APR statement."
+          },
+          {
+            "finding_id": "llmf_003",
+            "framework": "CFPB",
+            "severity": "medium",
+            "verdict": "needs_review",
+            "cited_segment_ids": [
+              "seg_1"
+            ],
+            "cited_entity_ids": [
+              "ent_1",
+              "ent_2"
+            ],
+            "quoted_evidence": "Get 5.99% APR, guaranteed approval!",
+            "claim_candidate_id": "clm_1",
+            "regulation_citations": [
+              "12 U.S.C. § 5531(a)",
+              "12 U.S.C. § 5531(c)",
+              "12 U.S.C. § 5531(d)"
+            ],
+            "reasoning": "The combination of a precise APR and the phrase \"guaranteed approval\" in connection with a consumer financial product or service could be considered deceptive or abusive under the CFPB's UDAAP authority if consumers are led to believe that everyone can obtain credit at 5.99% APR with guaranteed approval when that is not the case, or if material limitations are omitted. However, the supplied statutory excerpts define the CFPB's authority and general standards for unfairness and abusiveness but do not elaborate concrete advertising requirements or specify how phrases like \"guaranteed approval\" and APR claims must be qualified. Without more detailed CFPB guidance or implementing regulations in the record, it is not possible to conclusively determine from these excerpts alone whether the ad constitutes an unfair, deceptive, or abusive act or practice.",
+            "scope_of_improvement": "Ensure that the APR and approval claims accurately reflect the terms most consumers will receive and do not omit material limitations. If approval is subject to underwriting, avoid absolute language like \"guaranteed approval\" and replace it with accurate, non-misleading phrasing (for example, \"easy application\" or \"quick approval decisions for qualified applicants\") and disclose key eligibility criteria clearly. Review the ad against the CFPB's full UDAAP guidance and enforcement precedents to confirm that no substantial, unavoidable consumer injury is likely and that consumers can understand the material risks, costs, and conditions of the product."
+          },
+          {
+            "finding_id": "llmf_004",
+            "framework": "STATE_UDAP",
+            "severity": "medium",
+            "verdict": "needs_review",
+            "cited_segment_ids": [
+              "seg_1"
+            ],
+            "cited_entity_ids": [
+              "ent_1",
+              "ent_2"
+            ],
+            "quoted_evidence": "Get 5.99% APR, guaranteed approval!",
+            "claim_candidate_id": "clm_1",
+            "regulation_citations": [
+              "Cal. Bus. & Prof. Code § 17508",
+              "Cal. Bus. & Prof. Code § 17509",
+              "Cal. Fin. Code § 90001",
+              "Cal. Fin. Code § 90002",
+              "Cal. Fin. Code § 90003",
+              "Cal. Fin. Code § 90005",
+              "Cal. Fin. Code § 90009"
+            ],
+            "reasoning": "The ad is targeted to California (US-CA). The absolute phrase \"guaranteed approval\" combined with a specific \"5.99% APR\" may implicate California unfair or deceptive advertising standards if the guarantee is not literally true for California consumers or if significant conditions (such as minimum credit scores or income requirements) are not disclosed. However, the supplied California statutory excerpts are labeled only as \"Code Section\" and do not set forth any operative standards, definitions, or specific prohibitions regarding deceptive advertising, substantiation, or particular finance advertising practices. Without operative text from Cal. Bus. & Prof. Code §§ 17508, 17509 or Cal. Fin. Code §§ 90001–90005, 90009, it is not possible to determine how California specifically treats guarantee and APR claims in this context or what substantiation or disclosures are required.",
+            "scope_of_improvement": "Obtain and review the full operative text of Cal. Bus. & Prof. Code §§ 17508, 17509 and Cal. Fin. Code §§ 90001–90005, 90009 to determine California-specific requirements for advertising guarantees and credit terms. In the meantime, mitigate risk by (1) avoiding absolute approval language for California-targeted ads unless approval is truly unconditional for California consumers, and (2) clearly disclosing any material conditions or limitations on both the 5.99% APR and approval eligibility within the ad, in close proximity and comparable prominence to the headline. Maintain substantiation demonstrating that California consumers experience the advertised approval and APR terms as represented."
+          }
+        ],
+        "reviewed_clear": [],
+        "frameworks_evaluated": [
+          "FTC",
+          "TILA",
+          "CFPB",
+          "STATE_UDAP"
+        ],
+        "llm_meta": {
+          "tier": "pro",
+          "model": "gpt-5.1-2025-11-13",
+          "prompt_version": "compliance-review-v1.0",
+          "rag_corpus_hash": "1a276d64704c42d0",
+          "retrieved_chunks": 32,
+          "input_tokens": 5578,
+          "output_tokens": 1834,
+          "max_output_tokens": 8000,
+          "reviewed_at": "2026-07-20T18:33:59.287597Z",
+          "latency_ms": 21422
+        }
+      },
+      "adapter_notes": [
+        {
+          "finding_id": "llmf_001",
+          "action": "verdict_remapped",
+          "from": "needs_review",
+          "to": "potential_violation"
+        },
+        {
+          "finding_id": "llmf_002",
+          "action": "verdict_remapped",
+          "from": "needs_review",
+          "to": "potential_violation"
+        },
+        {
+          "finding_id": "llmf_003",
+          "action": "verdict_remapped",
+          "from": "needs_review",
+          "to": "potential_violation"
+        },
+        {
+          "finding_id": "llmf_004",
+          "action": "verdict_remapped",
+          "from": "needs_review",
+          "to": "potential_violation"
+        }
+      ],
+      "rule_engine_passed": true,
+      "failed_checks": []
+    }
+  ],
+  "human_review": null,
+  "llm_error": null,
+  "warnings": [],
+  "provenance": {
+    "tier": "pro",
+    "llm_provider": "anthropic",
+    "llm_model": "claude-sonnet-5",
+    "llm_effort": "medium",
+    "prompt_version": "compliance-review-v1.0",
+    "rag_corpus_hash": "1a276d64704c42d0",
+    "rag_online": true,
+    "ruleset_version": "1.7.0",
+    "asset_provenance": {
+      "cv_version": "cv-0.1.0",
+      "nlp_version": "nlp-0.1.0",
+      "ruleset_hash": "2ebb768be9c8c562",
+      "timestamp": "2026-07-20T18:32:57.882137Z",
+      "embedding_model_version": null,
+      "ocr_backend": null
+    },
+    "ocr_backend": null,
+    "as_of": null
+  },
+  "timings_ms": {
+    "review_and_verify": 61266,
+    "prepare_asset": 500
+  },
+  "resumed_from_run_id": null,
+  "asset": null
+}

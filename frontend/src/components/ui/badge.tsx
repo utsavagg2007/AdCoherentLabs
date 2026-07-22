@@ -30,18 +30,18 @@ export function Badge({
 /** Semantic severity — the only place red/amber/green appear. */
 export function SeverityBadge({ severity }: { severity: Severity }) {
   const styles: Record<Severity, string> = {
-    high: "border-red-200 bg-red-50 text-red-700",
-    medium: "border-amber-200 bg-amber-50 text-amber-800",
-    low: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    high: "border-red-400/25 bg-red-400/10 text-red-300",
+    medium: "border-amber-400/25 bg-amber-400/10 text-amber-300",
+    low: "border-emerald-400/25 bg-emerald-400/10 text-emerald-300",
   };
   return <Badge className={styles[severity]}>{SEVERITY_LABEL[severity]}</Badge>;
 }
 
 export function SeverityDot({ severity }: { severity: Severity }) {
   const styles: Record<Severity, string> = {
-    high: "bg-red-500",
-    medium: "bg-amber-500",
-    low: "bg-emerald-500",
+    high: "bg-red-400",
+    medium: "bg-amber-400",
+    low: "bg-emerald-400",
   };
   return (
     <span
@@ -53,9 +53,9 @@ export function SeverityDot({ severity }: { severity: Severity }) {
 
 export function VerdictBadge({ verdict }: { verdict: Verdict }) {
   const styles: Record<Verdict, string> = {
-    potential_violation: "border-red-200 bg-red-50 text-red-700",
-    needs_review: "border-amber-200 bg-amber-50 text-amber-800",
-    compliant: "border-emerald-200 bg-emerald-50 text-emerald-700",
+    potential_violation: "border-red-400/25 bg-red-400/10 text-red-300",
+    needs_review: "border-amber-400/25 bg-amber-400/10 text-amber-300",
+    compliant: "border-emerald-400/25 bg-emerald-400/10 text-emerald-300",
   };
   return <Badge className={styles[verdict]}>{VERDICT_LABEL[verdict]}</Badge>;
 }
@@ -63,10 +63,10 @@ export function VerdictBadge({ verdict }: { verdict: Verdict }) {
 export function RunStatusBadge({ status }: { status: RunStatus }) {
   const tone = runStatusTone(status);
   const styles = {
-    active: "border-violet-200 bg-violet-50 text-violet-700",
-    good: "border-emerald-200 bg-emerald-50 text-emerald-700",
-    warn: "border-amber-200 bg-amber-50 text-amber-800",
-    bad: "border-red-200 bg-red-50 text-red-700",
+    active: "border-sky-400/25 bg-sky-400/10 text-sky-300",
+    good: "border-emerald-400/25 bg-emerald-400/10 text-emerald-300",
+    warn: "border-amber-400/25 bg-amber-400/10 text-amber-300",
+    bad: "border-red-400/25 bg-red-400/10 text-red-300",
   } as const;
   const active = tone === "active";
   return (
@@ -74,7 +74,7 @@ export function RunStatusBadge({ status }: { status: RunStatus }) {
       {active && (
         <span
           aria-hidden
-          className="size-1.5 animate-pulse-dot rounded-full bg-violet-500"
+          className="size-1.5 animate-pulse-dot rounded-full bg-sky-300"
         />
       )}
       {RUN_STATUS_LABEL[status]}
@@ -84,10 +84,10 @@ export function RunStatusBadge({ status }: { status: RunStatus }) {
 
 export function FindingStatusBadge({ status }: { status: FindingStatus }) {
   const styles: Record<FindingStatus, string> = {
-    open: "border-zinc-200 bg-zinc-50 text-zinc-600",
-    approved: "border-emerald-200 bg-emerald-50 text-emerald-700",
-    flagged: "border-amber-200 bg-amber-50 text-amber-800",
-    dismissed: "border-zinc-200 bg-zinc-100 text-zinc-500",
+    open: "border-white/12 bg-white/5 text-ink-700",
+    approved: "border-emerald-400/25 bg-emerald-400/10 text-emerald-300",
+    flagged: "border-amber-400/25 bg-amber-400/10 text-amber-300",
+    dismissed: "border-white/10 bg-white/[0.03] text-ink-500",
   };
   return <Badge className={styles[status]}>{FINDING_STATUS_LABEL[status]}</Badge>;
 }
@@ -103,7 +103,7 @@ export function Chip({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1 rounded-md border border-violet-200 bg-violet-50 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-violet-800",
+        "inline-flex items-center gap-1 rounded-md border border-white/12 bg-white/6 px-1.5 py-0.5 font-mono text-[11px] font-semibold text-ink-800",
         className
       )}
     >

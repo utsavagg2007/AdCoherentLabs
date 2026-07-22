@@ -132,7 +132,7 @@ export default function OnboardingPage() {
         </Link>
         <button
           onClick={signOut}
-          className="text-[13px] font-semibold text-zinc-500 hover:text-ink-900"
+          className="text-[13px] font-semibold text-ink-500 hover:text-ink-900"
         >
           Sign out{email ? ` (${email})` : ""}
         </button>
@@ -140,14 +140,14 @@ export default function OnboardingPage() {
 
       <main className="container-page flex justify-center pt-[8vh] pb-16">
         {phase === "needs_provisioning" ? (
-          <div className="bg-grid-faint w-full max-w-md rounded-3xl border border-line bg-white p-8 text-center shadow-(--shadow-soft)">
-            <div className="mx-auto flex size-14 items-center justify-center rounded-2xl border border-violet-200 bg-violet-50 text-violet-600">
+          <div className="bg-grid-faint w-full max-w-md rounded-3xl border border-line bg-coal-800 p-8 text-center shadow-(--shadow-soft)">
+            <div className="mx-auto flex size-14 items-center justify-center rounded-2xl border border-white/15 bg-white/6 text-ink-600">
               <ShieldQuestion className="size-6" aria-hidden />
             </div>
             <h1 className="mt-5 text-xl font-extrabold tracking-tight text-ink-900">
               Workspace setup needs administrator provisioning
             </h1>
-            <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-zinc-500">
+            <p className="mx-auto mt-3 max-w-sm text-sm leading-relaxed text-ink-500">
               Your account is confirmed, but self-serve workspace creation
               isn&apos;t available for brand-new accounts yet. An administrator
               needs to provision your first organization — or add you to an
@@ -160,7 +160,7 @@ export default function OnboardingPage() {
               </Button>
               <a
                 href="mailto:support@adcoherentlabs.com?subject=Workspace%20provisioning"
-                className="text-[13px] font-semibold text-violet-700 hover:text-violet-900"
+                className="text-[13px] font-semibold text-ink-900 hover:text-white"
               >
                 Contact support
               </a>
@@ -168,14 +168,14 @@ export default function OnboardingPage() {
           </div>
         ) : (
           <div className="w-full max-w-md">
-            <div className="rounded-3xl border border-line bg-white p-8 shadow-(--shadow-soft)">
-              <div className="flex size-12 items-center justify-center rounded-2xl border border-violet-200 bg-violet-50 text-violet-600">
+            <div className="rounded-3xl border border-line bg-coal-800 p-8 shadow-(--shadow-soft)">
+              <div className="flex size-12 items-center justify-center rounded-2xl border border-white/15 bg-white/6 text-ink-600">
                 <Building2 className="size-5" aria-hidden />
               </div>
               <h1 className="mt-5 text-2xl font-extrabold tracking-tight text-ink-900">
                 Name your workspace
               </h1>
-              <p className="mt-2 text-sm leading-relaxed text-zinc-500">
+              <p className="mt-2 text-sm leading-relaxed text-ink-500">
                 Your organization holds your team, credits, and every review
                 trail. You can rename it later.
               </p>
@@ -196,7 +196,7 @@ export default function OnboardingPage() {
                   />
                 </div>
                 {phase === "error" && errorMsg && (
-                  <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3.5 text-[13px] leading-relaxed text-red-800">
+                  <div role="alert" className="rounded-xl border border-red-400/25 bg-red-400/10 p-3.5 text-[13px] leading-relaxed text-red-300">
                     {errorMsg}
                   </div>
                 )}
@@ -211,7 +211,7 @@ export default function OnboardingPage() {
                 </Button>
               </form>
             </div>
-            <p className="mt-4 text-center text-[12.5px] leading-relaxed text-zinc-400">
+            <p className="mt-4 text-center text-[12.5px] leading-relaxed text-ink-500">
               Starts on the Free plan — 25 credits monthly. Reviews are
               decision support, not legal advice.
             </p>

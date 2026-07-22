@@ -9,7 +9,7 @@ from ..deps import AuthContext
 from ..errors import ApiError
 from ..ratelimit_deps import rate_limited
 from ..schemas import SubscriptionCheckout
-from ..services import stripe_sync
+from ..services import dev_billing, stripe_sync
 
 router = APIRouter(tags=["billing"])
 
@@ -21,6 +21,10 @@ async def subscription_checkout(body: SubscriptionCheckout,
     if ctx.principal != "user":
         raise ApiError(403, "forbidden", "Billing requires a user session.")
     ctx.require_step_up()          # billing change (audit spec)
+    if dev_billing.enabled():      # Stripe unconfigured + non-prod: simulate
+        url = await dev_billing.simulate_subscription_checkout(
+            ctx.org_id, ctx.user_id, body.tier)
+        return {"checkout_url": url, "simulated": True}
     url = await stripe_sync.create_subscription_checkout(
         ctx.org_id, body.tier, body.interval)
     return {"checkout_url": url}

@@ -83,6 +83,7 @@ export const LEDGER_REASON_LABEL: Record<string, string> = {
   "grant.pack": "Credit pack",
   "grant.manual": "Manual grant",
   "consume.run": "Review run",
+  "consume.tokens": "Model usage settlement",
   "refund.system_failure": "Refund — system failure",
   "adjust.manual": "Manual adjustment",
   "expire.cycle": "Cycle expiry",

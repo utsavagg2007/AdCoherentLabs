@@ -66,12 +66,12 @@ function LoginForm() {
       <h1 className="text-2xl font-extrabold tracking-tight text-ink-900">
         Welcome back
       </h1>
-      <p className="mt-1.5 text-sm text-zinc-500">
+      <p className="mt-1.5 text-sm text-ink-500">
         Sign in to your review workspace.
       </p>
 
       {!configured && (
-        <div role="alert" className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-3.5 text-[13px] leading-relaxed text-amber-900">
+        <div role="alert" className="mt-6 rounded-xl border border-amber-400/25 bg-amber-400/10 p-3.5 text-[13px] leading-relaxed text-amber-200">
           Authentication isn&apos;t configured. Set{" "}
           <code className="font-mono text-[12px]">NEXT_PUBLIC_SUPABASE_URL</code>{" "}
           and{" "}
@@ -105,7 +105,7 @@ function LoginForm() {
             </label>
             <Link
               href="/forgot-password"
-              className="text-[12.5px] font-semibold text-violet-700 hover:text-violet-900"
+              className="text-[12.5px] font-semibold text-ink-900 hover:text-white"
             >
               Forgot password?
             </Link>
@@ -125,7 +125,7 @@ function LoginForm() {
               type="button"
               onClick={() => setShowPw((s) => !s)}
               aria-label={showPw ? "Hide password" : "Show password"}
-              className="absolute top-1/2 right-3 -translate-y-1/2 rounded-md p-1 text-zinc-400 hover:text-ink-800"
+              className="absolute top-1/2 right-3 -translate-y-1/2 rounded-md p-1 text-ink-500 hover:text-ink-800"
             >
               {showPw ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
             </button>
@@ -133,13 +133,13 @@ function LoginForm() {
         </div>
 
         {error && (
-          <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3.5 text-[13px] leading-relaxed text-red-800">
+          <div role="alert" className="rounded-xl border border-red-400/25 bg-red-400/10 p-3.5 text-[13px] leading-relaxed text-red-300">
             {error}
             {unconfirmed && (
               <button
                 type="button"
                 onClick={resendConfirmation}
-                className="mt-1.5 block font-bold text-red-900 underline underline-offset-2"
+                className="mt-1.5 block font-bold text-red-200 underline underline-offset-2"
               >
                 {resent ? "Confirmation email sent ✓" : "Resend confirmation email"}
               </button>
@@ -158,11 +158,11 @@ function LoginForm() {
         </Button>
       </form>
 
-      <p className="mt-6 text-center text-[13.5px] text-zinc-500">
+      <p className="mt-6 text-center text-[13.5px] text-ink-500">
         New to AdCoherent?{" "}
         <Link
           href="/signup"
-          className="font-bold text-violet-700 hover:text-violet-900"
+          className="font-bold text-ink-900 hover:text-white"
         >
           Create an account
         </Link>

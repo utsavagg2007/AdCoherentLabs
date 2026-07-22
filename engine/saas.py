@@ -179,8 +179,8 @@ def _entitlement_drift(tier: str, row: dict) -> list[str]:
 def _default_db_url() -> str:
     url = os.environ.get("SUPABASE_DB_URL") or os.environ.get("DATABASE_URL", "")
     if not url:
-        # Same resolution the RAG store uses (rag-engine/.env is loaded by
-        # its config module on import; root .env by _paths).
+        # Same resolution the RAG store uses (the repo-root .env is loaded
+        # by engine/_paths and again by adcoherent_rag.config on import).
         from adcoherent_rag import config as rag_config
         url = rag_config.DATABASE_URL
     if not url:
@@ -385,6 +385,20 @@ class SupabaseDataPlane:
         self.conn.commit()
         return refund
 
+    def settle_run_tokens(self, org_id: str, run_id: str,
+                          in_tok: int, out_tok: int) -> dict:
+        """Post-run token settlement (0011): the LLM component of the price,
+        charged from actual usage at the tier's published token_rates.
+        Idempotent per run; clamps to the available balance (the report
+        already exists — a shortfall is audited, never a failure)."""
+        assert self.conn is not None
+        with self.conn.cursor() as cur:
+            cur.execute("select app.settle_run_tokens(%s, %s, %s, %s) as s",
+                        (org_id, run_id, in_tok, out_tok))
+            settlement = cur.fetchone()["s"]
+        self.conn.commit()
+        return settlement
+
     # -- audit ------------------------------------------------------------
 
     def audit(self, org_id: str | None, actor: str | None, action: str,
@@ -453,6 +467,27 @@ class SupabaseDataPlane:
             "values (%s, %s, %s, %s) "
             "on conflict (run_id, layer) do update set payload = excluded.payload",
             (run_id, org_id, layer, Jsonb(payload)))
+
+    def emit_run_event(self, run_id: str, org_id: str, stage: str,
+                       event: str, message: str,
+                       detail: dict | None = None) -> None:
+        """One sanitized live-activity line (public.run_events, 0011). The
+        user watches these while the engine runs: fixed message templates
+        plus aggregate counts ONLY — never ad text, retrieved regulation
+        chunks, prompts, or model reasoning. Never raises: the feed is
+        best-effort and must not take a run down with it."""
+        try:
+            self._exec(
+                "insert into public.run_events "
+                "  (run_id, org_id, stage, event, message, detail) "
+                "values (%s, %s, %s, %s, %s, %s)",
+                (run_id, org_id, stage, event, message, Jsonb(detail or {})))
+        except Exception:  # noqa: BLE001
+            logger.warning("run_events insert failed for %s/%s", run_id, event)
+            try:
+                self.conn.rollback()   # keep the shared connection usable
+            except Exception:  # noqa: BLE001
+                pass
 
     def load_asset_representation(self, run_id: str) -> dict:
         """The stored Layer-1/2 output — lets an operator resume a
@@ -667,9 +702,21 @@ def _persist_outcome(db: SupabaseDataPlane, *, run_id: str, org_id: str,
                                   dump["verification"])
 
     meta = (result.llm_review or {}).get("llm_meta", {})
-    in_tok, out_tok = meta.get("input_tokens"), meta.get("output_tokens")
+    # Bill on the SUM across all LLM rounds (a 3-round run consumed 3 calls);
+    # fall back to the final round's meta when per-round usage is absent.
+    total_in = total_out = 0
+    for r in dump["rounds"] or []:
+        rmeta = (r.get("llm_review") or {}).get("llm_meta") or {}
+        total_in += int(rmeta.get("input_tokens") or 0)
+        total_out += int(rmeta.get("output_tokens") or 0)
+    if total_in == 0 and total_out == 0:
+        total_in = int(meta.get("input_tokens") or 0)
+        total_out = int(meta.get("output_tokens") or 0)
     db.record_token_usage(org_id, run_id, user_id, meta.get("model"),
-                          in_tok, out_tok, ent.tier)
+                          total_in or None, total_out or None, ent.tier)
+
+    # Token-metered settlement (0011): the usage component of the price.
+    settlement = db.settle_run_tokens(org_id, run_id, total_in, total_out)
 
     db_status = _RUN_STATUS_BY_ENGINE_STATUS[result.status]
     db.set_run(
@@ -680,7 +727,7 @@ def _persist_outcome(db: SupabaseDataPlane, *, run_id: str, org_id: str,
         prompt_version=result.provenance.get("prompt_version"),
         rulepack_version=result.provenance.get("ruleset_version"),
         rag_corpus_hash=result.provenance.get("rag_corpus_hash"),
-        input_tokens=in_tok, output_tokens=out_tok)
+        input_tokens=total_in or None, output_tokens=total_out or None)
 
     action = {"complete": "run.completed", "failed": "run.failed",
               "human_review": "run.human_review"}[db_status]
@@ -689,7 +736,27 @@ def _persist_outcome(db: SupabaseDataPlane, *, run_id: str, org_id: str,
         "llm_rounds_used": result.llm_rounds_used, "findings": n_findings,
         "review_passed": bool(result.verification
                               and result.verification.review_passed),
+        "tokens": {"input": total_in, "output": total_out},
+        "token_settlement": settlement,
     })
+
+    charged = int((settlement or {}).get("charged") or 0)
+    db.emit_run_event(
+        run_id, org_id, "report", "report.persisted",
+        f"Report compiled — {n_findings} finding"
+        f"{'s' if n_findings != 1 else ''} recorded.",
+        {"findings": n_findings, "status": db_status})
+    db.emit_run_event(
+        run_id, org_id, "done", "run.finished",
+        ("Review complete." if db_status == "complete" else
+         "Review paused for human review — a compliance reviewer should "
+         "add guidance." if db_status == "human_review" else
+         "The run failed; any charge is refunded automatically.")
+        + (f" Usage settled: {charged} credit"
+           f"{'s' if charged != 1 else ''} for "
+           f"{(total_in + total_out):,} tokens." if charged else ""),
+        {"status": db_status, "tokens_charged": charged,
+         "input_tokens": total_in, "output_tokens": total_out})
 
 
 def run_for_user(

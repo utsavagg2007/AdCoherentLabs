@@ -17,7 +17,13 @@ import {
 } from "lucide-react";
 import { PageBody, PageHeader } from "@/components/app/page-header";
 import { CREDITS_REFRESH_EVENT } from "@/components/app/sidebar";
-import { Dropzone, buildPicked, type PickedFile } from "@/components/app/dropzone";
+import {
+  Dropzone,
+  KIND_LABEL,
+  buildPicked,
+  probeVideoDuration,
+  type PickedFile,
+} from "@/components/app/dropzone";
 import { JurisdictionSelect } from "@/components/app/jurisdiction-select";
 import { useApi, useOrg } from "@/components/providers";
 import { Button } from "@/components/ui/button";
@@ -39,12 +45,6 @@ const MODES: { id: Mode; label: string; icon: React.ElementType }[] = [
   { id: "html", label: "Paste HTML", icon: Code2 },
 ];
 
-function inlineKindForFile(f: File): "image" | "text" | "html" {
-  if (f.type.startsWith("image/")) return "image";
-  if (f.type === "text/html" || /\.html?$/i.test(f.name)) return "html";
-  return "text";
-}
-
 export default function NewSubmissionPage() {
   const api = useApi();
   const { orgId } = useOrg();
@@ -54,6 +54,8 @@ export default function NewSubmissionPage() {
   const credits = useAsyncData((s) => api.credits(s), [api, orgId]);
   const orgMe = useAsyncData((s) => api.orgMe(s), [api, orgId]);
   const capMb = orgMe.data?.entitlements.max_upload_mb ?? null;
+  const allowedKinds = orgMe.data?.entitlements.allowed_kinds ?? null;
+  const maxVideoSeconds = orgMe.data?.entitlements.max_video_seconds ?? null;
 
   const [mode, setMode] = useState<Mode>("upload");
   const [files, setFiles] = useState<PickedFile[]>([]);
@@ -86,7 +88,8 @@ export default function NewSubmissionPage() {
     if (mode === "html") return html.trim() ? (p.html ?? null) : null;
     if (mode === "upload") {
       if (files.length !== 1) return null;
-      const kind = inlineKindForFile(files[0].file);
+      const kind = files[0].kind;
+      if (!kind) return null;
       return p[kind] ?? null;
     }
     if (mode === "carousel") {
@@ -101,21 +104,26 @@ export default function NewSubmissionPage() {
   const blockingProblem = useMemo(() => {
     if (mode === "upload") {
       if (files.length === 0) return "Add a creative to review.";
-      if (files[0].unsupported)
-        return "This file type isn't analyzable in v1 — use PNG, JPEG, WebP, GIF, TXT, or HTML.";
-      if (files[0].overCap)
+      const f = files[0];
+      if (f.kind === null)
+        return "This file type isn't supported — use an image, PDF, Word document, video, TXT, or HTML.";
+      if (f.planLocked)
+        return `${KIND_LABEL[f.kind]} uploads aren't included in your plan — upgrade to unlock them.`;
+      if (f.overCap)
         return `This file is over your plan's ${capMb} MB upload cap.`;
+      if (f.tooLong)
+        return `Videos on your plan are capped at ${maxVideoSeconds}s — this one runs ${Math.round(f.durationSeconds ?? 0)}s.`;
     }
     if (mode === "carousel") {
       if (cards.length === 0) return "Add 2–10 image cards.";
       if (cards.length < 2) return "A carousel needs at least 2 cards — use Upload for a single image.";
-      if (cards.some((c) => c.unsupported)) return "Carousel cards must be images (PNG, JPEG, WebP, GIF).";
+      if (cards.some((c) => c.kind !== "image")) return "Carousel cards must be images (PNG, JPEG, WebP, GIF).";
       if (cards.some((c) => c.overCap)) return `Every card must be within the ${capMb} MB upload cap.`;
     }
     if (mode === "text" && !text.trim()) return "Paste the ad copy to review.";
     if (mode === "html" && !html.trim()) return "Paste the ad HTML to review.";
     return null;
-  }, [mode, files, cards, text, html, capMb]);
+  }, [mode, files, cards, text, html, capMb, maxVideoSeconds]);
 
   const ready = blockingProblem === null;
 
@@ -137,14 +145,34 @@ export default function NewSubmissionPage() {
 
   const addFiles = useCallback(
     (incoming: File[], target: "upload" | "carousel") => {
-      const picked = incoming.map((f) => buildPicked(f, capMb));
+      const picked = incoming.map((f) => buildPicked(f, capMb, allowedKinds));
       if (target === "upload") {
         setFiles(picked.slice(0, 1));
       } else {
         setCards((prev) => [...prev, ...picked].slice(0, 10));
       }
+      // videos: resolve duration from metadata, then apply the plan cap
+      for (const p of picked) {
+        if (p.kind !== "video" || p.planLocked) continue;
+        probeVideoDuration(p.file).then((dur) => {
+          setFiles((prev) =>
+            prev.map((x) =>
+              x.id === p.id
+                ? {
+                    ...x,
+                    durationSeconds: dur,
+                    tooLong:
+                      dur != null &&
+                      maxVideoSeconds != null &&
+                      dur > maxVideoSeconds,
+                  }
+                : x
+            )
+          );
+        });
+      }
     },
-    [capMb]
+    [capMb, allowedKinds, maxVideoSeconds]
   );
 
   async function submit() {
@@ -229,6 +257,8 @@ export default function NewSubmissionPage() {
                     multiple={false}
                     maxFiles={1}
                     capMb={capMb}
+                    allowedKinds={allowedKinds}
+                    maxVideoSeconds={maxVideoSeconds}
                   />
                 )}
                 {mode === "carousel" && (
@@ -242,7 +272,7 @@ export default function NewSubmissionPage() {
                       capMb={capMb}
                       imagesOnly
                     />
-                    <p className="mt-2 text-[12px] text-zinc-400">
+                    <p className="mt-2 text-[12px] text-ink-500">
                       {cards.length}/10 cards · reviewed as one submission, in
                       this order.
                     </p>
@@ -263,7 +293,7 @@ export default function NewSubmissionPage() {
                       onChange={(e) => setText(e.target.value)}
                       maxLength={2_000_000}
                     />
-                    <p className="mt-1.5 text-right text-[11.5px] text-zinc-400 tabular-nums">
+                    <p className="mt-1.5 text-right text-[11.5px] text-ink-500 tabular-nums">
                       {formatNumber(text.length)} characters
                     </p>
                   </div>
@@ -282,7 +312,7 @@ export default function NewSubmissionPage() {
                       maxLength={2_000_000}
                       spellCheck={false}
                     />
-                    <p className="mt-1.5 text-right text-[11.5px] text-zinc-400 tabular-nums">
+                    <p className="mt-1.5 text-right text-[11.5px] text-ink-500 tabular-nums">
                       {formatNumber(html.length)} characters
                     </p>
                   </div>
@@ -293,7 +323,7 @@ export default function NewSubmissionPage() {
             <div className="grid gap-5 sm:grid-cols-2">
               <div>
                 <label htmlFor="title" className="label">
-                  Title <span className="font-normal text-zinc-400">(optional)</span>
+                  Title <span className="font-normal text-ink-500">(optional)</span>
                 </label>
                 <input
                   id="title"
@@ -307,7 +337,7 @@ export default function NewSubmissionPage() {
               <div>
                 <span className="label">
                   Target jurisdictions{" "}
-                  <span className="font-normal text-zinc-400">(optional)</span>
+                  <span className="font-normal text-ink-500">(optional)</span>
                 </span>
                 <JurisdictionSelect
                   selected={jurisdictions}
@@ -320,11 +350,11 @@ export default function NewSubmissionPage() {
               <ErrorPanel error={error} onRetry={() => setConfirming(true)} />
             ) : null}
             {insufficient && (
-              <div role="alert" className="rounded-2xl border border-amber-300 bg-amber-50 p-5">
-                <p className="text-sm font-bold text-amber-900">
+              <div role="alert" className="rounded-2xl border border-amber-400/30 bg-amber-400/10 p-5">
+                <p className="text-sm font-bold text-amber-200">
                   Not enough credits for this review
                 </p>
-                <p className="mt-1 text-[13px] leading-relaxed text-amber-800">
+                <p className="mt-1 text-[13px] leading-relaxed text-amber-300">
                   It costs{" "}
                   <strong>{String(insufficient.details["needed"] ?? "—")}</strong>{" "}
                   credits and your balance is{" "}
@@ -352,15 +382,11 @@ export default function NewSubmissionPage() {
               </h2>
               <dl className="mt-4 space-y-2.5 text-[13px]">
                 <div className="flex justify-between gap-3">
-                  <dt className="text-zinc-500">Input</dt>
+                  <dt className="text-ink-500">Input</dt>
                   <dd className="font-bold text-ink-900">
                     {mode === "upload"
-                      ? files.length
-                        ? files[0].file.type.startsWith("image/")
-                          ? "Image"
-                          : inlineKindForFile(files[0].file) === "html"
-                            ? "HTML file"
-                            : "Text file"
+                      ? files.length && files[0].kind
+                        ? KIND_LABEL[files[0].kind]
                         : "—"
                       : mode === "carousel"
                         ? cards.length
@@ -372,7 +398,7 @@ export default function NewSubmissionPage() {
                   </dd>
                 </div>
                 <div className="flex justify-between gap-3">
-                  <dt className="text-zinc-500">Jurisdictions</dt>
+                  <dt className="text-ink-500">Jurisdictions</dt>
                   <dd className="font-bold text-ink-900">
                     {jurisdictions.length === 0
                       ? "Nationwide"
@@ -380,17 +406,17 @@ export default function NewSubmissionPage() {
                   </dd>
                 </div>
                 <div className="flex justify-between gap-3 border-t border-line pt-2.5">
-                  <dt className="text-zinc-500">Estimated cost</dt>
-                  <dd className="text-lg font-extrabold text-violet-700 tabular-nums">
+                  <dt className="text-ink-500">Estimated cost</dt>
+                  <dd className="text-lg font-extrabold text-ink-900 tabular-nums">
                     {estimate !== null ? `${estimate} credits` : "—"}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-3">
-                  <dt className="text-zinc-500">Balance</dt>
+                  <dt className="text-ink-500">Balance</dt>
                   <dd className="font-bold text-ink-900 tabular-nums">
                     {balance !== null ? formatNumber(balance) : "—"}
                     {estimate !== null && balance !== null && (
-                      <span className="ml-1 text-[11.5px] font-semibold text-zinc-400">
+                      <span className="ml-1 text-[11.5px] font-semibold text-ink-500">
                         → {formatNumber(Math.max(0, balance - estimate))}
                       </span>
                     )}
@@ -398,12 +424,13 @@ export default function NewSubmissionPage() {
                 </div>
               </dl>
               {credits.data && (
-                <p className="mt-3 rounded-lg bg-cream p-2.5 text-[11.5px] leading-relaxed text-zinc-500">
-                  Your {credits.data.tier} plan prices: text{" "}
+                <p className="mt-3 rounded-lg bg-coal-700 p-2.5 text-[11.5px] leading-relaxed text-ink-500">
+                  Your {credits.data.tier} plan base prices: text{" "}
                   {priceList.text ?? "—"} · image {priceList.image ?? "—"} ·
-                  HTML {priceList.html ?? "—"} · extra card{" "}
-                  {priceList.carousel_card ?? "—"}. The charge is confirmed
-                  before anything runs.
+                  PDF {priceList.pdf ?? "—"} · doc {priceList.docx ?? "—"}
+                  {priceList.video != null ? ` · video ${priceList.video}` : ""}.
+                  Model usage settles from actual tokens when the run
+                  finishes.
                 </p>
               )}
               <Button
@@ -418,7 +445,7 @@ export default function NewSubmissionPage() {
               <p
                 className={cn(
                   "mt-2.5 text-center text-[12px] leading-relaxed",
-                  ready ? "text-zinc-400" : "font-semibold text-amber-700"
+                  ready ? "text-ink-500" : "font-semibold text-amber-300"
                 )}
                 role={ready ? undefined : "status"}
               >
@@ -439,14 +466,14 @@ export default function NewSubmissionPage() {
         >
           <div className="rounded-xl border border-line bg-cream/70 p-4">
             <div className="flex items-baseline justify-between">
-              <span className="text-sm font-semibold text-zinc-600">
+              <span className="text-sm font-semibold text-ink-600">
                 This review will charge
               </span>
-              <span className="text-2xl font-extrabold text-violet-700 tabular-nums">
+              <span className="text-2xl font-extrabold text-ink-900 tabular-nums">
                 {estimate ?? "—"} credits
               </span>
             </div>
-            <p className="mt-1.5 text-[12.5px] leading-relaxed text-zinc-500">
+            <p className="mt-1.5 text-[12.5px] leading-relaxed text-ink-500">
               {mode === "carousel"
                 ? `Image cost plus ${Math.max(0, cards.length - 1)} additional card${cards.length - 1 === 1 ? "" : "s"}.`
                 : "Priced from your plan's live price list."}{" "}

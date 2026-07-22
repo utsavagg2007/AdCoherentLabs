@@ -53,19 +53,19 @@ export default function ResetPasswordPage() {
   }
 
   if (hasSession === null) {
-    return <p className="text-center text-sm text-zinc-500">Checking your reset link…</p>;
+    return <p className="text-center text-sm text-ink-500">Checking your reset link…</p>;
   }
 
   if (!hasSession) {
     return (
       <div className="text-center">
-        <div className="mx-auto flex size-14 items-center justify-center rounded-2xl border border-amber-200 bg-amber-50 text-amber-600">
+        <div className="mx-auto flex size-14 items-center justify-center rounded-2xl border border-amber-400/25 bg-amber-400/10 text-amber-300">
           <KeyRound className="size-6" aria-hidden />
         </div>
         <h1 className="mt-5 text-2xl font-extrabold tracking-tight text-ink-900">
           Reset link needed
         </h1>
-        <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-zinc-500">
+        <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-ink-500">
           This page only works from the link in a password-reset email, and
           links expire quickly. Request a fresh one.
         </p>
@@ -82,7 +82,7 @@ export default function ResetPasswordPage() {
         <h1 className="text-2xl font-extrabold tracking-tight text-ink-900">
           Password updated
         </h1>
-        <p className="mt-2 text-sm text-zinc-500">Taking you to your dashboard…</p>
+        <p className="mt-2 text-sm text-ink-500">Taking you to your dashboard…</p>
       </div>
     );
   }
@@ -113,13 +113,13 @@ export default function ResetPasswordPage() {
               type="button"
               onClick={() => setShowPw((s) => !s)}
               aria-label={showPw ? "Hide password" : "Show password"}
-              className="absolute top-1/2 right-3 -translate-y-1/2 rounded-md p-1 text-zinc-400 hover:text-ink-800"
+              className="absolute top-1/2 right-3 -translate-y-1/2 rounded-md p-1 text-ink-500 hover:text-ink-800"
             >
               {showPw ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
             </button>
           </div>
           {pwTooShort && (
-            <p className="mt-1.5 text-[12.5px] text-red-600">
+            <p className="mt-1.5 text-[12.5px] text-red-300">
               Use at least 8 characters.
             </p>
           )}
@@ -138,13 +138,13 @@ export default function ResetPasswordPage() {
             onChange={(e) => setConfirm(e.target.value)}
           />
           {mismatch && (
-            <p className="mt-1.5 text-[12.5px] text-red-600">
+            <p className="mt-1.5 text-[12.5px] text-red-300">
               Passwords don&apos;t match.
             </p>
           )}
         </div>
         {error && (
-          <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3.5 text-[13px] text-red-800">
+          <div role="alert" className="rounded-xl border border-red-400/25 bg-red-400/10 p-3.5 text-[13px] text-red-300">
             {error}
           </div>
         )}

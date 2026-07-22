@@ -80,6 +80,14 @@ def _load_input(db: SupabaseDataPlane, run: dict, tmpdir: str) -> dict:
             p.write_bytes(storage.download_object_sync(a["storage_path"]))
             paths.append(str(p))
         return {"image_path": paths if len(paths) > 1 else paths[0]}
+    if kinds in ({"pdf"}, {"docx"}, {"video"}):
+        # Single-file kinds: engine.media converts them to the image/text
+        # paths inside prepare_asset (media_workdir = this run's tmpdir).
+        kind = next(iter(kinds))
+        ext = Path(assets[0]["storage_path"]).suffix or f".{kind}"
+        p = Path(tmpdir) / f"creative{ext}"
+        p.write_bytes(storage.download_object_sync(assets[0]["storage_path"]))
+        return {f"{kind}_path": str(p)}
     raise RunAttemptFailed(f"unsupported asset kinds {sorted(kinds)}")
 
 
@@ -129,13 +137,30 @@ def execute_job(db: SupabaseDataPlane, job: dict) -> JobOutcome:
 
 def _execute_fresh(db: SupabaseDataPlane, run: dict, ent, tmpdir: str):
     run_id, org_id = run["id"], run["org_id"]
+
+    def emit(stage: str, event: str, message: str, detail: dict | None = None):
+        db.emit_run_event(run_id, org_id, stage, event, message, detail)
+
+    emit("ingest", "ingest.loading",
+         "Fetching your creative from secure storage.", {})
     engine_input = _load_input(db, run, tmpdir)
+    input_kind = next(iter(engine_input)).removesuffix("_path")
+    kind_label = {"image": "image", "text": "text", "html": "HTML",
+                  "pdf": "PDF", "docx": "document",
+                  "video": "video"}.get(input_kind, input_kind)
+    emit("ingest", "ingest.ready",
+         f"Creative loaded — analysing as {kind_label}.", {"kind": kind_label})
 
     db.set_run(run_id, status="running_cv", started=True)
     db.audit(org_id, run["created_by"], "run.started", f"analysis_run:{run_id}",
              {"tier": ent.tier, "model": ent.llm_model, "async": True})
+    emit("cv", "cv.started",
+         "Layer 1 — computer vision: OCR, layout geometry and visual "
+         "measurements." if input_kind in ("image", "pdf", "video") else
+         "Layer 1 — structuring the creative's text.", {})
     asset = prepare_asset(product_tier=ent.tier,
                           target_jurisdictions=run["target_jurisdictions"],
+                          media_workdir=tmpdir,
                           **engine_input)
     db.set_run(run_id, status="running_nlp")
     dropped = _apply_framework_entitlements(asset, ent)
@@ -144,10 +169,21 @@ def _execute_fresh(db: SupabaseDataPlane, run: dict, ent, tmpdir: str):
         "provenance": asset.get("provenance", {}),
         "segments": len(asset.get("segments", []))})
     db.save_layer_output(run_id, org_id, "nlp", asset)
+    frameworks = (asset.get("routing") or {}).get("frameworks") or []
+    media_meta = (asset.get("provenance") or {}).get("media") or {}
+    emit("nlp", "nlp.structured",
+         (f"Layer 2 — language analysis: {len(asset.get('segments', []))} "
+          f"segments, {len(asset.get('claim_candidates', []))} claim "
+          f"candidates; routed to {len(frameworks)} regulatory "
+          f"framework{'s' if len(frameworks) != 1 else ''}."),
+         {"segments": len(asset.get("segments", [])),
+          "claims": len(asset.get("claim_candidates", [])),
+          "frameworks": frameworks, **({"media": media_meta} if media_meta else {})})
 
     db.set_run(run_id, status="running_llm")
     result = review_and_verify(asset, ent.tier,
-                               max_llm_rounds=DEFAULT_MAX_LLM_ROUNDS)
+                               max_llm_rounds=DEFAULT_MAX_LLM_ROUNDS,
+                               progress=emit)
 
     if bypassed:
         result.warnings.append(
@@ -170,11 +206,17 @@ def _execute_resume(db: SupabaseDataPlane, run: dict, ent):
     """Operator-guided single round over the stored Layer-1/2 output — no
     re-OCR, no credit charge, tokens still metered (§8.1)."""
     run_id, org_id = run["id"], run["org_id"]
+
+    def emit(stage: str, event: str, message: str, detail: dict | None = None):
+        db.emit_run_event(run_id, org_id, stage, event, message, detail)
+
     asset = db.load_asset_representation(run["resumed_from_run_id"])
     db.set_run(run_id, status="running_llm", started=True)
     db.audit(org_id, run["created_by"], "run.resumed", f"analysis_run:{run_id}",
              {"resumed_from": run["resumed_from_run_id"], "tier": ent.tier,
               "guidance_chars": len(run["operator_guidance"]), "async": True})
+    emit("llm", "llm.resume",
+         "Re-reviewing with your reviewer's guidance applied.", {})
     result = resume_with_human_guidance(
         asset, run["operator_guidance"], product_tier=ent.tier)
     db.save_layer_output(run_id, org_id, "nlp", asset)

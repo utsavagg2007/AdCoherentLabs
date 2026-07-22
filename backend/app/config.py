@@ -1,7 +1,7 @@
 """Typed settings — every env var validated at import, fail-fast on boot (§5).
 
-Values come from the process environment, then backend/.env (written by
-scripts/gen_env.py AFTER supabase/harden.py has rotated the stack secrets —
+Values come from the process environment, then the repo-root .env (written by
+scripts/sync_env.py AFTER supabase/harden.py has rotated the stack secrets —
 spec P0). Secrets never ship defaults; local-stack conveniences do.
 """
 

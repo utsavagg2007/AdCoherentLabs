@@ -57,7 +57,7 @@ function AssetImage({
 
   if (failed) {
     return (
-      <div className="flex aspect-video items-center justify-center rounded-xl border border-line bg-cream text-zinc-400">
+      <div className="flex aspect-video items-center justify-center rounded-xl border border-line bg-cream text-ink-500">
         <div className="text-center">
           <ImageOff className="mx-auto size-6" aria-hidden />
           <p className="mt-2 text-[12px]">
@@ -70,7 +70,7 @@ function AssetImage({
   if (!url) return <Skeleton className="aspect-video w-full" />;
 
   return (
-    <div className="relative overflow-hidden rounded-xl border border-line bg-white">
+    <div className="relative overflow-hidden rounded-xl border border-line bg-coal-800">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={url}
@@ -151,7 +151,7 @@ function AssetText({ path }: { path: string }) {
 
   if (failed) {
     return (
-      <p className="rounded-xl border border-line bg-cream p-4 text-[12.5px] text-zinc-500">
+      <p className="rounded-xl border border-line bg-cream p-4 text-[12.5px] text-ink-500">
         The source file preview is unavailable right now.
       </p>
     );
@@ -169,7 +169,7 @@ function AssetText({ path }: { path: string }) {
           href={url}
           target="_blank"
           rel="noreferrer"
-          className="mt-2 inline-flex items-center gap-1 text-[12px] font-bold text-violet-700 hover:text-violet-900"
+          className="mt-2 inline-flex items-center gap-1 text-[12px] font-bold text-ink-900 hover:text-white"
         >
           Open source file
           <ExternalLink className="size-3" aria-hidden />
@@ -217,8 +217,8 @@ export function CreativePanel({
             className={cn(
               "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11.5px] font-bold transition-colors",
               showBoxes
-                ? "border-violet-300 bg-violet-50 text-violet-800"
-                : "border-line bg-white text-zinc-500 hover:text-ink-900"
+                ? "border-white/20 bg-white/6 text-ink-850"
+                : "border-line bg-coal-800 text-ink-500 hover:text-ink-900"
             )}
           >
             <Frame className="size-3.5" aria-hidden />
@@ -231,7 +231,7 @@ export function CreativePanel({
         {detail.loading && <Skeleton className="aspect-video w-full" />}
         {!detail.loading && assets.length === 0 && (
           <div className="rounded-xl border border-line bg-cream/70 p-4">
-            <p className="flex items-center gap-2 text-[12.5px] font-semibold text-zinc-500">
+            <p className="flex items-center gap-2 text-[12.5px] font-semibold text-ink-500">
               <FileText className="size-4" aria-hidden />
               Inline submission — the reviewed content is quoted in the
               findings below.
@@ -241,7 +241,7 @@ export function CreativePanel({
         {imageAssets.map((a, i) => (
           <div key={a.id}>
             {imageAssets.length > 1 && (
-              <p className="mb-1 font-mono text-[10.5px] font-bold text-zinc-400">
+              <p className="mb-1 font-mono text-[10.5px] font-bold text-ink-500">
                 CARD {String(i + 1).padStart(2, "0")}
               </p>
             )}
@@ -258,7 +258,7 @@ export function CreativePanel({
             <AssetText key={a.id} path={a.storage_path} />
           ))}
         {detail.data?.submission.title && (
-          <p className="text-[12px] text-zinc-400">
+          <p className="text-[12px] text-ink-500">
             “{detail.data.submission.title}”
             {detail.data.submission.target_jurisdictions?.length
               ? ` · ${detail.data.submission.target_jurisdictions.join(", ")}`
