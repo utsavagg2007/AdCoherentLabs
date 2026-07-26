@@ -183,7 +183,8 @@ async def auth_context(request: Request) -> AuthContext:
     if authz.lower().startswith("bearer "):
         claims = verify_supabase_jwt(authz[7:].strip(),
                                      settings.supabase_jwt_secret,
-                                     settings.supabase_jwt_issuer)
+                                     settings.supabase_jwt_issuer,
+                                     settings.jwks_url)
         ctx_data = await _user_context(claims.user_id)
         memberships = ctx_data["memberships"]
         if not memberships:
@@ -224,7 +225,8 @@ async def user_only_context(request: Request) -> AuthContext:
         raise ApiError(401, "unauthenticated", "Provide a Bearer token.")
     claims = verify_supabase_jwt(authz[7:].strip(),
                                  settings.supabase_jwt_secret,
-                                 settings.supabase_jwt_issuer)
+                                 settings.supabase_jwt_issuer,
+                                 settings.jwks_url)
     ctx_data = await _user_context(claims.user_id)
     if not ctx_data["confirmed"]:
         raise ApiError(403, "forbidden",

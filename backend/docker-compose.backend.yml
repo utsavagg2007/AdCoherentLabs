@@ -20,7 +20,10 @@ x-app: &app
     APP_IN_CONTAINER: "1"          # entrypoint switches host loopback -> service names
   volumes:
     - ..:/repo:ro
-  networks: [backend, supabase_default]
+  # Cloud mode: Supabase is reached over TLS, so there is no stack network to
+  # join. For the self-hosted stack (SUPABASE_MODE=local) add `supabase_default`
+  # here AND re-declare it under `networks:` at the bottom of this file.
+  networks: [backend]
   restart: unless-stopped
 
 services:
@@ -89,5 +92,5 @@ volumes:
 
 networks:
   backend:
-  supabase_default:
-    external: true
+  # supabase_default:        # self-hosted stack only -- see the note in x-app
+  #   external: true

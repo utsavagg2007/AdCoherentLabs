@@ -17,7 +17,7 @@ dependencies = [
     "redis~=6.2.0",
     "httpx~=0.28.0",
     # auth
-    "PyJWT~=2.10.0",
+    "PyJWT[crypto]~=2.10.0",
     # billing
     "stripe~=12.3.0",
     # upload security

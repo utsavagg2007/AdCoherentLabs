@@ -32,7 +32,11 @@ class Settings(BaseSettings):
     log_level: str = "info"
 
     # -- data plane -----------------------------------------------------------
-    supabase_url: str = "http://localhost:8000"        # Kong
+    supabase_mode: str = "local"                       # local (self-hosted stack) | cloud
+                                                       # cloud => docker-entrypoint.sh leaves the
+                                                       # data-plane URLs alone and require_boot_secrets
+                                                       # rejects local hosts/placeholders
+    supabase_url: str = "http://localhost:8000"        # Kong (self-hosted) / project URL (cloud)
     supabase_service_role_key: str = ""                # SERVER ONLY (storage/admin)
     supabase_db_url: str = ""                          # privileged role for engine.saas
     database_url_api: str = ""                         # API request pool
@@ -40,6 +44,7 @@ class Settings(BaseSettings):
     supabase_jwt_secret: str = ""                      # HS256 verify (rotated by harden.py)
     supabase_jwt_issuer: str = ""                      # exact iss match, e.g. http://localhost:8000/auth/v1
                                                        # (empty = check skipped with a warning - dev only)
+    supabase_jwks_url: str = ""                        # override; default derives from supabase_url
 
     # -- app -------------------------------------------------------------------
     api_port: int = 8080
@@ -100,6 +105,17 @@ class Settings(BaseSettings):
     def is_prod(self) -> bool:
         return self.env == "prod"
 
+    @property
+    def jwks_url(self) -> str:
+        """Public keys for asymmetric (ES256) session tokens. Supabase Cloud
+        signs user sessions with a project keypair; the legacy HS256 secret
+        still covers anon/service_role keys and self-hosted GoTrue."""
+        if self.supabase_jwks_url:
+            return self.supabase_jwks_url
+        if not self.supabase_url:
+            return ""
+        return f"{self.supabase_url.rstrip('/')}/auth/v1/.well-known/jwks.json"
+
     def db_url_api(self) -> str:
         return self.database_url_api or self.supabase_db_url or self._local_default()
 
@@ -125,6 +141,23 @@ class Settings(BaseSettings):
             raise RuntimeError(
                 "refusing to boot in prod with the PUBLIC DEFAULT Supabase secrets - "
                 "run python supabase/harden.py first (spec P0)")
+        if self.supabase_mode.lower() == "cloud":
+            # A half-edited .env is the dangerous case: the app would come up
+            # pointing at the local stack (or at nothing) while every operator
+            # believes it is on Cloud. Fail at boot, not at first request.
+            blob = f"{self.supabase_url} {self.supabase_db_url} {self.database_url_api} " \
+                   f"{self.database_url_worker} {self.supabase_jwt_issuer}"
+            if "__PROJECT_REF__" in blob or "__PASTE_" in blob:
+                raise RuntimeError(
+                    "SUPABASE_MODE=cloud but .env still contains placeholders - "
+                    "fill in the project ref, DB password, service_role key and "
+                    "JWT secret from the Supabase dashboard")
+            for local_marker in ("127.0.0.1", "localhost", "supabase-db", "supabase-kong"):
+                if local_marker in blob:
+                    raise RuntimeError(
+                        f"SUPABASE_MODE=cloud but a data-plane URL still points at "
+                        f"'{local_marker}' - refusing to boot against the self-hosted "
+                        f"stack while claiming to be on Cloud")
 
 
 settings = Settings()

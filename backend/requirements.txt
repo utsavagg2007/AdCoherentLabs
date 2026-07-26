@@ -9,7 +9,7 @@ python-dotenv~=1.1.0
 psycopg[binary,pool]~=3.2.0
 redis~=6.2.0
 httpx~=0.28.0
-PyJWT~=2.10.0
+PyJWT[crypto]~=2.10.0   # [crypto] = ES256/RS256 for Supabase Cloud's JWKS-signed session tokens
 stripe~=12.3.0
 Pillow~=11.3.0
 python-docx~=1.1.2

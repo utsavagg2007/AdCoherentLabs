@@ -188,8 +188,25 @@ def write_frontend_env(stack_env: dict, prev_frontend: dict) -> Path:
 
 
 def run(stack_dir: Path = DEFAULT_STACK, only: set[str] | None = None,
-        allow_defaults: bool = False) -> int:
+        allow_defaults: bool = False, force_local: bool = False) -> int:
     only = only or {"root", "frontend"}
+
+    # This script's whole job is to copy the SELF-HOSTED stack's secrets into
+    # the two env files. Once the project points at Supabase Cloud that is
+    # destructive: it would silently overwrite the cloud URLs, service key and
+    # JWT secret with local ones, and the app would come back up talking to a
+    # stack that is no longer the source of truth.
+    if not force_local:
+        current = parse_env(PROJECT_ROOT / ".env")
+        if current.get("SUPABASE_MODE", "local").lower() == "cloud":
+            print("REFUSING: .env has SUPABASE_MODE=cloud.\n"
+                  "This script writes SELF-HOSTED stack credentials and would clobber\n"
+                  "the cloud URL / service key / JWT secret / pooler DB URL.\n"
+                  "To move back to the local stack: set SUPABASE_MODE=local (or restore\n"
+                  ".env.local-stack.bak), then re-run. Override: --force-local.",
+                  file=sys.stderr)
+            return 3
+
     stack_env = parse_env(stack_dir / ".env")
     missing = [k for k in STACK_KEYS if not stack_env.get(k)]
     if missing:
@@ -249,9 +266,12 @@ def main() -> int:
                     help="comma list of targets: root,frontend")
     ap.add_argument("--allow-defaults", action="store_true",
                     help="permit writing dev env from the PUBLIC default secrets")
+    ap.add_argument("--force-local", action="store_true",
+                    help="write self-hosted credentials even when .env is in cloud mode "
+                         "(destructive: overwrites the cloud data-plane values)")
     args = ap.parse_args()
     only = {t.strip() for t in args.only.split(",") if t.strip()}
-    return run(args.stack_dir, only, args.allow_defaults)
+    return run(args.stack_dir, only, args.allow_defaults, args.force_local)
 
 
 if __name__ == "__main__":
