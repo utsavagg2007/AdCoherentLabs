@@ -32,6 +32,12 @@ services:
     build:
       context: ..
       dockerfile: backend/Dockerfile
+      # MUST be explicit. backend/Dockerfile is multi-stage and `runtime` is the
+      # last stage, so omitting this silently builds the deployable image: every
+      # local build would then copy the whole repo in and run the import gate,
+      # only for the `..:/repo:ro` mount below to hide the result. `dev` is the
+      # dependencies-only stage this bind-mount workflow expects.
+      target: dev
     command: ["api"]
     ports:
       - "127.0.0.1:8080:8080"

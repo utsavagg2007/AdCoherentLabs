@@ -1,0 +1,20 @@
+# Build context filter for frontend/Dockerfile (context = frontend/).
+# node_modules is the big one: it is reinstalled inside the image from the
+# lockfile, so shipping the host copy is both slow and wrong (native binaries
+# built for Windows would land in a Linux image).
+node_modules
+.next
+out
+build
+
+.env
+.env.*
+!.env.local.example
+
+.git
+.gitignore
+npm-debug.log*
+.DS_Store
+Thumbs.db
+*.tsbuildinfo
+coverage

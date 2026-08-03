@@ -1,0 +1,74 @@
+# Build context filter for backend/Dockerfile (context = repo ROOT, because the
+# worker imports the two sibling layer repos). Without this file the context is
+# hundreds of MB — .git, two node_modules trees, the 71 MB corpus dump and the
+# CV virtualenv all get uploaded to the daemon on every build.
+
+# --- version control / tooling ---------------------------------------------
+.git
+.gitignore
+.github
+.claude
+.agents
+.vscode
+.idea
+
+# --- SECRETS: never bake env into an image ----------------------------------
+# Cloud Run and compose both inject these at run time. The templates are
+# excluded too — the image has no use for them.
+.env
+.env.*
+*.env.local
+frontend/.env*
+
+# --- virtualenvs and dependency trees ---------------------------------------
+.venv
+venv
+**/.venv
+**/venv
+node_modules
+**/node_modules
+
+# --- Python build noise ------------------------------------------------------
+__pycache__
+**/__pycache__
+*.py[cod]
+*.egg-info
+.pytest_cache
+.mypy_cache
+.ruff_cache
+htmlcov
+.coverage
+
+# --- frontend build output (frontend has its own Dockerfile + dockerignore) --
+frontend/.next
+frontend/out
+frontend/build
+
+# --- large data / documentation assets not needed at run time ----------------
+# rag_corpus.sql is the 71 MB pgvector dump; it is loaded into Postgres once,
+# never read by a container.
+rag_corpus.sql
+
+# 126 MB of raw regulatory snapshots kept for ingest provenance. The chunks
+# they produced already live in public.rag_chunks, and the serving path
+# (api/worker/scheduler) never opens these. Re-ingestion is an offline job run
+# from a checkout, not from this image. data/manual is small but is likewise
+# ingest-only.
+rag-engine/data/raw
+rag-engine/data/manual
+*.sql.gz
+*.dump
+*.pdf
+*.png
+*.jpeg
+*.jpg
+AdCoherent_Backend_Architecture.pdf
+AdCoherent_Labs_Build_Playbook.pdf
+
+# --- local dev artifacts -----------------------------------------------------
+report.json
+report-*.json
+engine-sample-report.json
+*.bak
+.DS_Store
+Thumbs.db

@@ -32,6 +32,9 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# ...except the committed template (placeholders only) — `.env*` above would
+# otherwise hide it from a fresh clone.
+!.env.local.example
 
 # vercel
 .vercel

@@ -8,8 +8,39 @@
 # rebuild the data-plane URLs from the secrets in that same env file — no second
 # env file, no compose ${...} interpolation. This also sets DATABASE_URL, which
 # the engine's RAG layer needs (host loopback is wrong inside a container).
+#
+# APP_IN_CONTAINER=1 means "I am on the local compose network, next to the
+# redis and clamav SIDECARS" — not merely "I am in a container". Cloud Run runs
+# this same image and must NOT set it: there is no `redis` or `clamav` host to
+# resolve there, and rewriting the URLs to those names would break both.
 set -e
 cd /repo/backend
+
+# --- cloud-mode safety guard: runs everywhere, sidecars or not --------------
+# Deliberately outside the APP_IN_CONTAINER block below. A half-edited .env is
+# the dangerous case — the process comes up pointing at a local stack (or at
+# nothing) while every operator believes it is on Cloud. The API re-checks this
+# in config.py::require_boot_secrets, but the worker and scheduler do not build
+# a FastAPI app, so without this they would start against the wrong database.
+if [ "${SUPABASE_MODE:-local}" = "cloud" ]; then
+  case "$SUPABASE_URL$SUPABASE_DB_URL$DATABASE_URL_API$DATABASE_URL_WORKER" in
+    *__PROJECT_REF__*|*__PASTE_*|*__GENERATE_*)
+      echo "FATAL: SUPABASE_MODE=cloud but the env still has unfilled placeholders." >&2
+      echo "       Copy .env.example to .env and fill in the Supabase values." >&2
+      exit 1 ;;
+    *127.0.0.1*|*localhost*|*supabase-db*|*supabase-kong*)
+      echo "FATAL: SUPABASE_MODE=cloud but a data-plane URL still points at a local host." >&2
+      exit 1 ;;
+  esac
+
+  # The engine's RAG store reads DATABASE_URL specifically, while the backend
+  # reads DATABASE_URL_API/_WORKER. If the env set only SUPABASE_DB_URL the RAG
+  # layer would get "" and retrieval would come back EMPTY rather than erroring
+  # — a silent quality failure, not a crash. Align it for host, compose and
+  # Cloud Run alike (this used to live in the APP_IN_CONTAINER block, where
+  # Cloud Run never reached it).
+  export DATABASE_URL="${DATABASE_URL:-$SUPABASE_DB_URL}"
+fi
 
 if [ "${APP_IN_CONTAINER:-}" = "1" ]; then
   : "${REDIS_HOST:=redis}";  : "${REDIS_PORT:=6379}"
@@ -39,24 +70,26 @@ if [ "${APP_IN_CONTAINER:-}" = "1" ]; then
     export DATABASE_URL_API="$_db"
     export DATABASE_URL_WORKER="$_db"
     export DATABASE_URL_MIGRATIONS="$_db"
-  else
-    # engine RAG store reads DATABASE_URL; keep it aligned with the pooler URL
-    # the rest of the app uses if the env only set SUPABASE_DB_URL.
-    export DATABASE_URL="${DATABASE_URL:-$SUPABASE_DB_URL}"
-    case "$SUPABASE_URL$SUPABASE_DB_URL" in
-      *127.0.0.1*|*localhost*|*supabase-db*)
-        echo "FATAL: SUPABASE_MODE=cloud but the data-plane URLs still point at a local host." >&2
-        exit 1 ;;
-      *__PROJECT_REF__*|*__PASTE_*)
-        echo "FATAL: SUPABASE_MODE=cloud but .env still has unreplaced placeholders." >&2
-        exit 1 ;;
-    esac
   fi
+  # (cloud mode needs no data-plane rewrite here — the URLs in the env are
+  #  already the real, reachable ones, and the guard at the top has vetted them)
 fi
 
 case "$1" in
   api)
-    exec uvicorn app.main:app --host 0.0.0.0 --port "${API_PORT:-8080}" --workers 2
+    # $PORT wins: Cloud Run (and most PaaS) ASSIGNS the port and routes traffic
+    # only there — a container that binds anything else fails its start probe
+    # with "the user-provided container failed to listen on $PORT". API_PORT
+    # stays as the compose/host default.
+    #
+    # Workers: 2 suits a compose box. On Cloud Run, horizontal scaling is the
+    # platform's job and each instance is often 1 vCPU, where a second worker
+    # just doubles the memory for the model imports — set UVICORN_WORKERS=1
+    # there. It is an env var rather than a hardcode so the same image serves
+    # both without a rebuild.
+    exec uvicorn app.main:app --host 0.0.0.0 \
+         --port "${PORT:-${API_PORT:-8080}}" \
+         --workers "${UVICORN_WORKERS:-2}"
     ;;
   worker)
     exec python -m worker.main

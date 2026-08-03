@@ -1,0 +1,63 @@
+# AdCoherent Labs — THE whole application, one command.
+#
+#   cp .env.example .env      # fill in the Supabase values (see ONBOARDING.md)
+#   docker compose up -d --build
+#
+#   frontend  http://127.0.0.1:3000
+#   api       http://127.0.0.1:8080   (/docs for the OpenAPI browser)
+#
+# There is NO database service here, and that is the point: the data plane is
+# Supabase Cloud (SUPABASE_MODE=cloud). A new developer needs a filled-in .env
+# and this file — not a copy of anyone's database, and not the 11-container
+# self-hosted stack that used to be a prerequisite.
+#
+# The backend services live in backend/docker-compose.backend.yml and are pulled
+# in by `include` below rather than copied, so the two files cannot drift. That
+# file remains usable on its own (`docker compose -f backend/docker-compose.backend.yml up -d`)
+# for backend-only work, exactly as the existing docs describe.
+
+name: adcoherent
+
+include:
+  # Paths inside an included file resolve relative to THAT file, so its
+  # `env_file: ../.env` and `context: ..` still point at the repo root.
+  - path: backend/docker-compose.backend.yml
+
+services:
+  frontend:
+    build:
+      context: frontend
+      # NEXT_PUBLIC_* are compiled INTO the JavaScript bundle by `next build`;
+      # they are not read at run time. So they have to be build args, and
+      # changing one means `docker compose build frontend`, not `restart`.
+      #
+      # This is the one place the project uses compose ${...} interpolation.
+      # The backend deliberately avoids it (docker-entrypoint.sh rebuilds URLs
+      # from secrets instead) — but build args cannot come from an env_file, so
+      # there is no alternative here. Compose reads these from the root .env.
+      #
+      # `:?` makes a missing value a clear build-time error instead of a
+      # frontend that compiles fine and then cannot reach Supabase at run time.
+      args:
+        NEXT_PUBLIC_SUPABASE_URL: ${SUPABASE_URL:?set SUPABASE_URL in .env}
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:?set SUPABASE_ANON_KEY in .env - the PUBLIC anon key, not service_role}
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://127.0.0.1:8080}
+    ports:
+      # Loopback-bound like every other published port here: only the reverse
+      # proxy is ever meant to listen publicly (Appendix C).
+      - "127.0.0.1:3000:3000"
+    # The browser reaches the API on the host at 127.0.0.1:8080, not over this
+    # network. Joining `backend` anyway costs nothing and means server-side
+    # rendering can call http://api:8080 later without a compose change.
+    networks: [backend]
+    depends_on:
+      api:
+        condition: service_started
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e",
+             "fetch('http://127.0.0.1:3000/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 20s

@@ -3,6 +3,11 @@
 .env
 .env.*
 
+# ...except the committed template a new developer copies to .env. Without
+# this negation `.env.*` above swallows it and a fresh clone has nothing to
+# fill in. It holds placeholders only — see the header in the file.
+!.env.example
+
 # Python
 __pycache__/
 *.py[cod]
