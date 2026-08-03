@@ -1,0 +1,37 @@
+# Line-ending policy. Without this, the checkout depends on each developer's
+# local core.autocrlf, which differs between Windows and macOS/Linux machines.
+#
+# The failure this prevents is specific and confusing: a shell script committed
+# with CRLF gets `#!/bin/sh\r` as its interpreter line, and Linux reports
+# "no such file or directory" for a file that plainly exists. Inside a
+# container that surfaces as an entrypoint the daemon cannot execute.
+
+# Let git decide for ordinary text, normalising to LF in the repository.
+* text=auto
+
+# Files executed by a shell — on Linux, in containers, or by CI — must be LF
+# in the working tree regardless of host OS.
+*.sh text eol=lf
+*.bash text eol=lf
+Dockerfile text eol=lf
+*.Dockerfile text eol=lf
+docker-entrypoint.sh text eol=lf
+.dockerignore text eol=lf
+.gcloudignore text eol=lf
+
+# Config read by Linux tooling; CRLF can trip strict parsers.
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+*.sql text eol=lf
+*.toml text eol=lf
+*.env.example text eol=lf
+
+# Binary — never touch these.
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.pdf binary
+*.ico binary
+*.woff binary
+*.woff2 binary

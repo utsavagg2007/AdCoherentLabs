@@ -2,6 +2,10 @@
 
 Everything needed to run the application, test it, and contribute changes.
 
+> **On a Mac? Use [ONBOARDING_MACOS.md](ONBOARDING_MACOS.md) instead.** Same
+> content with native commands, the Homebrew prerequisites (`libmagic` is
+> required and easy to miss), and the Apple Silicon notes.
+
 **You do not need a database.** The data plane is a shared Supabase Cloud
 project. You get credentials, not a data dump — no local Supabase stack, no
 71 MB corpus to import.
@@ -23,6 +27,33 @@ somebody else's afternoon.
 
 Docker alone is enough to *run* the app. Python is required to run the test
 suites and the engine CLI on your machine.
+
+### On macOS (including Apple Silicon)
+
+Everything works. Five differences from the Windows notes elsewhere in this
+guide:
+
+1. **Virtualenv paths use `bin/`, not `Scripts/`.** Every command below is
+   given in both forms.
+2. **`python -m app.devserver` is a Windows workaround** — it installs a
+   selector event-loop policy that async psycopg needs there. On macOS run
+   `uvicorn app.main:app` directly. The devserver still works if you prefer it;
+   the Windows-specific branch is guarded by a platform check.
+3. **`127.0.0.1` rather than `localhost`** is advised for Windows, where
+   `localhost` resolves to `::1` first and burns a connect timeout.
+   On macOS either is fine — `127.0.0.1` remains correct, so nothing to change.
+4. **Apple Silicon is supported.** Images build as `linux/arm64` and every
+   dependency has arm64 wheels — paddlepaddle publishes `manylinux2014_aarch64`
+   and `macosx_11_0_arm64`, and torch and opencv likewise. ClamAV is pinned to
+   `clamav/clamav:stable-debian` for exactly this reason: the default `stable`
+   tag is Alpine and ships amd64 only.
+5. **Give Docker Desktop more memory.** The default is often 8 GB, and the
+   backend image installs torch and PaddleOCR. Docker Desktop → Settings →
+   Resources → Memory, 8 GB or more. A build that dies without explanation is
+   usually the OOM killer.
+
+Expect the first `docker compose build` to be slower on Apple Silicon than on
+x86 — it is compiling the same ML stack for arm64.
 
 ## 2. Credentials to collect
 
@@ -68,7 +99,7 @@ Now replace every `__PLACEHOLDER__` in both files.
 
 | Placeholder | Replace with |
 |---|---|
-| `__PROJECT_REF__` | the project ref (appears in 6 URLs) |
+| `__PROJECT_REF__` | the project ref (appears in 7 URLs) |
 | `__PASTE_DB_PASSWORD__` | the database password (appears in 5 URLs) |
 | `__PASTE_SERVICE_ROLE_KEY__` | `service_role` key |
 | `__PASTE_ANON_KEY__` | `anon` key |

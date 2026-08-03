@@ -81,7 +81,12 @@ services:
     restart: unless-stopped
 
   clamav:
-    image: clamav/clamav:stable
+    # stable-debian, NOT stable. The default `stable` tag is Alpine-based and
+    # publishes amd64 only, so on an Apple Silicon Mac it either refuses to run
+    # or limps along under emulation. stable-debian is multi-arch (amd64 +
+    # arm64) and is the same ClamAV — a no-op on x86, and the difference
+    # between "docker compose up works" and "it doesn't" on an M-series Mac.
+    image: clamav/clamav:stable-debian
     ports:
       - "127.0.0.1:3310:3310"     # host-dev tests; loopback only
     networks: [backend]
