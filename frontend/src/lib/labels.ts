@@ -84,9 +84,27 @@ export const LEDGER_REASON_LABEL: Record<string, string> = {
   "grant.manual": "Manual grant",
   "consume.run": "Review run",
   "consume.tokens": "Model usage settlement",
+  // 0012 — a metered run writes three lines: the reserve, the release of that
+  // reserve, then the actual charge. Labelled so the pair reads as one story
+  // rather than as a mystery debit followed by a mystery credit.
+  "hold.reserve": "Reserved for run",
+  "hold.release": "Reserve returned",
+  "consume.metered": "Review run — metered usage",
   "refund.system_failure": "Refund — system failure",
   "adjust.manual": "Manual adjustment",
   "expire.cycle": "Cycle expiry",
+};
+
+/** Human names for the units the engine bills effort in (0012). */
+export const EFFORT_UNIT_LABEL: Record<string, string> = {
+  llm_input_1k: "Model input (per 1k tokens)",
+  llm_output_1k: "Model output (per 1k tokens)",
+  llm_call: "Review round",
+  ocr_page: "Page scanned",
+  cv_frame: "Frame analysed",
+  video_second: "Video second",
+  rag_query: "Regulation lookup",
+  embed_1k: "Embedding (per 1k tokens)",
 };
 
 export const FRAMEWORK_LABEL: Record<string, string> = {

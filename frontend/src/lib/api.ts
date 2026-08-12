@@ -21,6 +21,7 @@ import type {
   PublicPlansResponse,
   ReportResponse,
   Role,
+  RunEffort,
   RunEventsResponse,
   RunResponse,
   RunRow,
@@ -414,11 +415,23 @@ export class ApiClient {
     return this.request<{
       run_id: string;
       resumed_from_run_id: string;
+      /** Escrowed for the extra review round; unused credits come back. */
+      credits_reserved: number;
+      credits_floor: number;
+      /** @deprecated (0012) equals credits_reserved. */
       credits_charged: number;
     }>(`/v1/runs/${encodeURIComponent(id)}/resume`, {
       method: "POST",
       json: { guidance },
     });
+  }
+
+  /** Line items behind a run's metered charge (0012). */
+  runEffort(id: string, signal?: AbortSignal) {
+    return this.request<RunEffort>(
+      `/v1/runs/${encodeURIComponent(id)}/effort`,
+      { signal }
+    );
   }
 
   // -- findings -------------------------------------------------------------

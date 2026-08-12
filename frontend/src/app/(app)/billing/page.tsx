@@ -225,6 +225,16 @@ function BillingContent() {
                           {formatNumber(credits.data?.purchased_credits)}
                         </dd>
                       </div>
+                      {/* Without this line a user watching their balance dip
+                          while a run is in flight has no way to know why. */}
+                      {!!credits.data?.held && (
+                        <div className="flex justify-between">
+                          <dt>Reserved by running reviews</dt>
+                          <dd className="font-bold text-ink-800">
+                            {formatNumber(credits.data.held)}
+                          </dd>
+                        </div>
+                      )}
                       {credits.data?.cycle_end && (
                         <div className="flex justify-between border-t border-line pt-1.5">
                           <dt>Allowance resets</dt>
@@ -237,6 +247,10 @@ function BillingContent() {
                     <p className="mt-3 text-[11.5px] leading-relaxed text-ink-500">
                       Subscription credits spend first and reset each cycle;
                       purchased credits never expire.
+                      {!!credits.data?.held &&
+                        " Credits reserved by a running review are already" +
+                          " deducted here; whatever it does not use comes back" +
+                          " when it finishes."}
                     </p>
                   </>
                 )}
@@ -325,10 +339,12 @@ function BillingContent() {
                         ))}
                     </dl>
                     <p className="mt-3 text-[11.5px] leading-relaxed text-ink-500">
-                      Base price, charged up front.
+                      Minimum price of a run — credits are reserved when it
+                      starts, metered as the engine works, and the unused
+                      remainder is returned when it finishes.
                       {myTokenRate
-                        ? ` Model usage settles after the run at ${myTokenRate.in_per_1k}/${myTokenRate.out_per_1k} credits per 1k input/output tokens.`
-                        : " Model usage settles from actual tokens after the run."}
+                        ? ` Model usage is charged at ${myTokenRate.in_per_1k}/${myTokenRate.out_per_1k} credits per 1k input/output tokens.`
+                        : " Model usage is charged from actual tokens."}
                     </p>
                   </>
                 )}

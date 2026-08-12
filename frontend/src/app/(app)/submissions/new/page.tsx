@@ -203,8 +203,8 @@ export default function NewSubmissionPage() {
       window.dispatchEvent(new Event(CREDITS_REFRESH_EVENT));
       toast({
         kind: "success",
-        title: `Review started — ${accepted.credits_charged} credit${accepted.credits_charged === 1 ? "" : "s"} charged`,
-        detail: `Balance: ${formatNumber(accepted.balance.subscription_credits + accepted.balance.purchased_credits)} credits remaining.`,
+        title: `Review started — ${accepted.credits_reserved} credit${accepted.credits_reserved === 1 ? "" : "s"} reserved`,
+        detail: `You are charged for what the review actually uses; the rest is returned when it finishes. Balance: ${formatNumber(accepted.balance.subscription_credits + accepted.balance.purchased_credits)} credits.`,
       });
       router.push(`/runs/${accepted.run_id}`);
     } catch (e) {
@@ -429,8 +429,9 @@ export default function NewSubmissionPage() {
                   {priceList.text ?? "—"} · image {priceList.image ?? "—"} ·
                   PDF {priceList.pdf ?? "—"} · doc {priceList.docx ?? "—"}
                   {priceList.video != null ? ` · video ${priceList.video}` : ""}.
-                  Model usage settles from actual tokens when the run
-                  finishes.
+                  We reserve a little more than the base price to cover model
+                  usage, meter what the review actually uses, and return the
+                  rest when it finishes.
                 </p>
               )}
               <Button

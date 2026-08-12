@@ -42,6 +42,29 @@ from .tiers import get_tier, normalize_tier
 logger = logging.getLogger("engine.llm_layer")
 
 
+class BudgetExhausted(Exception):
+    """The run's escrowed credits ran out; no further LLM round may start.
+
+    Raised BEFORE a round's provider call, never during one — a round that has
+    already spent tokens always completes and is always metered. Round 1 is
+    never blocked: the reserve is guaranteed to cover the floor, so every run
+    produces at least one review.
+
+    evaluate_with_retry catches this like any other LLM-layer failure and
+    returns status='llm_error' with the completed rounds preserved;
+    review_and_verify then reclassifies it as a budget stop rather than a
+    system failure, so it never triggers the DLQ refund path.
+    """
+
+    def __init__(self, rounds_done: int, metered: float, reserved: int):
+        super().__init__(
+            f"credit budget exhausted after {rounds_done} round(s): "
+            f"metered {metered} of {reserved} reserved credits")
+        self.rounds_done = rounds_done
+        self.metered = metered
+        self.reserved = reserved
+
+
 def empty_retriever(conn: Any, embedder: Any, query: str, *, k: int,
                     frameworks: list[str] | None,
                     jurisdictions: list[str] | None,
@@ -130,6 +153,7 @@ class LLMLayer:
         as_of: date | None = None,
         human_guidance: str | None = None,
         progress: Callable[[str, str, str, dict], None] | None = None,
+        meter: Callable[[str, float, dict], dict] | None = None,
         max_rounds: int | None = None,
     ) -> None:
         self.tier_name = normalize_tier(tier_name)
@@ -142,8 +166,14 @@ class LLMLayer:
         self.as_of = as_of
         self.human_guidance = human_guidance
         self.progress = progress          # (stage, event, message, detail) — sanitized
+        self.meter = meter                # (unit, qty, meta) -> headroom reading
         self.max_rounds = max_rounds
         self.rounds: list[dict[str, Any]] = []
+        #: Set once metering reports the escrow is spent. The next round
+        #: refuses to start; the orchestrator reads this to distinguish a
+        #: budget stop from a provider failure.
+        self.budget_stopped = False
+        self.last_reading: dict[str, Any] = {}
 
     def _emit(self, stage: str, event: str, message: str, detail: dict) -> None:
         """Progress events carry TEMPLATES + COUNTS only — never ad text,
@@ -155,6 +185,25 @@ class LLMLayer:
             self.progress(stage, event, message, detail)
         except Exception:  # noqa: BLE001
             logger.warning("progress sink failed for %s/%s", stage, event)
+
+    def _meter(self, unit: str, qty: float, **meta: Any) -> dict:
+        """Charge `qty` of `unit` against the run's hold, right now.
+
+        Metering failures degrade to UNMETERED, never to a failed run: a
+        billing outage must not cost a paying user their report. The
+        consequence is absorbed cost on our side, which is the correct way
+        round for this trade — and effort_events still records the attempt."""
+        if self.meter is None:
+            return {}
+        try:
+            reading = self.meter(unit, float(qty), meta) or {}
+        except Exception:  # noqa: BLE001 — a broken meter never breaks a run
+            logger.warning("meter sink failed for %s (qty=%s)", unit, qty)
+            return {}
+        self.last_reading = reading
+        if reading.get("exhausted"):
+            self.budget_stopped = True
+        return reading
 
     def _resolve_provider(self) -> ReviewProvider:
         if self.provider is None:
@@ -175,6 +224,16 @@ class LLMLayer:
         """One Layer-3 round. ``prior_report`` is the failed EngineReport
         on a rule-engine callback (None on the first round)."""
         from rule_engine.orchestrator import build_retry_payload
+
+        # Budget gate — checked here, before any provider call, so the escrow
+        # bounds spend to at most one round of overrun rather than all three.
+        # Never applies to round 1: the reserve covers the floor by
+        # construction, and a run that produces no review at all is worse for
+        # the user than a run that slightly overruns for us.
+        if self.budget_stopped and self.rounds:
+            raise BudgetExhausted(len(self.rounds),
+                                  float(self.last_reading.get("metered") or 0),
+                                  int(self.last_reading.get("reserved") or 0))
 
         engine_feedback = None
         if prior_report is not None:
@@ -218,12 +277,46 @@ class LLMLayer:
         )
         adapted = adapt_review_for_rule_engine(review_doc)
 
+        # Meter this round's tokens NOW, not at the end of the run. The user's
+        # balance moves while the run is still going, and the reading below is
+        # what stops round N+1 from starting if the escrow is spent.
+        llm_meta = (review_doc or {}).get("llm_meta") or {}
+        round_in = int(llm_meta.get("input_tokens") or 0)
+        round_out = int(llm_meta.get("output_tokens") or 0)
+        self._meter("llm_call", 1, round=round_no, model=llm_meta.get("model"))
+        if round_in:
+            self._meter("llm_input_1k", round_in / 1000.0,
+                        round=round_no, model=llm_meta.get("model"))
+        reading = self._meter("llm_output_1k", round_out / 1000.0,
+                              round=round_no, model=llm_meta.get("model")) \
+            if round_out else self.last_reading
+
         findings_n = len((review_doc or {}).get("findings") or [])
         self._emit("llm", "llm.round_done",
                    f"Round {rounds_of} returned {findings_n} "
                    f"finding{'s' if findings_n != 1 else ''}; handing off "
                    "to deterministic verification.",
-                   {"round": round_no, "findings": findings_n})
+                   {"round": round_no, "findings": findings_n,
+                    "input_tokens": round_in, "output_tokens": round_out})
+        if reading.get("billed"):
+            # Live credit line in the user's activity feed — the visible half
+            # of "deducted in real time".
+            spent = float(reading.get("metered") or 0)
+            self._emit("llm", "llm.credits_metered",
+                       f"Round {rounds_of} used {round_in + round_out:,} "
+                       f"tokens — {spent:.2f} credits of "
+                       f"{reading.get('reserved')} reserved used so far.",
+                       {"round": round_no,
+                        "metered": spent,
+                        "reserved": reading.get("reserved"),
+                        "headroom": reading.get("headroom")})
+        if self.budget_stopped:
+            self._emit("llm", "llm.budget_reached",
+                       "Reserved credits for this run are used up — "
+                       "finishing with the review completed so far.",
+                       {"round": round_no,
+                        "metered": float(reading.get("metered") or 0),
+                        "reserved": reading.get("reserved")})
         self.rounds.append({
             "round": round_no,
             "was_rule_engine_callback": prior_report is not None,

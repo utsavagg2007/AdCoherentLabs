@@ -83,15 +83,34 @@ export interface PriceList {
   video?: number;
 }
 
+/** Units the engine meters effort in (migration 0012). */
+export type EffortUnit =
+  | "llm_input_1k"
+  | "llm_output_1k"
+  | "llm_call"
+  | "ocr_page"
+  | "cv_frame"
+  | "video_second"
+  | "rag_query"
+  | "embed_1k";
+
+export type EffortRates = Partial<Record<EffortUnit, number>>;
+
 export interface CreditBalance {
   tier: Tier;
   subscription_credits: number;
   purchased_credits: number;
+  /** Spendable now. Open holds are already debited, so this is post-reserve. */
   total: number;
+  /** Escrowed by runs still in flight; part of it returns when they settle. */
+  held: number;
+  available: number;
   cycle_start: string | null;
   cycle_end: string | null;
   credits_per_month: number | null;
+  /** Base price of a run — a floor, not the whole price (0012). */
   price_list: PriceList;
+  effort_rates: EffortRates;
 }
 
 export interface LedgerEntry {
@@ -103,6 +122,10 @@ export interface LedgerEntry {
     | "grant.pack"
     | "grant.manual"
     | "consume.run"
+    | "consume.tokens"
+    | "consume.metered"
+    | "hold.reserve"
+    | "hold.release"
     | "refund.system_failure"
     | "adjust.manual"
     | "expire.cycle";
@@ -110,6 +133,33 @@ export interface LedgerEntry {
   stripe_ref: string | null;
   balance_after: number;
   created_at: string;
+}
+
+/** Live escrow state for one run. `status: "open"` means it is still moving. */
+export interface RunCredits {
+  reserved: number;
+  floor_credits: number;
+  metered: number;
+  charged: number | null;
+  returned: number | null;
+  status: "open" | "settled" | "released";
+  settled_at: string | null;
+}
+
+export interface EffortLineItem {
+  unit: EffortUnit;
+  quantity: number;
+  rate: number;
+  credits: number;
+  events: number;
+}
+
+export interface RunEffort {
+  units: EffortLineItem[];
+  reserved: number | null;
+  floor: number | null;
+  metered: number | null;
+  charged: number | null;
 }
 
 // ---------------------------------------------------------------- submissions
@@ -120,6 +170,11 @@ export type PricingKind = "text" | "html" | "image" | "carousel";
 export interface SubmissionAccepted {
   submission_id: string;
   run_id: string;
+  /** Escrowed for this run — an upper bound on the charge, not the charge. */
+  credits_reserved: number;
+  /** Base price component of the reserve. */
+  credits_floor: number;
+  /** @deprecated (0012) equals credits_reserved; read that instead. */
   credits_charged: number;
   balance: { subscription_credits: number; purchased_credits: number };
 }
@@ -181,6 +236,8 @@ export interface QueueInfo {
 export interface RunResponse {
   run: RunDetail;
   queue: QueueInfo | null;
+  /** Escrow state; updates live while status is "open". Null for pre-0012 runs. */
+  credits: RunCredits | null;
   disclaimer: string;
 }
 
@@ -200,12 +257,17 @@ export interface PublicPlan {
   max_video_seconds: number | null;
   max_concurrent_runs: number;
   submissions_per_day: number | null;
+  /** Base price per asset kind — the floor of a run, not its whole price. */
   credit_costs: Record<string, number>;
+  /** Metered rates charged above the floor (0012). */
+  effort_rates: EffortRates;
 }
 
 export interface PublicPlansResponse {
   plans: PublicPlan[];
   packs: { pack: string; credits: number; usd_cents: number }[];
+  effort_rates: { tier: Tier; unit: EffortUnit; credits: number }[];
+  /** @deprecated (0012) superseded by effort_rates. */
   token_rates: {
     tier: Tier;
     in_per_1k: number;

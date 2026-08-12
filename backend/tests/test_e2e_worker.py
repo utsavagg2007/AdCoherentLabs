@@ -72,11 +72,12 @@ async def test_full_async_pipeline(client, tenant, stub_engine):
     org = tenant["org"]
     tok = mint_jwt(tenant["users"]["reviewer"], f"reviewer-{tenant['tag']}@bt.local")
 
-    # 1. submit → 202, charged 1 (free text)
+    # 1. submit → 202, floor 1 (free text) escrowed with a usage forecast
     r = await client.post("/v1/submissions", json=TEXT, headers=auth(tok, org))
     assert r.status_code == 202, r.text
     run_id = r.json()["run_id"]
-    assert r.json()["credits_charged"] == 1
+    assert r.json()["credits_floor"] == 1
+    assert r.json()["credits_reserved"] >= 1
 
     # 2. worker executes (stub L3): tier came from the DB, statuses persisted
     assert _work_one(run_id) == "passed"
@@ -125,7 +126,10 @@ async def test_human_review_resume_roundtrip(client, tenant, stub_engine):
     assert q_one("select status from public.analysis_runs where id = %s",
                  (run_id,))["status"] == "human_review"
 
-    # resume: 0 credits, new linked run, worker runs ONE steered round
+    # resume: NO base price (nothing is re-extracted), new linked run, worker
+    # runs ONE steered round. 0012 escrows that round's model usage — with the
+    # stub engine reporting no tokens, the settle charges the floor of 0 and
+    # the whole reserve comes back.
     before = q_one("select subscription_credits + purchased_credits as t "
                    "from public.credit_balances where org_id = %s", (org,))["t"]
     r = await client.post(f"/v1/runs/{run_id}/resume",
@@ -134,14 +138,16 @@ async def test_human_review_resume_roundtrip(client, tenant, stub_engine):
                           headers=auth(tok, org))
     assert r.status_code == 202
     resumed_id = r.json()["run_id"]
-    assert r.json()["credits_charged"] == 0
+    assert r.json()["credits_floor"] == 0      # no re-ingest, no base charge
     assert _work_one(resumed_id) == "passed"
     row = q_one("select status, resumed_from_run_id::text as parent "
                 "from public.analysis_runs where id = %s", (resumed_id,))
     assert row == {"status": "complete", "parent": run_id}
     after = q_one("select subscription_credits + purchased_credits as t "
                   "from public.credit_balances where org_id = %s", (org,))["t"]
-    assert after == before                     # the resume was free
+    assert after == before                     # nothing metered → nothing kept
+    assert q_one("select charged from public.credit_holds where run_id = %s",
+                 (resumed_id,))["charged"] == 0
 
     # a resume of a non-human_review run is refused
     r = await client.post(f"/v1/runs/{resumed_id}/resume",

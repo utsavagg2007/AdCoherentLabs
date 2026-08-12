@@ -88,7 +88,7 @@ export async function Pricing() {
           </h2>
           <p className="mt-4 text-[15.5px] leading-relaxed text-ink-600 text-pretty">
             Every plan runs the same four-layer engine. Credits meter the
-            work — the base price of a run plus its actual model usage.
+            work — you pay for what a review actually uses, not a flat fee.
           </p>
         </Reveal>
 
@@ -206,8 +206,9 @@ export async function Pricing() {
         )}
 
         <p className="mt-10 text-center text-[12px] text-ink-500">
-          Prices are published live by the platform. A run&apos;s final cost =
-          its base price + metered model usage, both shown on the report.
+          Prices are published live by the platform. Credits are reserved when
+          a run starts and charged from what it actually uses; whatever is left
+          over goes back to your balance. Every line item is on the report.
         </p>
       </div>
     </section>

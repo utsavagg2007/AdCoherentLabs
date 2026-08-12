@@ -15,6 +15,13 @@ CREDITS_CHARGED = Counter(
     "adcoherent_credits_charged_total", "Credits charged", ["tier"])
 CREDITS_REFUNDED = Counter(
     "adcoherent_credits_refunded_total", "Credits refunded (system failure)")
+# 0012: what is escrowed at enqueue, before the run establishes its real cost.
+# reserved - charged is what comes back at settle; the ratio between these two
+# is how you tune app.credit_forecast. A ratio near 1.0 means the forecast is
+# tight (and users are close to spurious budget stops); a ratio near 3.0 means
+# credits are being frozen for no reason.
+CREDITS_RESERVED = Counter(
+    "adcoherent_credits_reserved_total", "Credits escrowed at enqueue", ["tier"])
 WEBHOOK_EVENTS = Counter(
     "adcoherent_stripe_webhook_events_total", "Stripe webhook events", ["type", "outcome"])
 UPLOAD_REJECTS = Counter(

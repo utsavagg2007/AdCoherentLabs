@@ -2,8 +2,13 @@
 
 Reuses the engine's own persistence verbatim — SupabaseDataPlane methods,
 _apply_framework_entitlements, _persist_outcome — against the run row the API
-pre-created. Nothing here charges credits (Appendix C: the charge happened at
-enqueue); a DLQ'd job refunds them (§10.3).
+pre-created.
+
+Credits (0012): the API ESCROWED credits at enqueue; this process meters real
+effort against that escrow as the engine works, and _persist_outcome settles
+it — charging what was used and returning the rest. A DLQ'd job releases the
+whole escrow (§10.3). The escrow is a hard ceiling, so nothing here can charge
+more than the API reserved.
 
 The tier is fetched from the DB via app.org_tier at execution time — never
 from the job payload — so a plan change between submit and execution takes
@@ -135,11 +140,22 @@ def execute_job(db: SupabaseDataPlane, job: dict) -> JobOutcome:
         providers.release_slot(provider)
 
 
+def _meter_for(db: SupabaseDataPlane, run_id: str, org_id: str):
+    """The billing sink handed to the engine: charges effort against this
+    run's escrow the moment it happens, and hands back live headroom so the
+    engine can stop before the escrow is gone."""
+    def meter(unit: str, qty: float, meta: dict | None = None) -> dict:
+        return db.meter_effort(org_id, run_id, unit, qty, meta)
+    return meter
+
+
 def _execute_fresh(db: SupabaseDataPlane, run: dict, ent, tmpdir: str):
     run_id, org_id = run["id"], run["org_id"]
 
     def emit(stage: str, event: str, message: str, detail: dict | None = None):
         db.emit_run_event(run_id, org_id, stage, event, message, detail)
+
+    meter = _meter_for(db, run_id, org_id)
 
     emit("ingest", "ingest.loading",
          "Fetching your creative from secure storage.", {})
@@ -161,6 +177,7 @@ def _execute_fresh(db: SupabaseDataPlane, run: dict, ent, tmpdir: str):
     asset = prepare_asset(product_tier=ent.tier,
                           target_jurisdictions=run["target_jurisdictions"],
                           media_workdir=tmpdir,
+                          meter=meter,
                           **engine_input)
     db.set_run(run_id, status="running_nlp")
     dropped = _apply_framework_entitlements(asset, ent)
@@ -183,7 +200,7 @@ def _execute_fresh(db: SupabaseDataPlane, run: dict, ent, tmpdir: str):
     db.set_run(run_id, status="running_llm")
     result = review_and_verify(asset, ent.tier,
                                max_llm_rounds=DEFAULT_MAX_LLM_ROUNDS,
-                               progress=emit)
+                               progress=emit, meter=meter)
 
     if bypassed:
         result.warnings.append(
@@ -204,11 +221,14 @@ def _execute_fresh(db: SupabaseDataPlane, run: dict, ent, tmpdir: str):
 
 def _execute_resume(db: SupabaseDataPlane, run: dict, ent):
     """Operator-guided single round over the stored Layer-1/2 output — no
-    re-OCR, no credit charge, tokens still metered (§8.1)."""
+    re-OCR, so no Layer-1 effort, but the extra LLM round is real spend and is
+    metered against this resume's own escrow (§8.1)."""
     run_id, org_id = run["id"], run["org_id"]
 
     def emit(stage: str, event: str, message: str, detail: dict | None = None):
         db.emit_run_event(run_id, org_id, stage, event, message, detail)
+
+    meter = _meter_for(db, run_id, org_id)
 
     asset = db.load_asset_representation(run["resumed_from_run_id"])
     db.set_run(run_id, status="running_llm", started=True)
@@ -218,7 +238,8 @@ def _execute_resume(db: SupabaseDataPlane, run: dict, ent):
     emit("llm", "llm.resume",
          "Re-reviewing with your reviewer's guidance applied.", {})
     result = resume_with_human_guidance(
-        asset, run["operator_guidance"], product_tier=ent.tier)
+        asset, run["operator_guidance"], product_tier=ent.tier,
+        progress=emit, meter=meter)
     db.save_layer_output(run_id, org_id, "nlp", asset)
     result.provenance["saas"] = {
         "org_id": org_id, "submission_id": run["submission_id"],
@@ -243,22 +264,43 @@ class NoProviderSlot(Exception):
 # ---------------------------------------------------------------------------
 # Failure finalisation — shared with the scheduler's watchdog.
 
-def requeue_run(db: SupabaseDataPlane, run_id: str, error: str) -> None:
+def requeue_run(db: SupabaseDataPlane, run_id: str, org_id: str,
+                error: str) -> None:
     """The attempt failed but the job requeued: the run shows 'queued' again
-    (users see queued, never a provider error — §9.3)."""
+    (users see queued, never a provider error — §9.3).
+
+    The escrow stays (it was sized for one run and the run is still going),
+    but its meter resets: the dead attempt's tokens are our cost, not the
+    user's. Without the reset a run that retried twice would bill three
+    attempts' worth of tokens for one report."""
     db.set_run(run_id, status="queued", error=error[:2000])
+    db.reset_hold_meter(org_id, run_id)
 
 
 def finalize_dlq(db: SupabaseDataPlane, org_id: str, run_id: str, error: str) -> dict:
-    """Permanent system failure: run failed + automatic credit refund
-    (reason refund.system_failure) + audit + ops alert (§10.3). Idempotent —
-    safe under worker/watchdog double-fire."""
+    """Permanent system failure: run failed + full credit release + audit +
+    ops alert (§10.3). Idempotent — safe under worker/watchdog double-fire.
+
+    keep=0 is deliberate. The run burned real provider tokens before it died
+    and those are metered in effort_events, but the failure is ours, so the
+    user pays nothing. The difference is absorbed cost — which, unlike before
+    0012, is now VISIBLE: effort_events holds the quantity and app.run_margin
+    holds the dollars. Billing users for our own failures would be the wrong
+    fix; not being able to see the bill was the actual problem."""
     db.set_run(run_id, finished=True, status="failed",
                error=f"system failure after retries: {error}"[:2000])
-    refund = db.refund_credits(org_id, run_id)
+
+    release = db.release_hold(org_id, run_id, keep=0)
+    if not release.get("released") and release.get("reason") == "no_hold":
+        # Enqueued before 0012 deployed: no escrow, so reverse the flat charge
+        # the old path took. Goes away when settle_run_tokens does.
+        release = db.refund_credits(org_id, run_id)
+
+    refunded = release.get("refunded", 0)
     db.audit(org_id, None, "run.failed", f"analysis_run:{run_id}",
-             {"error": error[:500], "dlq": True,
-              "refunded": refund.get("refunded", 0)})
+             {"error": error[:500], "dlq": True, "refunded": refunded,
+              "unbilled_effort": release.get("metered", 0)})
     logger.error("ALERT job.dlq", run_id=run_id, org_id=org_id,
-                 error=error[:500], refunded=refund.get("refunded", 0))
-    return refund
+                 error=error[:500], refunded=refunded,
+                 unbilled_effort=release.get("metered", 0))
+    return release

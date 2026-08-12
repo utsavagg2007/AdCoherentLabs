@@ -73,6 +73,7 @@ def prepare_asset(
     product_tier: str = "free",
     target_jurisdictions: list[str] | None = None,
     media_workdir: str | None = None,
+    meter: Callable[[str, float, dict], dict] | None = None,
 ) -> dict:
     """Layers 1+2: raw creative -> validated AssetRepresentation dict.
 
@@ -83,6 +84,10 @@ def prepare_asset(
     intermediate page/frame files (a temp dir is created and cleaned up
     when omitted). The product tier only selects the OCR backend here
     (PaddleOCR for every tier, for now).
+
+    ``meter`` charges Layer-1 effort as it is discovered — a 12-page PDF and a
+    1-page PDF are different amounts of OCR work and stop being the same
+    price. Optional; without it this behaves exactly as before 0012.
     """
     provided = [v is not None
                 for v in (image_path, text, html, pdf_path, docx_path, video_path)]
@@ -99,13 +104,29 @@ def prepare_asset(
             workdir = tempfile.mkdtemp(prefix="engine-media-")
             created_workdir = True
 
+    def _meter(unit: str, qty: float, **meta: Any) -> None:
+        if meter is None or qty <= 0:
+            return
+        try:
+            meter(unit, float(qty), meta)
+        except Exception:  # noqa: BLE001 — a broken meter never breaks a run
+            logger.warning("meter sink failed for %s (qty=%s)", unit, qty)
+
     try:
         if pdf_path is not None:
             image_path, media_meta = media.pdf_to_images(pdf_path, workdir)
+            _meter("ocr_page", media_meta.get("pages", 0),
+                   truncated=media_meta.get("truncated"))
         elif docx_path is not None:
             text, media_meta = media.docx_to_text(docx_path)
         elif video_path is not None:
             image_path, media_meta = media.video_to_frames(video_path, workdir)
+            _meter("cv_frame", media_meta.get("sampled_frames", 0))
+            _meter("video_second", media_meta.get("duration_seconds", 0))
+        elif image_path is not None:
+            # Carousels are N images of CV work, not one.
+            _meter("cv_frame",
+                   len(image_path) if isinstance(image_path, list) else 1)
 
         rep = analyze_asset(
             asset_id or ("ad_" + uuid.uuid4().hex[:12]),
@@ -143,6 +164,7 @@ def review_and_verify(
     resumed_from_run_id: str | None = None,
     include_asset: bool = False,
     progress: Callable[[str, str, str, dict], None] | None = None,
+    meter: Callable[[str, float, dict], dict] | None = None,
 ) -> EngineRunResult:
     """Layers 3+4 over a prepared asset: review, verify, callback loop.
 
@@ -151,6 +173,12 @@ def review_and_verify(
     production RAG store is wired from DATABASE_URL (degrading to empty
     retrieval with a warning when unreachable). ``progress`` receives
     sanitized (stage, event, message, detail) live-activity events.
+
+    ``meter`` is the billing sink: ``(unit, quantity, meta) -> reading``,
+    called as effort happens rather than at the end. It is deliberately
+    SEPARATE from ``progress`` — progress writes the user-facing activity feed
+    and must stay sanitized, while metering moves money. Both are optional;
+    with ``meter=None`` the engine runs exactly as it did before 0012.
     """
     tier_name = normalize_tier(product_tier)
     tier = get_tier(tier_name)
@@ -165,6 +193,15 @@ def review_and_verify(
             progress(stage, event, message, detail)
         except Exception:  # noqa: BLE001 — a broken sink never breaks a run
             logger.warning("progress sink failed for %s/%s", stage, event)
+
+    def _meter(unit: str, qty: float, **meta: Any) -> dict:
+        if meter is None:
+            return {}
+        try:
+            return meter(unit, float(qty), meta) or {}
+        except Exception:  # noqa: BLE001 — a broken meter never breaks a run
+            logger.warning("meter sink failed for %s (qty=%s)", unit, qty)
+            return {}
 
     rag: RagConnection | None = None
     if conn is None and retriever is None and manage_rag_connection:
@@ -181,6 +218,12 @@ def review_and_verify(
            else "Running without regulation retrieval (degraded grounding)."),
           {"frameworks": frameworks,
            "online": bool(conn is not None or retriever is not None)})
+    # Retrieval effort scales with routed frameworks — one grounded query set
+    # per framework, per round. Metered at rate 0 until the margin view says
+    # what it costs (0012 §5); the quantity is real from day one either way.
+    if frameworks and (conn is not None or retriever is not None):
+        _meter("rag_query", len(frameworks) * max_llm_rounds,
+               frameworks=len(frameworks), rounds=max_llm_rounds)
 
     llm = LLMLayer(
         tier_name,
@@ -192,6 +235,7 @@ def review_and_verify(
         as_of=as_of,
         human_guidance=human_guidance,
         progress=progress,
+        meter=meter,
         max_rounds=max_llm_rounds,
     )
 
@@ -202,6 +246,29 @@ def review_and_verify(
         if rag is not None:
             rag.close()
     timings["review_and_verify"] = int((time.monotonic() - t0) * 1000)
+
+    # A budget stop is not a system failure. evaluate_with_retry catches
+    # BudgetExhausted like any other LLM-layer exception and returns
+    # status='llm_error', which downstream means "our fault, refund and DLQ".
+    # Reclassify it here: the user has a report from the rounds that did run,
+    # and those rounds were legitimately charged.
+    if llm.budget_stopped and final.status == "llm_error":
+        if final.final_report is not None:
+            final = final.model_copy(update={
+                "status": "human_review" if not final.final_report.passed
+                          else "passed",
+                "llm_error": None})
+            warnings.append(
+                "the credits reserved for this run were used up after "
+                f"{len(llm.rounds)} of {max_llm_rounds} review rounds; the "
+                "report reflects the rounds that completed — re-run with a "
+                "larger balance for the full callback budget")
+        else:
+            # Round 1 never produced a report. Cannot happen while the reserve
+            # covers the floor and round 1 is exempt from the gate, but if it
+            # ever does, leave it as an error rather than ship an empty report.
+            logger.error("budget stop before any completed round (run=%s)",
+                         run_id)
 
     if final.final_report is not None:
         rep0 = final.final_report
@@ -362,6 +429,7 @@ def resume_with_human_guidance(
     provider: Any = None,
     include_asset: bool = False,
     progress: Callable[[str, str, str, dict], None] | None = None,
+    meter: Callable[[str, float, dict], dict] | None = None,
 ) -> EngineRunResult:
     """Operator interference: one more LLM round steered by a human.
 
@@ -369,6 +437,10 @@ def resume_with_human_guidance(
     operator direction, the rule engine verifies the new output, and a
     fresh EngineRunResult is returned (linked to the previous run via
     ``resumed_from_run_id``). Call repeatedly until satisfied.
+
+    No Layer-1/2 work repeats (the stored asset is reused), so a resume has no
+    OCR/CV effort — but the extra LLM round is real spend and is metered
+    against the resume's own hold like any other round.
     """
     if not guidance or not guidance.strip():
         raise ValueError("guidance must be a non-empty operator prompt")
@@ -381,4 +453,5 @@ def resume_with_human_guidance(
         resumed_from_run_id=(previous.run_id if previous else None),
         include_asset=include_asset,
         progress=progress,
+        meter=meter,
     )

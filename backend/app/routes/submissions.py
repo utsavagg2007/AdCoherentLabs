@@ -116,7 +116,14 @@ async def create_submission(request: Request,
     try:
         async with db.transaction() as conn:
             await credits.ensure_cycle_grant_tx(conn, ctx.org_id)
-            cost = await credits.cost_tx(conn, ctx.org_id, pricing_kind, cards)
+            # floor = the published base price (ingest/CV/storage — the fixed
+            # cost of accepting a creative). forecast = expected metered effort
+            # on top. Both are escrowed; whatever the run does not use comes
+            # back at settle.
+            floor = await credits.cost_tx(conn, ctx.org_id, pricing_kind, cards)
+            forecast = await credits.forecast_tx(conn, ctx.org_id,
+                                                 pricing_kind, cards)
+            cost = floor + forecast
 
             await conn.execute(
                 "insert into public.submissions "
@@ -140,7 +147,8 @@ async def create_submission(request: Request,
                 (run_id, submission_id, ctx.org_id, ctx.tier,
                  ctx.entitlements.get("llm_model")))
 
-            decision = await credits.consume_tx(conn, ctx.org_id, run_id, cost)
+            decision = await credits.reserve_tx(conn, ctx.org_id, run_id,
+                                                floor, forecast)
 
             if not decision.get("allowed"):
                 # Record + audit the rejected attempt, then commit THAT (the
@@ -156,13 +164,18 @@ async def create_submission(request: Request,
                     (ctx.org_id, actor, f"analysis_run:{run_id}",
                      json.dumps({"needed": decision.get("needed"),
                                  "balance": decision.get("balance"),
+                                 "floor": floor, "forecast": forecast,
                                  "tier": ctx.tier, "via": ctx.principal})))
                 body = {"error": {"code": "insufficient_credits",
-                                  "message": f"Run costs {decision.get('needed')} credits; "
-                                             f"balance is {decision.get('balance')}.",
+                                  "message": f"This run reserves {decision.get('needed')} "
+                                             f"credits ({floor} base + {forecast} for "
+                                             f"expected model usage); balance is "
+                                             f"{decision.get('balance')}. Unused credits "
+                                             f"are returned when the run finishes.",
                                   "request_id": request.state.request_id,
                                   "details": {"needed": decision.get("needed"),
                                               "balance": decision.get("balance"),
+                                              "floor": floor, "forecast": forecast,
                                               "packs_url": "/v1/credits/checkout"}}}
                 if idem_key:
                     await idempotency.store_tx(conn, ctx.org_id, "submissions",
@@ -175,20 +188,29 @@ async def create_submission(request: Request,
                 "  (run_id, org_id, stage, event, message, detail) "
                 "values (%s, %s, 'queued', 'run.queued', %s, %s::jsonb)",
                 (run_id, ctx.org_id,
-                 f"Run accepted — {decision['charged']} credits reserved; "
-                 "waiting for an analysis worker.",
-                 json.dumps({"credits_charged": decision["charged"],
+                 f"Run accepted — {decision['reserved']} credits reserved "
+                 f"({floor} base + {forecast} for model usage). You are "
+                 "charged for what the review actually uses; the rest comes "
+                 "back when it finishes.",
+                 json.dumps({"credits_reserved": decision["reserved"],
+                             "floor": floor, "forecast": forecast,
                              "kind": pricing_kind, "cards": cards})))
             response_body = {
                 "submission_id": submission_id, "run_id": run_id,
-                "credits_charged": decision["charged"],
+                "credits_reserved": decision["reserved"],
+                "credits_floor": floor,
+                # Retained for API compatibility: pre-0012 clients read this
+                # as the final charge. It is now the reserve — an upper bound
+                # on the charge, not the charge itself.
+                "credits_charged": decision["reserved"],
                 "balance": {"subscription_credits": decision["sub_bal"],
                             "purchased_credits": decision["pack_bal"]}}
             await conn.execute(
                 "select app.log_audit_event(%s, %s, 'submission.created', %s, %s::jsonb)",
                 (ctx.org_id, actor, f"submission:{submission_id}",
                  json.dumps({"kind": pricing_kind, "cards": cards, "title": title,
-                             "credits_charged": decision["charged"],
+                             "credits_reserved": decision["reserved"],
+                             "floor": floor, "forecast": forecast,
                              "job_id": job_id, "via": ctx.principal,
                              "api_key_id": ctx.api_key_id})))
             if idem_key:
@@ -202,7 +224,8 @@ async def create_submission(request: Request,
         logger.exception("submission.tx_failed", submission_id=submission_id)
         raise ApiError(500, "internal", "Submission could not be recorded.")
 
-    metrics.CREDITS_CHARGED.labels(tier=ctx.tier).inc(decision["charged"])
+    # Reserved, not charged — the charge is counted by the worker at settle.
+    metrics.CREDITS_RESERVED.labels(tier=ctx.tier).inc(decision["reserved"])
     return JSONResponse(status_code=202, content=response_body)
 
 

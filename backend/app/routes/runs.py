@@ -18,10 +18,14 @@ from ..deps import AuthContext
 from ..errors import ApiError, not_found
 from ..ratelimit_deps import rate_limited, rate_limited_reviewer
 from ..schemas import ResumeRequest
-from ..services import queue
+from ..services import credits, queue
 
 DISCLAIMER = ("AdCoherent reports are decision support for your compliance "
               "process, not legal advice.")
+
+#: Mirrors engine.orchestrator.DEFAULT_MAX_LLM_ROUNDS. Duplicated rather than
+#: imported: the API process must not import the engine (Appendix C).
+_MAX_LLM_ROUNDS = 3
 
 router = APIRouter(prefix="/v1/runs", tags=["runs"])
 
@@ -64,7 +68,38 @@ async def get_run(run_id: uuid.UUID, ctx: AuthContext = Depends(rate_limited)):
     job = await db.fetch_one(
         "select status as job_status, attempts, not_before, last_error "
         "from app.job_queue where run_id = %s", (str(run_id),))
-    return {"run": run, "queue": job, "disclaimer": DISCLAIMER}
+    # Live escrow state (0012). While status='open' this updates as the engine
+    # works, so a client polling this endpoint watches credits tick up in real
+    # time; once settled, `charged` is final and `reserved - charged` came back.
+    hold = await credits.hold_for_run(ctx.org_id, str(run_id))
+    if hold is not None:
+        hold = {**hold,
+                "metered": float(hold["metered"]),
+                "returned": (hold["reserved"] - hold["charged"]
+                             if hold["charged"] is not None else None)}
+    return {"run": run, "queue": job, "credits": hold,
+            "disclaimer": DISCLAIMER}
+
+
+@router.get("/{run_id}/effort")
+async def get_run_effort(run_id: uuid.UUID,
+                         ctx: AuthContext = Depends(rate_limited)):
+    """Line items behind a metered charge — what was measured, how much of it,
+    at what rate. A user who is billed by usage is owed the itemisation."""
+    ctx.require_scope("read")
+    await _own_run(str(run_id), ctx.org_id)
+    rows = await credits.effort_breakdown(ctx.org_id, str(run_id))
+    hold = await credits.hold_for_run(ctx.org_id, str(run_id))
+    return {
+        "units": [{**r,
+                   "quantity": float(r["quantity"]),
+                   "rate": float(r["rate"]),
+                   "credits": float(r["credits"])} for r in rows],
+        "reserved": hold["reserved"] if hold else None,
+        "floor": hold["floor_credits"] if hold else None,
+        "metered": float(hold["metered"]) if hold else None,
+        "charged": hold["charged"] if hold else None,
+    }
 
 
 @router.get("/{run_id}/events")
@@ -130,14 +165,26 @@ async def get_report(run_id: uuid.UUID, ctx: AuthContext = Depends(rate_limited)
 @router.post("/{run_id}/resume", status_code=202)
 async def resume_run(run_id: uuid.UUID, body: ResumeRequest,
                      ctx: AuthContext = Depends(rate_limited_reviewer)):
-    """Operator guidance for a human_review run: a NEW linked run, 0 credits
-    (same creative — the existing quota contract), tokens still metered."""
+    """Operator guidance for a human_review run: a NEW linked run with NO base
+    charge (same creative — the existing contract; no re-ingest, no re-OCR),
+    but its one extra LLM round is real spend and is escrowed and metered like
+    any other round.
+
+    floor = 0 is what keeps the "resume is free" promise honest: the user pays
+    for model work they asked for, and nothing for work that is not redone."""
     ctx.require_scope("submit")
     prev = await _own_run(str(run_id), ctx.org_id)
     if prev["status"] != "human_review":
         raise ApiError(409, "conflict",
                        "Only runs awaiting human review can be resumed.",
                        {"status": prev["status"]})
+
+    sub = await db.fetch_one(
+        "select coalesce(params->>'pricing_kind', 'text') as kind, "
+        "       coalesce((params->>'cards')::int, 1) as cards "
+        "from public.submissions where id = %s and org_id = %s",
+        (prev["submission_id"], ctx.org_id))
+
     new_run = str(uuid.uuid4())
     async with db.transaction() as conn:
         await conn.execute(
@@ -147,12 +194,33 @@ async def resume_run(run_id: uuid.UUID, body: ResumeRequest,
             "values (%s, %s, %s, 'queued', %s, %s, %s, %s)",
             (new_run, prev["submission_id"], ctx.org_id, ctx.tier,
              ctx.entitlements.get("llm_model"), str(run_id), body.guidance))
+
+        # A resume is exactly ONE round; a fresh run's forecast covers up to
+        # DEFAULT_MAX_LLM_ROUNDS. Scaling it down keeps a low-balance user from
+        # being blocked out of a resume by an escrow sized for three rounds.
+        full = await credits.forecast_tx(conn, ctx.org_id,
+                                         sub["kind"], sub["cards"])
+        forecast = max(1, -(-full // _MAX_LLM_ROUNDS))   # ceil division
+        decision = await credits.reserve_tx(conn, ctx.org_id, new_run,
+                                            0, forecast)
+        if not decision.get("allowed"):
+            raise ApiError(
+                402, "insufficient_credits",
+                f"A resume reserves {decision.get('needed')} credits for the "
+                f"extra review round; balance is {decision.get('balance')}.",
+                {"needed": decision.get("needed"),
+                 "balance": decision.get("balance"),
+                 "packs_url": "/v1/credits/checkout"})
+
         await queue.enqueue_tx(conn, new_run)
         await conn.execute(
             "select app.log_audit_event(%s, %s, 'run.resume_requested', %s, %s::jsonb)",
             (ctx.org_id, ctx.user_id, f"analysis_run:{new_run}",
              json.dumps({"resumed_from": str(run_id),
                          "guidance_chars": len(body.guidance),
-                         "credits_charged": 0, "via": ctx.principal})))
+                         "credits_reserved": decision["reserved"],
+                         "floor": 0, "via": ctx.principal})))
     return {"run_id": new_run, "resumed_from_run_id": str(run_id),
-            "credits_charged": 0}
+            "credits_reserved": decision["reserved"],
+            "credits_floor": 0,
+            "credits_charged": decision["reserved"]}   # back-compat: an upper bound

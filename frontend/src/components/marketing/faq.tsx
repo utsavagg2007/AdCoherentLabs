@@ -21,11 +21,11 @@ const FAQS = [
   },
   {
     q: "How does credit pricing work?",
-    a: "A run charges its published base price up front — it covers extraction, retrieval and verification. When the run finishes, its actual model usage is settled from the tokens consumed, at per-tier rates published on the pricing endpoint. Both components appear on the report and in your ledger, line by line.",
+    a: "When you submit a run we reserve credits for it: its published base price plus an estimate of the model work it will need. The engine then meters what it actually uses as it works — tokens, pages scanned, frames analysed — and when the run finishes you are charged for that and the unused reserve is returned to your balance. You are never charged more than was reserved. Every line item appears on the report and in your ledger.",
   },
   {
     q: "What happens when a review needs human input?",
-    a: "If the automated loop can't converge — for example, the deterministic checks keep failing the AI's review — the run pauses in a human-review state with specific instructions about what remained unresolved. A reviewer adds guidance and resumes the run. The resumed run is linked to the original and costs zero additional credits.",
+    a: "If the automated loop can't converge — for example, the deterministic checks keep failing the AI's review — the run pauses in a human-review state with specific instructions about what remained unresolved. A reviewer adds guidance and resumes the run. The resumed run is linked to the original and pays no base price, since nothing is re-extracted; you are charged only for the model work of the extra review round.",
   },
   {
     q: "How are creatives handled?",

@@ -387,10 +387,14 @@ class SupabaseDataPlane:
 
     def settle_run_tokens(self, org_id: str, run_id: str,
                           in_tok: int, out_tok: int) -> dict:
-        """Post-run token settlement (0011): the LLM component of the price,
-        charged from actual usage at the tier's published token_rates.
-        Idempotent per run; clamps to the available balance (the report
-        already exists — a shortfall is audited, never a failure)."""
+        """DEPRECATED (0012) — post-run token settlement (0011): the LLM
+        component of the price, charged from actual usage at the tier's
+        published token_rates. Idempotent per run; clamps to the available
+        balance, forgiving any shortfall.
+
+        That clamp is exactly the overspend hole 0012 closes. This stays only
+        as the fallback for runs enqueued before 0012 deployed, which have no
+        hold to settle. New runs go through settle_hold."""
         assert self.conn is not None
         with self.conn.cursor() as cur:
             cur.execute("select app.settle_run_tokens(%s, %s, %s, %s) as s",
@@ -398,6 +402,85 @@ class SupabaseDataPlane:
             settlement = cur.fetchone()["s"]
         self.conn.commit()
         return settlement
+
+    # -- metered credits (migration 0012 — reserve → meter → settle) ---------
+
+    def reserve_credits(self, org_id: str, run_id: str, floor_credits: int,
+                        forecast: int = 0) -> dict:
+        """Escrow floor + forecast BEFORE the run. Raises the same
+        InsufficientCreditsError as consume_credits on rejection, so callers
+        that already handle the 402 contract need no change."""
+        assert self.conn is not None
+        with self.conn.cursor() as cur:
+            cur.execute("select app.reserve_credits(%s, %s, %s, %s) as d",
+                        (org_id, run_id, floor_credits, forecast))
+            decision = cur.fetchone()["d"]
+        self.conn.commit()
+        if not decision.get("allowed"):
+            raise InsufficientCreditsError(
+                decision.get("needed", floor_credits), decision.get("balance", 0))
+        return decision
+
+    def meter_effort(self, org_id: str, run_id: str, unit: str,
+                     qty: float, meta: dict | None = None) -> dict:
+        """Charge one unit of engine effort against the run's hold, as it
+        happens. Returns live headroom; ``exhausted`` is the engine's signal
+        to stop starting new work.
+
+        Commits immediately and per event — the deduction must be visible to
+        the user's live feed and to a concurrently-reading balance query while
+        the run is still going. That is the whole point of metering in real
+        time rather than settling at the end."""
+        assert self.conn is not None
+        with self.conn.cursor() as cur:
+            cur.execute("select app.meter_effort(%s, %s, %s, %s, %s) as m",
+                        (org_id, run_id, unit, qty, Jsonb(meta or {})))
+            reading = cur.fetchone()["m"]
+        self.conn.commit()
+        return reading
+
+    def settle_hold(self, org_id: str, run_id: str) -> dict:
+        """Finalise: charge max(floor, ceil(metered)) capped at the reserve,
+        return the remainder. Idempotent. Returns {'settled': False,
+        'reason': 'no_hold'} for pre-0012 runs so the caller can fall back."""
+        assert self.conn is not None
+        with self.conn.cursor() as cur:
+            cur.execute("select app.settle_hold(%s, %s) as s", (org_id, run_id))
+            settlement = cur.fetchone()["s"]
+        self.conn.commit()
+        return settlement
+
+    def reset_hold_meter(self, org_id: str, run_id: str) -> dict:
+        """Zero a requeued run's meter so a retry does not bill the dead
+        attempt's tokens. The effort stays recorded as absorbed cost."""
+        assert self.conn is not None
+        with self.conn.cursor() as cur:
+            cur.execute("select app.reset_hold_meter(%s, %s) as r",
+                        (org_id, run_id))
+            reset = cur.fetchone()["r"]
+        self.conn.commit()
+        return reset
+
+    def release_hold(self, org_id: str, run_id: str, keep: int = 0) -> dict:
+        """Failure path: return the escrow, keeping ``keep`` credits for
+        effort genuinely delivered. Idempotent."""
+        assert self.conn is not None
+        with self.conn.cursor() as cur:
+            cur.execute("select app.release_hold(%s, %s, %s) as r",
+                        (org_id, run_id, keep))
+            release = cur.fetchone()["r"]
+        self.conn.commit()
+        return release
+
+    def provider_cost_cents(self, model: str | None, in_tok: int,
+                            out_tok: int) -> int | None:
+        """True provider spend for this run, in USD cents. None for an unknown
+        model — never 0, which would read as 100% margin on the dashboard."""
+        if not model:
+            return None
+        row = self._one("select app.provider_cost_cents(%s, %s, %s) as c",
+                        (model, in_tok, out_tok))
+        return None if row is None or row["c"] is None else int(row["c"])
 
     # -- audit ------------------------------------------------------------
 
@@ -715,19 +798,33 @@ def _persist_outcome(db: SupabaseDataPlane, *, run_id: str, org_id: str,
     db.record_token_usage(org_id, run_id, user_id, meta.get("model"),
                           total_in or None, total_out or None, ent.tier)
 
-    # Token-metered settlement (0011): the usage component of the price.
-    settlement = db.settle_run_tokens(org_id, run_id, total_in, total_out)
+    model_used = meta.get("model") or ent.llm_model
+
+    # Settlement (0012): charge max(floor, ceil(metered)) against the run's
+    # hold, capped at what was reserved, and return the remainder. Tokens were
+    # already metered round-by-round inside the engine, so this only finalises.
+    #
+    # A run enqueued before 0012 deployed has no hold — settle_hold says so and
+    # we fall back to the 0011 token settlement for it. That fallback goes away
+    # with the deprecation of settle_run_tokens one release from now.
+    settlement = db.settle_hold(org_id, run_id)
+    if not settlement.get("settled") and settlement.get("reason") == "no_hold":
+        settlement = db.settle_run_tokens(org_id, run_id, total_in, total_out)
 
     db_status = _RUN_STATUS_BY_ENGINE_STATUS[result.status]
     db.set_run(
         run_id, finished=True, status=db_status,
         error=result.llm_error,
         engine_run_id=result.run_id,
-        model_id=meta.get("model") or ent.llm_model,
+        model_id=model_used,
         prompt_version=result.provenance.get("prompt_version"),
         rulepack_version=result.provenance.get("ruleset_version"),
         rag_corpus_hash=result.provenance.get("rag_corpus_hash"),
-        input_tokens=total_in or None, output_tokens=total_out or None)
+        input_tokens=total_in or None, output_tokens=total_out or None,
+        # True provider spend — the denominator of every margin number. The
+        # column has existed since 0001 and been null ever since; without it
+        # the tier rates are unfalsifiable.
+        cost_cents=db.provider_cost_cents(model_used, total_in, total_out))
 
     action = {"complete": "run.completed", "failed": "run.failed",
               "human_review": "run.human_review"}[db_status]
@@ -737,10 +834,11 @@ def _persist_outcome(db: SupabaseDataPlane, *, run_id: str, org_id: str,
         "review_passed": bool(result.verification
                               and result.verification.review_passed),
         "tokens": {"input": total_in, "output": total_out},
-        "token_settlement": settlement,
+        "settlement": settlement,
     })
 
     charged = int((settlement or {}).get("charged") or 0)
+    returned = int((settlement or {}).get("returned") or 0)
     db.emit_run_event(
         run_id, org_id, "report", "report.persisted",
         f"Report compiled — {n_findings} finding"
@@ -752,10 +850,13 @@ def _persist_outcome(db: SupabaseDataPlane, *, run_id: str, org_id: str,
          "Review paused for human review — a compliance reviewer should "
          "add guidance." if db_status == "human_review" else
          "The run failed; any charge is refunded automatically.")
-        + (f" Usage settled: {charged} credit"
-           f"{'s' if charged != 1 else ''} for "
-           f"{(total_in + total_out):,} tokens." if charged else ""),
-        {"status": db_status, "tokens_charged": charged,
+        + (f" Charged {charged} credit{'s' if charged != 1 else ''} for "
+           f"{(total_in + total_out):,} tokens of model work."
+           if charged else "")
+        + (f" {returned} unused credit{'s' if returned != 1 else ''} "
+           "returned to your balance." if returned else ""),
+        {"status": db_status, "credits_charged": charged,
+         "credits_returned": returned,
          "input_tokens": total_in, "output_tokens": total_out})
 
 

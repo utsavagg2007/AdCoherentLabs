@@ -73,19 +73,22 @@ async def test_submit_202_then_402_then_idempotent_replay(client, tenant):
     r1 = await client.post("/v1/submissions", json=TEXT, headers=hdrs)
     assert r1.status_code == 202, r1.text
     body = r1.json()
-    assert body["credits_charged"] == 1                     # free text price
+    # 0012: the base price is the FLOOR of the charge, escrowed together with a
+    # forecast for model usage. The final charge lands at settle, not here.
+    assert body["credits_floor"] == 1                       # free text price
+    assert body["credits_reserved"] >= body["credits_floor"]
     assert q_one("select status from app.job_queue where run_id = %s",
                  (body["run_id"],))["status"] == "queued"
     audited = q_all("select action from public.audit_logs where org_id = %s "
-                    "and action in ('submission.created','credits.consumed')",
+                    "and action in ('submission.created','credits.reserved')",
                     (org,))
     assert len(audited) >= 2
 
-    # same key → replayed response, no new charge
+    # same key → replayed response, no second reserve
     r2 = await client.post("/v1/submissions", json=TEXT, headers=hdrs)
     assert r2.status_code == 202 and r2.json()["run_id"] == body["run_id"]
-    assert q_one("select count(*) as n from public.credit_ledger where org_id = %s "
-                 "and reason = 'consume.run'", (org,))["n"] == 1
+    assert q_one("select count(*) as n from public.credit_holds where org_id = %s",
+                 (org,))["n"] == 1
 
     # same key, different body → 409
     r3 = await client.post("/v1/submissions",

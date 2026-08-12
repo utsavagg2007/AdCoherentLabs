@@ -133,7 +133,7 @@ def main() -> int:
                 if disposition.get("disposition") == "dlq":
                     executor.finalize_dlq(db, job["org_id"], job["run_id"], err)
                 elif disposition.get("disposition") == "requeued":
-                    executor.requeue_run(db, job["run_id"], err)
+                    executor.requeue_run(db, job["run_id"], job["org_id"], err)
             except Exception:
                 log.exception("job.fail_handling_crashed")
                 db.close()

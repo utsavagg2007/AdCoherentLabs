@@ -59,22 +59,33 @@ def watchdog() -> None:
                     "update public.analysis_runs set status = 'failed', "
                     "finished_at = now(), error = coalesce(error, 'worker died; "
                     "attempts exhausted') where id = %s", (run_id,))
+                # 0012: release the escrow in full. Falls back to the pre-0012
+                # flat refund for runs enqueued before the migration deployed.
                 refund = conn.execute(
-                    "select app.refund_credits(%s, %s) as x",
+                    "select app.release_hold(%s, %s, 0) as x",
                     (org_id, run_id)).fetchone()["x"]
+                if not refund.get("released") and refund.get("reason") == "no_hold":
+                    refund = conn.execute(
+                        "select app.refund_credits(%s, %s) as x",
+                        (org_id, run_id)).fetchone()["x"]
                 conn.execute(
                     "select app.log_audit_event(%s, null, 'run.failed', %s, %s::jsonb)",
                     (org_id, f"analysis_run:{run_id}",
                      psycopg.types.json.Jsonb({"dlq": True, "watchdog": True,
-                                               "refunded": refund.get("refunded", 0)})))
+                                               "refunded": refund.get("refunded", 0),
+                                               "unbilled_effort": refund.get("metered", 0)})))
                 logger.error("ALERT watchdog.dlq", run_id=run_id, org_id=org_id,
                              refunded=refund.get("refunded", 0))
             else:
+                run_id, org_id = str(r["run_id"]), str(r["org_id"])
                 conn.execute(
                     "update public.analysis_runs set status = 'queued' "
                     "where id = %s and status not in "
-                    "('complete','failed','human_review')", (str(r["run_id"]),))
-                logger.warning("watchdog.requeued", run_id=str(r["run_id"]))
+                    "('complete','failed','human_review')", (run_id,))
+                # The dead attempt's tokens are our cost, not the user's.
+                conn.execute("select app.reset_hold_meter(%s, %s)",
+                             (org_id, run_id))
+                logger.warning("watchdog.requeued", run_id=run_id)
 
 
 def queue_alerts() -> None:
