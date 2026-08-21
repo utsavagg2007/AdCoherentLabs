@@ -99,7 +99,7 @@ function Collapsible({
 }) {
   const [open, setOpen] = useState(Boolean(defaultOpen));
   return (
-    <div className="rounded-xl border border-line bg-coal-800">
+    <div className="rounded-xl border border-line bg-surface">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -109,7 +109,7 @@ function Collapsible({
         <span className="min-w-0 flex-1">{summary}</span>
         <ChevronDown
           className={cn(
-            "size-4 shrink-0 text-ink-500 transition-transform",
+            "size-4 shrink-0 text-subtle transition-transform",
             open && "rotate-180"
           )}
           aria-hidden
@@ -143,12 +143,12 @@ function FindingCard({
       aria-label={`Finding ${index + 1}: ${finding.framework ?? "unknown framework"}`}
     >
       <div className="flex flex-wrap items-center gap-1.5">
-        <span className="font-mono text-[11px] font-bold text-ink-500">
+        <span className="font-mono text-[11px] font-bold text-subtle">
           F{index + 1}
         </span>
         {finding.severity && <SeverityBadge severity={finding.severity} />}
         {finding.verdict && <VerdictBadge verdict={finding.verdict} />}
-        <span className="text-[12px] font-bold text-ink-500">
+        <span className="text-[12px] font-bold text-subtle">
           {frameworkLabel(finding.framework)}
         </span>
         {dbRow && dbRow.status !== "open" && (
@@ -159,16 +159,16 @@ function FindingCard({
       </div>
 
       {finding.quoted_evidence && (
-        <blockquote className="mt-3 flex gap-2.5 rounded-lg border-l-2 border-white/40 bg-white/6 p-3">
-          <Quote className="mt-0.5 size-3.5 shrink-0 text-ink-500" aria-hidden />
-          <p className="text-[13px] leading-relaxed text-ink-800 italic">
+        <blockquote className="mt-3 flex gap-2.5 rounded-lg border-l-2 border-line-strong bg-tint p-3">
+          <Quote className="mt-0.5 size-3.5 shrink-0 text-subtle" aria-hidden />
+          <p className="text-[13px] leading-relaxed text-body italic">
             “{finding.quoted_evidence}”
           </p>
         </blockquote>
       )}
 
       {finding.reasoning && (
-        <p className="mt-3 text-[13.5px] leading-relaxed text-ink-600">
+        <p className="mt-3 text-[13.5px] leading-relaxed text-muted">
           {finding.reasoning}
         </p>
       )}
@@ -182,16 +182,16 @@ function FindingCard({
       )}
 
       {finding.scope_of_improvement && (
-        <div className="mt-3 flex items-start gap-2.5 rounded-lg border border-white/10 bg-coal-700 p-3">
-          <Wrench className="mt-0.5 size-3.5 shrink-0 text-ink-500" aria-hidden />
+        <div className="mt-3 flex items-start gap-2.5 rounded-lg border border-line bg-hover p-3">
+          <Wrench className="mt-0.5 size-3.5 shrink-0 text-subtle" aria-hidden />
           <div>
-            <p className="text-[11px] font-bold tracking-wider text-ink-500 uppercase">
+            <p className="text-[11px] font-bold tracking-wider text-subtle uppercase">
               Suggested measures
             </p>
-            <p className="mt-0.5 text-[13px] leading-relaxed text-ink-700">
+            <p className="mt-0.5 text-[13px] leading-relaxed text-muted">
               {finding.scope_of_improvement}
             </p>
-            <p className="mt-1.5 text-[11px] leading-relaxed text-ink-500 italic">
+            <p className="mt-1.5 text-[11px] leading-relaxed text-subtle italic">
               A suggestion for your compliance team to evaluate — not legal
               advice, and not a clearance of the ad.
             </p>
@@ -201,7 +201,7 @@ function FindingCard({
 
       {((finding.cited_segment_ids?.length ?? 0) > 0 ||
         (finding.cited_entity_ids?.length ?? 0) > 0) && (
-        <p className="mt-2.5 font-mono text-[10.5px] text-ink-500">
+        <p className="mt-2.5 font-mono text-[10.5px] text-subtle">
           cites{" "}
           {[...(finding.cited_segment_ids ?? []), ...(finding.cited_entity_ids ?? [])].join(
             " · "
@@ -211,7 +211,7 @@ function FindingCard({
 
       {dbRow && canReview && (
         <div className="mt-3.5 flex flex-wrap items-center gap-2 border-t border-line pt-3">
-          <span className="mr-1 text-[11px] font-bold tracking-wider text-ink-500 uppercase">
+          <span className="mr-1 text-[11px] font-bold tracking-wider text-subtle uppercase">
             Workflow
           </span>
           <Button
@@ -231,7 +231,7 @@ function FindingCard({
             disabled={busy !== null && busy !== `${dbRow.id}:flagged`}
             onClick={() => onReview(dbRow, "flagged")}
             className={cn(
-              dbRow.status === "flagged" && "!border-amber-400/30 !bg-amber-400/10 !text-amber-200"
+              dbRow.status === "flagged" && "!border-warn-line !bg-warn-soft !text-warn"
             )}
           >
             <Flag className="size-3.5" aria-hidden />
@@ -243,7 +243,7 @@ function FindingCard({
             loading={busy === `${dbRow.id}:dismissed`}
             disabled={busy !== null && busy !== `${dbRow.id}:dismissed`}
             onClick={() => onReview(dbRow, "dismissed")}
-            className={cn(dbRow.status === "dismissed" && "!text-ink-500")}
+            className={cn(dbRow.status === "dismissed" && "!text-subtle")}
           >
             <Trash2 className="size-3.5" aria-hidden />
             Dismiss
@@ -420,28 +420,28 @@ export function ReportView({
   const banner =
     report.status === "llm_error"
       ? {
-          tone: "border-red-400/25 bg-red-400/10",
-          icon: <CircleAlert className="size-5 text-red-300" aria-hidden />,
+          tone: "border-fail-line bg-fail-soft",
+          icon: <CircleAlert className="size-5 text-fail" aria-hidden />,
           title: "The review could not be completed",
           text: report.llm_error ?? "The language-model provider failed.",
         }
       : report.status === "human_review"
         ? {
-            tone: "border-amber-400/25 bg-amber-400/10",
-            icon: <FileWarning className="size-5 text-amber-300" aria-hidden />,
+            tone: "border-warn-line bg-warn-soft",
+            icon: <FileWarning className="size-5 text-warn" aria-hidden />,
             title: "Interim report — awaiting human review",
             text: "Findings below reflect the latest round; resume the run above to finish.",
           }
         : potentialViolations + defects.length > 0
           ? {
-              tone: "border-white/15 bg-white/6",
-              icon: <ShieldCheck className="size-5 text-ink-600" aria-hidden />,
+              tone: "border-line-strong bg-tint",
+              icon: <ShieldCheck className="size-5 text-muted" aria-hidden />,
               title: `Review verified — ${potentialViolations + defects.length} item${potentialViolations + defects.length === 1 ? "" : "s"} need attention`,
               text: "The deterministic layer verified this review's soundness. Work the findings below.",
             }
           : {
-              tone: "border-emerald-400/25 bg-emerald-400/10",
-              icon: <BadgeCheck className="size-5 text-emerald-300" aria-hidden />,
+              tone: "border-pass-line bg-pass-soft",
+              icon: <BadgeCheck className="size-5 text-pass" aria-hidden />,
               title: "Review verified — no potential violations surfaced",
               text: "Evaluated claims and disclosures came back clear or compliant.",
             };
@@ -453,38 +453,38 @@ export function ReportView({
         aria-label="Review outcome"
         className={cn("flex flex-wrap items-center gap-4 rounded-2xl border p-5", banner.tone)}
       >
-        <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-coal-800 shadow-(--shadow-soft)">
+        <div className="flex size-11 shrink-0 items-center justify-center rounded-2xl bg-surface shadow-(--shadow-soft)">
           {banner.icon}
         </div>
         <div className="min-w-0 flex-1">
-          <h2 className="text-[16px] font-extrabold text-ink-900">{banner.title}</h2>
-          <p className="mt-0.5 text-[13px] leading-relaxed text-ink-600">
+          <h2 className="text-[16px] font-extrabold text-strong">{banner.title}</h2>
+          <p className="mt-0.5 text-[13px] leading-relaxed text-muted">
             {banner.text}
           </p>
         </div>
         <div className="flex items-center gap-4">
           <dl className="hidden items-center gap-4 text-center sm:flex">
             <div>
-              <dt className="text-[10.5px] font-bold tracking-wider text-ink-500 uppercase">
+              <dt className="text-[10.5px] font-bold tracking-wider text-subtle uppercase">
                 Findings
               </dt>
-              <dd className="text-lg font-extrabold text-ink-900 tabular-nums">
+              <dd className="text-lg font-extrabold text-strong tabular-nums">
                 {llmFindings.length}
               </dd>
             </div>
             <div>
-              <dt className="text-[10.5px] font-bold tracking-wider text-ink-500 uppercase">
+              <dt className="text-[10.5px] font-bold tracking-wider text-subtle uppercase">
                 Checks
               </dt>
-              <dd className="text-lg font-extrabold text-ink-900 tabular-nums">
+              <dd className="text-lg font-extrabold text-strong tabular-nums">
                 {verification?.checks_run ?? "—"}
               </dd>
             </div>
             <div>
-              <dt className="text-[10.5px] font-bold tracking-wider text-ink-500 uppercase">
+              <dt className="text-[10.5px] font-bold tracking-wider text-subtle uppercase">
                 Rounds
               </dt>
-              <dd className="text-lg font-extrabold text-ink-900 tabular-nums">
+              <dd className="text-lg font-extrabold text-strong tabular-nums">
                 {report.llm_rounds_used ?? "—"}/{report.max_llm_rounds ?? "—"}
               </dd>
             </div>
@@ -519,37 +519,37 @@ export function ReportView({
           {/* which regulation frameworks applied, and how each came out */}
           {frameworkRows.length > 0 && (
             <section aria-label="Regulation frameworks" className="card p-5">
-              <h3 className="flex items-center gap-2 text-[13px] font-extrabold tracking-wide text-ink-900 uppercase">
-                <ShieldCheck className="size-4 text-ink-500" aria-hidden />
+              <h3 className="flex items-center gap-2 text-[13px] font-extrabold tracking-wide text-strong uppercase">
+                <ShieldCheck className="size-4 text-subtle" aria-hidden />
                 Regulation frameworks
               </h3>
-              <p className="mt-1 text-[12.5px] leading-relaxed text-ink-500">
+              <p className="mt-1 text-[12.5px] leading-relaxed text-subtle">
                 {frameworkTally.passed} passed · {frameworkTally.failed} failed
                 {frameworkTally.skipped > 0
                   ? ` · ${frameworkTally.skipped} not reviewed`
                   : ""}{" "}
                 — every framework the router applied to this creative.
               </p>
-              <ul className="mt-3 divide-y divide-white/8">
+              <ul className="mt-3 divide-y divide-line">
                 {frameworkRows.map((r) => (
                   <li key={r.framework} className="flex items-center gap-3 py-2.5">
                     <span
                       className={cn(
                         "w-[108px] shrink-0 rounded-md border px-2 py-1 text-center text-[11px] font-extrabold tracking-wide uppercase",
                         r.status === "failed" &&
-                          "border-red-400/25 bg-red-400/10 text-red-300",
+                          "border-fail-line bg-fail-soft text-fail",
                         r.status === "passed" &&
-                          "border-emerald-400/25 bg-emerald-400/10 text-emerald-300",
+                          "border-pass-line bg-pass-soft text-pass",
                         r.status === "not_reviewed" &&
-                          "border-white/12 bg-white/5 text-ink-500"
+                          "border-line bg-tint text-subtle"
                       )}
                     >
                       {r.status === "not_reviewed" ? "Not reviewed" : r.status}
                     </span>
-                    <span className="min-w-0 flex-1 truncate text-[13.5px] font-semibold text-ink-900">
+                    <span className="min-w-0 flex-1 truncate text-[13.5px] font-semibold text-strong">
                       {frameworkLabel(r.framework)}
                     </span>
-                    <span className="shrink-0 text-[12px] text-ink-500">
+                    <span className="shrink-0 text-[12px] text-subtle">
                       {r.status === "failed"
                         ? `${r.findings} finding${r.findings === 1 ? "" : "s"}${
                             r.worst ? ` · worst ${r.worst}` : ""
@@ -566,11 +566,11 @@ export function ReportView({
 
           {llmFindings.length === 0 ? (
             <section className="card p-6 text-center">
-              <BadgeCheck className="mx-auto size-7 text-emerald-500" aria-hidden />
-              <p className="mt-2 text-[15px] font-bold text-ink-900">
+              <BadgeCheck className="mx-auto size-7 text-pass" aria-hidden />
+              <p className="mt-2 text-[15px] font-bold text-strong">
                 No findings from the grounded review
               </p>
-              <p className="mx-auto mt-1 max-w-sm text-[13px] text-ink-500">
+              <p className="mx-auto mt-1 max-w-sm text-[13px] text-subtle">
                 The review evaluated the creative against the applicable
                 frameworks and raised nothing to work.
               </p>
@@ -580,11 +580,11 @@ export function ReportView({
               <section key={group.severity} aria-label={`${group.severity} severity findings`}>
                 <div className="mb-3 flex items-center gap-2.5">
                   <SeverityBadge severity={group.severity} />
-                  <span className="text-[12px] font-bold text-ink-500">
+                  <span className="text-[12px] font-bold text-subtle">
                     {group.items.length} finding{group.items.length === 1 ? "" : "s"}
                   </span>
                   {needsReviewCount > 0 && group === grouped[0] && (
-                    <span className="ml-auto text-[11.5px] text-ink-500">
+                    <span className="ml-auto text-[11.5px] text-subtle">
                       {needsReviewCount} marked needs-review
                     </span>
                   )}
@@ -611,11 +611,11 @@ export function ReportView({
           {/* asset defects */}
           {defects.length > 0 && (
             <section aria-label="Asset defects">
-              <h3 className="mb-3 flex items-center gap-2 text-[13px] font-extrabold tracking-wide text-ink-900 uppercase">
-                <FileWarning className="size-4 text-amber-300" aria-hidden />
+              <h3 className="mb-3 flex items-center gap-2 text-[13px] font-extrabold tracking-wide text-strong uppercase">
+                <FileWarning className="size-4 text-warn" aria-hidden />
                 Asset defects · {defects.length}
               </h3>
-              <p className="mb-3 -mt-1.5 text-[12.5px] leading-relaxed text-ink-500">
+              <p className="mb-3 -mt-1.5 text-[12.5px] leading-relaxed text-subtle">
                 Deterministic facts about the creative itself — re-reviewing
                 won&apos;t change them; fixing the creative will.
               </p>
@@ -631,7 +631,7 @@ export function ReportView({
                             <SeverityBadge severity={d.severity as Severity} />
                           )}
                         {d.check_id && (
-                          <Chip className="border-amber-400/25 bg-amber-400/10 text-amber-200">
+                          <Chip className="border-warn-line bg-warn-soft text-warn">
                             {String(d.check_id)}
                           </Chip>
                         )}
@@ -641,7 +641,7 @@ export function ReportView({
                           </span>
                         )}
                       </div>
-                      <p className="mt-2 text-[13.5px] leading-relaxed text-ink-700">
+                      <p className="mt-2 text-[13.5px] leading-relaxed text-muted">
                         {String(d.message ?? "")}
                       </p>
                       {dbRow && canReview && (
@@ -685,23 +685,23 @@ export function ReportView({
           {/* advisories */}
           {advisories.length > 0 && (
             <section aria-label="Advisories">
-              <h3 className="mb-3 flex items-center gap-2 text-[13px] font-extrabold tracking-wide text-ink-900 uppercase">
-                <Info className="size-4 text-ink-600" aria-hidden />
+              <h3 className="mb-3 flex items-center gap-2 text-[13px] font-extrabold tracking-wide text-strong uppercase">
+                <Info className="size-4 text-muted" aria-hidden />
                 Advisories · {advisories.length}
               </h3>
               <div className="space-y-2">
                 {advisories.map((a: FailedCheck, i) => (
                   <div
                     key={i}
-                    className="rounded-xl border border-white/12 bg-white/5 p-3.5 text-[13px] leading-relaxed text-ink-700"
+                    className="rounded-xl border border-line bg-tint p-3.5 text-[13px] leading-relaxed text-muted"
                   >
                     {a.check_id && (
-                      <span className="mr-2 font-mono text-[11px] font-bold text-ink-600">
+                      <span className="mr-2 font-mono text-[11px] font-bold text-muted">
                         {String(a.check_id)}
                       </span>
                     )}
                     {String(a.message ?? "")}
-                    <span className="mt-1 block text-[11.5px] text-ink-850/60">
+                    <span className="mt-1 block text-[11.5px] text-subtle">
                       Informational — advertiser-level obligation; never gates
                       the verdict.
                     </span>
@@ -714,46 +714,46 @@ export function ReportView({
           {/* verification */}
           {verification && (
             <section aria-label="Deterministic verification">
-              <h3 className="mb-3 flex items-center gap-2 text-[13px] font-extrabold tracking-wide text-ink-900 uppercase">
-                <ShieldCheck className="size-4 text-ink-600" aria-hidden />
+              <h3 className="mb-3 flex items-center gap-2 text-[13px] font-extrabold tracking-wide text-strong uppercase">
+                <ShieldCheck className="size-4 text-muted" aria-hidden />
                 Deterministic verification
               </h3>
               <div className="card p-4">
                 <dl className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                   <div>
-                    <dt className="text-[10.5px] font-bold tracking-wider text-ink-500 uppercase">
+                    <dt className="text-[10.5px] font-bold tracking-wider text-subtle uppercase">
                       Soundness
                     </dt>
                     <dd
                       className={cn(
                         "mt-0.5 text-[15px] font-extrabold",
-                        verification.review_passed ? "text-emerald-300" : "text-amber-300"
+                        verification.review_passed ? "text-pass" : "text-warn"
                       )}
                     >
                       {verification.review_passed ? "Passed" : "Not passed"}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-[10.5px] font-bold tracking-wider text-ink-500 uppercase">
+                    <dt className="text-[10.5px] font-bold tracking-wider text-subtle uppercase">
                       Checks run
                     </dt>
-                    <dd className="mt-0.5 text-[15px] font-extrabold text-ink-900 tabular-nums">
+                    <dd className="mt-0.5 text-[15px] font-extrabold text-strong tabular-nums">
                       {verification.checks_run ?? "—"}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-[10.5px] font-bold tracking-wider text-ink-500 uppercase">
+                    <dt className="text-[10.5px] font-bold tracking-wider text-subtle uppercase">
                       Review failures
                     </dt>
-                    <dd className="mt-0.5 text-[15px] font-extrabold text-ink-900 tabular-nums">
+                    <dd className="mt-0.5 text-[15px] font-extrabold text-strong tabular-nums">
                       {verification.failed_checks?.length ?? 0}
                     </dd>
                   </div>
                   <div>
-                    <dt className="text-[10.5px] font-bold tracking-wider text-ink-500 uppercase">
+                    <dt className="text-[10.5px] font-bold tracking-wider text-subtle uppercase">
                       Ruleset
                     </dt>
-                    <dd className="mt-0.5 truncate font-mono text-[12px] font-bold text-ink-900">
+                    <dd className="mt-0.5 truncate font-mono text-[12px] font-bold text-strong">
                       {verification.ruleset_version || "—"}
                     </dd>
                   </div>
@@ -762,7 +762,7 @@ export function ReportView({
                   <div className="mt-4">
                     <Collapsible
                       summary={
-                        <span className="text-[13px] font-bold text-ink-900">
+                        <span className="text-[13px] font-bold text-strong">
                           Failed checks on the final round ·{" "}
                           {verification.failed_checks!.length}
                         </span>
@@ -772,10 +772,10 @@ export function ReportView({
                         {verification.failed_checks!.map((c, i) => (
                           <li
                             key={i}
-                            className="rounded-lg bg-cream p-3 text-[12.5px] leading-relaxed text-ink-700"
+                            className="rounded-lg bg-surface p-3 text-[12.5px] leading-relaxed text-muted"
                           >
                             {c.check_id && (
-                              <span className="mr-2 font-mono text-[11px] font-bold text-ink-500">
+                              <span className="mr-2 font-mono text-[11px] font-bold text-subtle">
                                 {String(c.check_id)}
                               </span>
                             )}
@@ -793,8 +793,8 @@ export function ReportView({
           {/* audit rounds */}
           {(report.rounds?.length ?? 0) > 0 && (
             <section aria-label="Audit rounds">
-              <h3 className="mb-3 flex items-center gap-2 text-[13px] font-extrabold tracking-wide text-ink-900 uppercase">
-                <CheckCheck className="size-4 text-ink-600" aria-hidden />
+              <h3 className="mb-3 flex items-center gap-2 text-[13px] font-extrabold tracking-wide text-strong uppercase">
+                <CheckCheck className="size-4 text-muted" aria-hidden />
                 Audit trail · {report.rounds!.length} round
                 {report.rounds!.length === 1 ? "" : "s"}
               </h3>
@@ -804,25 +804,25 @@ export function ReportView({
                     key={i}
                     summary={
                       <span className="flex flex-wrap items-center gap-2">
-                        <span className="text-[13px] font-bold text-ink-900">
+                        <span className="text-[13px] font-bold text-strong">
                           Round {r.round ?? i + 1}
                         </span>
                         {r.was_rule_engine_callback && (
-                          <Chip className="border-white/12 bg-white/5 text-ink-600">
+                          <Chip className="border-line bg-tint text-muted">
                             rule-engine callback
                           </Chip>
                         )}
                         {r.had_human_guidance && (
-                          <Chip className="border-amber-400/25 bg-amber-400/10 text-amber-300">
+                          <Chip className="border-warn-line bg-warn-soft text-warn">
                             human guidance
                           </Chip>
                         )}
                         <span
                           className={cn(
                             "text-[12px] font-bold",
-                            r.rule_engine_passed === true && "text-emerald-300",
-                            r.rule_engine_passed === false && "text-amber-300",
-                            r.rule_engine_passed == null && "text-ink-500"
+                            r.rule_engine_passed === true && "text-pass",
+                            r.rule_engine_passed === false && "text-warn",
+                            r.rule_engine_passed == null && "text-subtle"
                           )}
                         >
                           {r.rule_engine_passed === true
@@ -834,13 +834,13 @@ export function ReportView({
                       </span>
                     }
                   >
-                    <div className="space-y-3 text-[12.5px] leading-relaxed text-ink-600">
+                    <div className="space-y-3 text-[12.5px] leading-relaxed text-muted">
                       {r.feedback_sent_to_llm && (
                         <div>
-                          <p className="text-[10.5px] font-bold tracking-wider text-ink-500 uppercase">
+                          <p className="text-[10.5px] font-bold tracking-wider text-subtle uppercase">
                             Feedback sent into this round
                           </p>
-                          <pre className="mt-1 max-h-44 overflow-auto rounded-lg bg-cream p-3 font-sans break-words whitespace-pre-wrap">
+                          <pre className="mt-1 max-h-44 overflow-auto rounded-lg bg-surface p-3 font-sans break-words whitespace-pre-wrap">
                             {r.feedback_sent_to_llm}
                           </pre>
                         </div>
@@ -860,11 +860,11 @@ export function ReportView({
 
           {/* warnings */}
           {(report.warnings?.length ?? 0) > 0 && (
-            <section aria-label="Warnings" className="rounded-xl border border-amber-400/25 bg-amber-400/10 p-4">
-              <p className="text-[11px] font-bold tracking-wider text-amber-300 uppercase">
+            <section aria-label="Warnings" className="rounded-xl border border-warn-line bg-warn-soft p-4">
+              <p className="text-[11px] font-bold tracking-wider text-warn uppercase">
                 Warnings
               </p>
-              <ul className="mt-1.5 list-disc space-y-1 pl-4 text-[12.5px] leading-relaxed text-amber-200">
+              <ul className="mt-1.5 list-disc space-y-1 pl-4 text-[12.5px] leading-relaxed text-warn">
                 {report.warnings!.map((w, i) => (
                   <li key={i}>{w}</li>
                 ))}
@@ -874,8 +874,8 @@ export function ReportView({
 
           {/* provenance */}
           <section aria-label="Provenance" className="card p-4">
-            <h3 className="flex items-center gap-2 text-[13px] font-extrabold tracking-wide text-ink-900 uppercase">
-              <Fingerprint className="size-4 text-ink-600" aria-hidden />
+            <h3 className="flex items-center gap-2 text-[13px] font-extrabold tracking-wide text-strong uppercase">
+              <Fingerprint className="size-4 text-muted" aria-hidden />
               Provenance
             </h3>
             <dl className="mt-3 grid gap-x-6 gap-y-2.5 font-mono text-[12px] sm:grid-cols-2">
@@ -890,26 +890,26 @@ export function ReportView({
                 .filter(([, v]) => v)
                 .map(([k, v]) => (
                   <div key={k as string} className="flex justify-between gap-3 border-b border-line/70 pb-1.5">
-                    <dt className="text-ink-500">{k}</dt>
-                    <dd className="truncate font-semibold text-ink-800">{String(v)}</dd>
+                    <dt className="text-subtle">{k}</dt>
+                    <dd className="truncate font-semibold text-body">{String(v)}</dd>
                   </div>
                 ))}
               <div className="flex justify-between gap-3 border-b border-line/70 pb-1.5">
-                <dt className="text-ink-500">submitted</dt>
-                <dd className="font-semibold text-ink-800">
+                <dt className="text-subtle">submitted</dt>
+                <dd className="font-semibold text-body">
                   {formatDateTime(run.created_at)}
                 </dd>
               </div>
               <div className="flex justify-between gap-3 border-b border-line/70 pb-1.5">
-                <dt className="text-ink-500">duration</dt>
-                <dd className="font-semibold text-ink-800">
+                <dt className="text-subtle">duration</dt>
+                <dd className="font-semibold text-body">
                   {formatDuration(run.started_at, run.finished_at)}
                 </dd>
               </div>
               {(run.input_tokens ?? 0) > 0 && (
                 <div className="flex justify-between gap-3 border-b border-line/70 pb-1.5">
-                  <dt className="text-ink-500">tokens</dt>
-                  <dd className="font-semibold text-ink-800">
+                  <dt className="text-subtle">tokens</dt>
+                  <dd className="font-semibold text-body">
                     {formatNumber(run.input_tokens)} in ·{" "}
                     {formatNumber(run.output_tokens)} out
                   </dd>
@@ -917,16 +917,16 @@ export function ReportView({
               )}
               {(report.llm_review?.frameworks_evaluated?.length ?? 0) > 0 && (
                 <div className="flex justify-between gap-3 border-b border-line/70 pb-1.5 sm:col-span-2">
-                  <dt className="text-ink-500">frameworks</dt>
-                  <dd className="truncate font-semibold text-ink-800">
+                  <dt className="text-subtle">frameworks</dt>
+                  <dd className="truncate font-semibold text-body">
                     {report.llm_review!.frameworks_evaluated!.join(", ")}
                   </dd>
                 </div>
               )}
               {(report.llm_review?.reviewed_clear?.length ?? 0) > 0 && (
                 <div className="flex justify-between gap-3 sm:col-span-2">
-                  <dt className="text-ink-500">reviewed clear</dt>
-                  <dd className="truncate font-semibold text-emerald-300">
+                  <dt className="text-subtle">reviewed clear</dt>
+                  <dd className="truncate font-semibold text-pass">
                     {report.llm_review!.reviewed_clear!.join(", ")}
                   </dd>
                 </div>

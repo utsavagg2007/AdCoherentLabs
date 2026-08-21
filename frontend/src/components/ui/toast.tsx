@@ -30,9 +30,9 @@ export function useToast(): ToastContextValue {
 }
 
 const ICONS = {
-  success: <CheckCircle2 className="size-4.5 text-emerald-300" aria-hidden />,
-  error: <XCircle className="size-4.5 text-red-300" aria-hidden />,
-  info: <Info className="size-4.5 text-ink-600" aria-hidden />,
+  success: <CheckCircle2 className="size-4.5 text-pass" aria-hidden />,
+  error: <XCircle className="size-4.5 text-fail" aria-hidden />,
+  info: <Info className="size-4.5 text-muted" aria-hidden />,
 };
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
@@ -65,15 +65,15 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             key={t.id}
             role="status"
             className={cn(
-              "pointer-events-auto flex items-start gap-3 rounded-xl border bg-coal-800 p-3.5 shadow-(--shadow-float) animate-fade-up",
-              t.kind === "error" ? "border-red-400/25" : "border-line"
+              "pointer-events-auto flex items-start gap-3 rounded-xl border bg-surface p-3.5 shadow-(--shadow-float) animate-fade-up",
+              t.kind === "error" ? "border-fail-line" : "border-line"
             )}
           >
             {ICONS[t.kind]}
             <div className="min-w-0 flex-1">
-              <p className="text-[13px] font-bold text-ink-900">{t.title}</p>
+              <p className="text-[13px] font-bold text-strong">{t.title}</p>
               {t.detail && (
-                <p className="mt-0.5 text-[12px] leading-relaxed text-ink-500">
+                <p className="mt-0.5 text-[12px] leading-relaxed text-subtle">
                   {t.detail}
                 </p>
               )}
@@ -81,7 +81,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
             <button
               onClick={() => dismiss(t.id)}
               aria-label="Dismiss notification"
-              className="rounded-md p-1 text-ink-500 hover:bg-white/8 hover:text-ink-800"
+              className="rounded-md p-1 text-subtle hover:bg-tint-2 hover:text-body"
             >
               <X className="size-3.5" />
             </button>

@@ -68,15 +68,15 @@ export function LiveReview() {
     <section
       id="live"
       aria-label="Watch a review happen live"
-      className="relative border-y border-line bg-brushed"
+      className="relative border-y border-line bg-sunken"
     >
       <div className="container-wide py-20 sm:py-28" ref={ref}>
         <div className="mx-auto max-w-2xl text-center">
           <p className="eyebrow">Live review</p>
-          <h2 className="text-chrome mt-3 font-display text-4xl font-bold tracking-[-0.02em] text-balance sm:text-5xl">
+          <h2 className="text-gradient mt-3 font-display text-4xl font-bold tracking-[-0.02em] text-balance sm:text-5xl">
             Watch the engine think.
           </h2>
-          <p className="mt-4 text-[15.5px] leading-relaxed text-ink-600 text-pretty">
+          <p className="mt-4 text-[15.5px] leading-relaxed text-muted text-pretty">
             From the moment you upload, the workspace narrates every stage —
             what was extracted, which frameworks apply, how each review round
             went. Aggregate signals only; your creative and the model&apos;s
@@ -88,14 +88,14 @@ export function LiveReview() {
           {/* the activity feed */}
           <div className="card overflow-hidden">
             <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
-              <span className="inline-flex items-center gap-2 text-[13px] font-semibold text-ink-700">
-                <Activity className="size-4 text-ink-500" aria-hidden />
+              <span className="inline-flex items-center gap-2 text-[13px] font-semibold text-muted">
+                <Activity className="size-4 text-subtle" aria-hidden />
                 Live activity
               </span>
               <span
                 className={cn(
                   "inline-flex items-center gap-1.5 text-[12px] font-semibold",
-                  done ? "text-emerald-300" : "text-ink-600"
+                  done ? "text-pass" : "text-muted"
                 )}
               >
                 {done ? (
@@ -118,13 +118,13 @@ export function LiveReview() {
                     key={i}
                     className="flex animate-fade-up items-start gap-3 rounded-xl px-2.5 py-2"
                   >
-                    <span className="mt-1 w-[74px] shrink-0 font-mono text-[10.5px] font-bold tracking-wider text-ink-500 uppercase">
+                    <span className="mt-1 w-[74px] shrink-0 font-mono text-[10.5px] font-bold tracking-wider text-subtle uppercase">
                       {f.stage}
                     </span>
                     <span
                       className={cn(
                         "text-[13.5px] leading-relaxed",
-                        active ? "text-shimmer" : "text-ink-700"
+                        active ? "text-shimmer" : "text-muted"
                       )}
                     >
                       {f.text}
@@ -138,7 +138,7 @@ export function LiveReview() {
           {/* the checklist outcome */}
           <div className="card overflow-hidden">
             <div className="border-b border-line px-5 py-3.5">
-              <span className="text-[13px] font-semibold text-ink-700">
+              <span className="text-[13px] font-semibold text-muted">
                 Framework checklist — the report&apos;s spine
               </span>
             </div>
@@ -150,12 +150,12 @@ export function LiveReview() {
                     "rounded-xl border p-3.5 transition-opacity duration-500",
                     done || reduced ? "opacity-100" : "opacity-35",
                     c.status === "flagged"
-                      ? "border-red-400/20 bg-red-400/[0.06]"
-                      : "border-emerald-400/20 bg-emerald-400/[0.06]"
+                      ? "border-fail-line bg-fail-solid/[0.06]"
+                      : "border-pass-line bg-pass-solid/[0.06]"
                   )}
                 >
                   <div className="flex items-center justify-between gap-3">
-                    <span className="font-mono text-[12.5px] font-bold text-ink-850">
+                    <span className="font-mono text-[12.5px] font-bold text-body">
                       {c.fw}
                     </span>
                     {c.status === "flagged" ? (
@@ -170,12 +170,12 @@ export function LiveReview() {
                       </span>
                     )}
                   </div>
-                  <p className="mt-1.5 text-[12.5px] leading-relaxed text-ink-600">
+                  <p className="mt-1.5 text-[12.5px] leading-relaxed text-muted">
                     {c.note}
                   </p>
                 </li>
               ))}
-              <li className="flex items-center gap-2 px-1 pt-1 text-[12.5px] font-medium text-ink-500">
+              <li className="flex items-center gap-2 px-1 pt-1 text-[12.5px] font-medium text-subtle">
                 <ChevronRight className="size-3.5" aria-hidden />
                 Each flag opens the exact quoted evidence and suggested fixes.
               </li>

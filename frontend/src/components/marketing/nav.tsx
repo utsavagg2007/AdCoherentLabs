@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Menu, X } from "lucide-react";
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { Logo } from "@/components/logo";
+import { ThemeToggle } from "@/components/theme";
 import { cn } from "@/lib/utils";
 
 const LINKS = [
@@ -30,7 +31,7 @@ export function MarketingNav() {
       className={cn(
         "fixed inset-x-0 top-0 z-50 transition-[background-color,border-color,box-shadow] duration-300",
         scrolled
-          ? "glass-dark border-b border-white/8 shadow-(--shadow-soft)"
+          ? "glass border-b border-line shadow-(--shadow-soft)"
           : "bg-transparent"
       )}
     >
@@ -44,17 +45,18 @@ export function MarketingNav() {
             <a
               key={l.href}
               href={l.href}
-              className="rounded-full px-3.5 py-2 text-sm font-semibold text-ink-600 transition-colors duration-200 hover:bg-white/8 hover:text-ink-900"
+              className="rounded-full px-3.5 py-2 text-sm font-semibold text-muted transition-colors duration-200 hover:bg-tint-2 hover:text-strong"
             >
               {l.label}
             </a>
           ))}
         </nav>
 
-        <div className="hidden items-center gap-2.5 md:flex">
+        <div className="hidden items-center gap-1.5 md:flex">
+          <ThemeToggle />
           <Link
             href="/login"
-            className="rounded-full px-3.5 py-2 text-sm font-semibold text-ink-600 transition-colors duration-200 hover:text-ink-900"
+            className="rounded-full px-3.5 py-2 text-sm font-semibold text-muted transition-colors duration-200 hover:text-strong"
           >
             Sign in
           </Link>
@@ -65,15 +67,18 @@ export function MarketingNav() {
 
         {/* mobile drawer */}
         <DialogPrimitive.Root open={open} onOpenChange={setOpen}>
-          <DialogPrimitive.Trigger
-            aria-label="Open menu"
-            className="rounded-lg p-2 text-ink-900 md:hidden"
-          >
-            <Menu className="size-5" />
-          </DialogPrimitive.Trigger>
+          <div className="flex items-center gap-1 md:hidden">
+            <ThemeToggle />
+            <DialogPrimitive.Trigger
+              aria-label="Open menu"
+              className="flex size-11 cursor-pointer items-center justify-center rounded-full text-strong hover:bg-tint-2"
+            >
+              <Menu className="size-5" />
+            </DialogPrimitive.Trigger>
+          </div>
           <DialogPrimitive.Portal>
-            <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-coal-950/70 backdrop-blur-sm data-[state=open]:animate-fade-in md:hidden" />
-            <DialogPrimitive.Content className="fixed inset-y-0 right-0 z-50 flex w-[min(20rem,85vw)] flex-col border-l border-white/10 bg-coal-850 p-6 shadow-2xl focus:outline-none md:hidden">
+            <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-[var(--n-975)]/60 backdrop-blur-sm data-[state=open]:animate-fade-in md:hidden" />
+            <DialogPrimitive.Content className="fixed inset-y-0 right-0 z-50 flex w-[min(20rem,85vw)] flex-col border-l border-line bg-raised p-6 shadow-(--shadow-float) focus:outline-none md:hidden">
               <DialogPrimitive.Title className="sr-only">
                 Navigation menu
               </DialogPrimitive.Title>
@@ -81,7 +86,7 @@ export function MarketingNav() {
                 <Logo />
                 <DialogPrimitive.Close
                   aria-label="Close menu"
-                  className="rounded-lg p-2 text-ink-600 hover:bg-white/10 hover:text-ink-900"
+                  className="rounded-lg p-2 text-muted hover:bg-tint-2 hover:text-strong"
                 >
                   <X className="size-5" />
                 </DialogPrimitive.Close>
@@ -92,7 +97,7 @@ export function MarketingNav() {
                     key={l.href}
                     href={l.href}
                     onClick={() => setOpen(false)}
-                    className="rounded-xl px-3 py-3 text-[15px] font-semibold text-ink-700 hover:bg-white/10 hover:text-ink-900"
+                    className="rounded-xl px-3 py-3 text-[15px] font-semibold text-muted hover:bg-tint-2 hover:text-strong"
                   >
                     {l.label}
                   </a>
@@ -102,7 +107,7 @@ export function MarketingNav() {
                 <Link
                   href="/login"
                   onClick={() => setOpen(false)}
-                  className="btn-ghost-dark w-full"
+                  className="btn-ghost w-full"
                 >
                   Sign in
                 </Link>

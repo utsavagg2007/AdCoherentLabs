@@ -12,7 +12,7 @@ export function Spinner({ className }: { className?: string }) {
   return (
     <Loader2
       aria-label="Loading"
-      className={cn("size-5 animate-spin text-ink-600", className)}
+      className={cn("size-5 animate-spin text-muted", className)}
     />
   );
 }
@@ -21,14 +21,14 @@ export function Skeleton({ className }: { className?: string }) {
   return (
     <div
       aria-hidden
-      className={cn("animate-pulse rounded-lg bg-zinc-200/70", className)}
+      className={cn("animate-pulse rounded-lg bg-tint-2", className)}
     />
   );
 }
 
 export function PageLoading({ label = "Loading" }: { label?: string }) {
   return (
-    <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 text-ink-500">
+    <div className="flex min-h-[40vh] flex-col items-center justify-center gap-3 text-subtle">
       <Spinner />
       <p className="text-sm font-medium">{label}…</p>
     </div>
@@ -37,12 +37,17 @@ export function PageLoading({ label = "Loading" }: { label?: string }) {
 
 export function EmptyState({
   icon,
+  art,
   title,
   description,
   action,
   className,
 }: {
   icon?: React.ReactNode;
+  /** Full illustration. Takes precedence over `icon` — an empty screen is
+   * the one place worth spending real artwork, since it is often the first
+   * thing a new workspace ever shows. */
+  art?: React.ReactNode;
   title: string;
   description?: string;
   action?: React.ReactNode;
@@ -51,22 +56,27 @@ export function EmptyState({
   return (
     <div
       className={cn(
-        "bg-grid-faint flex flex-col items-center justify-center rounded-2xl border border-dashed border-white/15 px-6 py-14 text-center",
+        "bg-dots relative flex flex-col items-center justify-center overflow-hidden rounded-2xl border border-dashed border-line-strong px-6 py-14 text-center",
         className
       )}
     >
-      {icon && (
-        <div className="mb-4 flex size-12 items-center justify-center rounded-2xl border border-white/15 bg-white/6 text-ink-600">
-          {icon}
-        </div>
+      <div className="bg-spotlight pointer-events-none absolute inset-0" aria-hidden />
+      {art ? (
+        <div className="relative mb-1">{art}</div>
+      ) : (
+        icon && (
+          <div className="relative mb-4 flex size-12 items-center justify-center rounded-2xl border border-brand-line bg-brand-soft text-brand-text">
+            {icon}
+          </div>
+        )
       )}
-      <h3 className="text-[15px] font-bold text-ink-900">{title}</h3>
+      <h3 className="relative text-[15px] font-bold text-strong">{title}</h3>
       {description && (
-        <p className="mt-1.5 max-w-sm text-sm leading-relaxed text-ink-500">
+        <p className="relative mt-1.5 max-w-sm text-sm leading-relaxed text-subtle">
           {description}
         </p>
       )}
-      {action && <div className="mt-5">{action}</div>}
+      {action && <div className="relative mt-5">{action}</div>}
     </div>
   );
 }
@@ -91,16 +101,16 @@ export function ErrorPanel({
     <div
       role="alert"
       className={cn(
-        "rounded-2xl border border-red-400/25 bg-red-400/10 p-4",
+        "rounded-2xl border border-fail-line bg-fail-soft p-4",
         compact ? "p-3" : "p-4",
         className
       )}
     >
       <div className="flex items-start gap-3">
-        <ShieldAlert className="mt-0.5 size-4.5 shrink-0 text-red-300" aria-hidden />
+        <ShieldAlert className="mt-0.5 size-4.5 shrink-0 text-fail" aria-hidden />
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-bold text-red-200">{title}</p>
-          <p className="mt-0.5 text-[13px] leading-relaxed text-red-300/90">
+          <p className="text-sm font-bold text-fail">{title}</p>
+          <p className="mt-0.5 text-[13px] leading-relaxed text-fail/90">
             {detail}
           </p>
           {api && (api.requestId || api.code) && (
@@ -109,7 +119,7 @@ export function ErrorPanel({
                 type="button"
                 onClick={() => setOpen((o) => !o)}
                 aria-expanded={open}
-                className="inline-flex items-center gap-1 text-[12px] font-semibold text-red-300 hover:text-red-200"
+                className="inline-flex items-center gap-1 text-[12px] font-semibold text-fail hover:text-fail"
               >
                 Support details
                 <ChevronDown
@@ -118,7 +128,7 @@ export function ErrorPanel({
                 />
               </button>
               {open && (
-                <dl className="mt-2 space-y-1 rounded-lg border border-red-400/25 bg-red-400/10 p-2.5 font-mono text-[11px] text-red-200">
+                <dl className="mt-2 space-y-1 rounded-lg border border-fail-line bg-fail-soft p-2.5 font-mono text-[11px] text-fail">
                   <div className="flex gap-2">
                     <dt className="font-bold">code</dt>
                     <dd className="break-all">{api.code}</dd>
@@ -155,7 +165,7 @@ export function Disclaimer({ className }: { className?: string }) {
   return (
     <p
       className={cn(
-        "text-[12px] leading-relaxed text-ink-500 italic",
+        "text-[12px] leading-relaxed text-subtle italic",
         className
       )}
     >

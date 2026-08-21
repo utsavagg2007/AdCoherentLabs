@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { ArrowRight, FolderOpen, SquarePlus } from "lucide-react";
+import { ArrowRight, SquarePlus } from "lucide-react";
 import { PageBody, PageHeader } from "@/components/app/page-header";
 import { useApi, useOrg } from "@/components/providers";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import {
   ErrorPanel,
   Skeleton,
 } from "@/components/ui/feedback";
+import { SubmissionsArt } from "@/components/app/empty-art";
 import { useAsyncData } from "@/lib/hooks";
 import type { RunRow, SubmissionRow } from "@/lib/types";
 import { formatDateTime } from "@/lib/utils";
@@ -81,7 +82,7 @@ export default function SubmissionsPage() {
           </div>
         ) : rows.length === 0 ? (
           <EmptyState
-            icon={<FolderOpen className="size-5" aria-hidden />}
+            art={<SubmissionsArt />}
             title="No submissions yet"
             description="Paste ad copy or upload a creative — the review takes it from there."
             action={
@@ -95,7 +96,7 @@ export default function SubmissionsPage() {
           <div className="card overflow-x-auto">
             <table className="w-full min-w-[640px] text-left">
               <thead>
-                <tr className="border-b border-line text-[11px] font-bold tracking-wider text-ink-500 uppercase">
+                <tr className="border-b border-line text-[11px] font-bold tracking-wider text-subtle uppercase">
                   <th className="px-4 py-3">Title</th>
                   <th className="px-4 py-3">Jurisdictions</th>
                   <th className="px-4 py-3">Submitted</th>
@@ -107,25 +108,25 @@ export default function SubmissionsPage() {
                 {rows.map((s) => {
                   const latest = latestRunBySubmission.get(s.id) ?? null;
                   return (
-                    <tr key={s.id} className="group transition-colors hover:bg-cream/70">
+                    <tr key={s.id} className="group transition-colors hover:bg-hover">
                       <td className="px-4 py-3.5">
                         <Link
                           href={`/submissions/${s.id}`}
-                          className="font-bold text-ink-900 group-hover:text-ink-850"
+                          className="font-bold text-strong group-hover:text-body"
                         >
                           {s.title || (
-                            <span className="font-mono text-[12px] font-semibold text-ink-500">
+                            <span className="font-mono text-[12px] font-semibold text-subtle">
                               {s.id.slice(0, 8)}
                             </span>
                           )}
                         </Link>
                       </td>
-                      <td className="px-4 py-3.5 text-[12.5px] text-ink-500">
+                      <td className="px-4 py-3.5 text-[12.5px] text-subtle">
                         {s.target_jurisdictions?.length
                           ? s.target_jurisdictions.join(", ")
                           : "Nationwide"}
                       </td>
-                      <td className="px-4 py-3.5 text-[12.5px] whitespace-nowrap text-ink-500">
+                      <td className="px-4 py-3.5 text-[12.5px] whitespace-nowrap text-subtle">
                         {formatDateTime(s.created_at)}
                       </td>
                       <td className="px-4 py-3.5">
@@ -134,7 +135,7 @@ export default function SubmissionsPage() {
                         ) : runs.loading ? (
                           <Skeleton className="h-5 w-20" />
                         ) : (
-                          <span className="text-[12px] text-ink-500">—</span>
+                          <span className="text-[12px] text-subtle">—</span>
                         )}
                       </td>
                       <td className="px-4 py-3.5 text-right">
@@ -142,7 +143,7 @@ export default function SubmissionsPage() {
                           href={
                             latest ? `/runs/${latest.id}` : `/submissions/${s.id}`
                           }
-                          className="inline-flex items-center gap-1 text-[12.5px] font-bold text-ink-900 hover:text-white"
+                          className="inline-flex items-center gap-1 text-[12.5px] font-bold text-strong hover:text-brand-text"
                         >
                           Open
                           <ArrowRight className="size-3.5" aria-hidden />

@@ -53,19 +53,19 @@ export default function ResetPasswordPage() {
   }
 
   if (hasSession === null) {
-    return <p className="text-center text-sm text-ink-500">Checking your reset link…</p>;
+    return <p className="text-center text-sm text-subtle">Checking your reset link…</p>;
   }
 
   if (!hasSession) {
     return (
       <div className="text-center">
-        <div className="mx-auto flex size-14 items-center justify-center rounded-2xl border border-amber-400/25 bg-amber-400/10 text-amber-300">
+        <div className="mx-auto flex size-14 items-center justify-center rounded-2xl border border-warn-line bg-warn-soft text-warn">
           <KeyRound className="size-6" aria-hidden />
         </div>
-        <h1 className="mt-5 text-2xl font-extrabold tracking-tight text-ink-900">
+        <h1 className="mt-5 text-2xl font-extrabold tracking-tight text-strong">
           Reset link needed
         </h1>
-        <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-ink-500">
+        <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-subtle">
           This page only works from the link in a password-reset email, and
           links expire quickly. Request a fresh one.
         </p>
@@ -79,17 +79,17 @@ export default function ResetPasswordPage() {
   if (done) {
     return (
       <div className="text-center">
-        <h1 className="text-2xl font-extrabold tracking-tight text-ink-900">
+        <h1 className="text-2xl font-extrabold tracking-tight text-strong">
           Password updated
         </h1>
-        <p className="mt-2 text-sm text-ink-500">Taking you to your dashboard…</p>
+        <p className="mt-2 text-sm text-subtle">Taking you to your dashboard…</p>
       </div>
     );
   }
 
   return (
     <div>
-      <h1 className="text-2xl font-extrabold tracking-tight text-ink-900">
+      <h1 className="text-2xl font-extrabold tracking-tight text-strong">
         Choose a new password
       </h1>
       <form onSubmit={onSubmit} className="mt-7 space-y-4" noValidate>
@@ -113,13 +113,13 @@ export default function ResetPasswordPage() {
               type="button"
               onClick={() => setShowPw((s) => !s)}
               aria-label={showPw ? "Hide password" : "Show password"}
-              className="absolute top-1/2 right-3 -translate-y-1/2 rounded-md p-1 text-ink-500 hover:text-ink-800"
+              className="absolute top-1/2 right-3 -translate-y-1/2 rounded-md p-1 text-subtle hover:text-body"
             >
               {showPw ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
             </button>
           </div>
           {pwTooShort && (
-            <p className="mt-1.5 text-[12.5px] text-red-300">
+            <p className="mt-1.5 text-[12.5px] text-fail">
               Use at least 8 characters.
             </p>
           )}
@@ -138,13 +138,13 @@ export default function ResetPasswordPage() {
             onChange={(e) => setConfirm(e.target.value)}
           />
           {mismatch && (
-            <p className="mt-1.5 text-[12.5px] text-red-300">
+            <p className="mt-1.5 text-[12.5px] text-fail">
               Passwords don&apos;t match.
             </p>
           )}
         </div>
         {error && (
-          <div role="alert" className="rounded-xl border border-red-400/25 bg-red-400/10 p-3.5 text-[13px] text-red-300">
+          <div role="alert" className="rounded-xl border border-fail-line bg-fail-soft p-3.5 text-[13px] text-fail">
             {error}
           </div>
         )}

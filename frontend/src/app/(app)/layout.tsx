@@ -10,6 +10,7 @@ import { AppProviders, useAuth, useOrg } from "@/components/providers";
 import { SidebarBody } from "@/components/app/sidebar";
 import { ToastProvider } from "@/components/ui/toast";
 import { PageLoading } from "@/components/ui/feedback";
+import { ThemeToggle } from "@/components/theme";
 
 function Shell({ children }: { children: React.ReactNode }) {
   const { session, loading, configured } = useAuth();
@@ -32,8 +33,8 @@ function Shell({ children }: { children: React.ReactNode }) {
 
   if (loading || !session || loadingOrgs) {
     return (
-      <div className="flex min-h-dvh flex-col items-center justify-center gap-6 bg-paper">
-        <Logo tone="dark" />
+      <div className="flex min-h-dvh flex-col items-center justify-center gap-6 bg-canvas">
+        <Logo />
         <PageLoading label="Opening your workspace" />
       </div>
     );
@@ -41,37 +42,40 @@ function Shell({ children }: { children: React.ReactNode }) {
 
   if (orgs.length === 0) {
     return (
-      <div className="flex min-h-dvh items-center justify-center bg-paper">
+      <div className="flex min-h-dvh items-center justify-center bg-canvas">
         <PageLoading label="Checking workspace access" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-dvh bg-paper">
+    <div className="min-h-dvh bg-canvas">
       {/* mobile top bar */}
-      <header className="sticky top-0 z-40 flex h-14 items-center justify-between border-b border-line bg-paper/90 px-4 backdrop-blur-sm lg:hidden">
+      <header className="glass sticky top-0 z-40 flex h-14 items-center justify-between border-b px-4 lg:hidden">
         <Link href="/dashboard" className="rounded-lg">
-          <Logo tone="dark" />
+          <Logo />
         </Link>
         <DialogPrimitive.Root open={drawerOpen} onOpenChange={setDrawerOpen}>
-          <DialogPrimitive.Trigger
-            aria-label="Open navigation"
-            className="rounded-lg p-2 text-ink-900 hover:bg-white/8"
-          >
-            <Menu className="size-5" />
-          </DialogPrimitive.Trigger>
+          <div className="flex items-center gap-1">
+            <ThemeToggle />
+            <DialogPrimitive.Trigger
+              aria-label="Open navigation"
+              className="flex size-11 cursor-pointer items-center justify-center rounded-full text-strong hover:bg-tint-2"
+            >
+              <Menu className="size-5" />
+            </DialogPrimitive.Trigger>
+          </div>
           <DialogPrimitive.Portal>
-            <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-coal-950/50 backdrop-blur-sm data-[state=open]:animate-fade-in" />
-            <DialogPrimitive.Content className="fixed inset-y-0 left-0 z-50 flex w-[min(19rem,85vw)] flex-col bg-paper p-4 shadow-2xl focus:outline-none">
+            <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-[var(--n-975)]/50 backdrop-blur-sm data-[state=open]:animate-fade-in" />
+            <DialogPrimitive.Content className="fixed inset-y-0 left-0 z-50 flex w-[min(19rem,85vw)] flex-col border-r border-line bg-raised p-4 shadow-(--shadow-float) focus:outline-none">
               <DialogPrimitive.Title className="sr-only">
                 Navigation
               </DialogPrimitive.Title>
               <div className="mb-5 flex items-center justify-between px-1">
-                <Logo tone="dark" />
+                <Logo />
                 <DialogPrimitive.Close
                   aria-label="Close navigation"
-                  className="rounded-lg p-2 text-ink-500 hover:bg-white/8"
+                  className="rounded-lg p-2 text-subtle hover:bg-tint-2"
                 >
                   <X className="size-5" />
                 </DialogPrimitive.Close>
@@ -86,9 +90,9 @@ function Shell({ children }: { children: React.ReactNode }) {
 
       <div className="lg:grid lg:grid-cols-[248px_1fr]">
         {/* desktop sidebar */}
-        <aside className="sticky top-0 hidden h-dvh flex-col border-r border-line bg-paper px-3 py-5 lg:flex">
+        <aside className="sticky top-0 hidden h-dvh flex-col border-r border-line bg-sunken px-3 py-5 lg:flex">
           <Link href="/dashboard" className="mb-6 block rounded-lg px-2">
-            <Logo tone="dark" />
+            <Logo />
           </Link>
           <div className="flex min-h-0 flex-1 flex-col">
             <SidebarBody />

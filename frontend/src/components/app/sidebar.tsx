@@ -25,6 +25,8 @@ import {
   DropdownTrigger,
 } from "@/components/ui/dropdown";
 import { useApi, useAuth, useOrg } from "@/components/providers";
+import { CreditMeter } from "@/components/app/credits";
+import { ThemeSwitch } from "@/components/theme";
 import type { CreditBalance } from "@/lib/types";
 import { cn, formatNumber } from "@/lib/utils";
 
@@ -59,15 +61,24 @@ export function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
             onClick={onNavigate}
             aria-current={active ? "page" : undefined}
             className={cn(
-              "flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13.5px] font-semibold transition-colors",
+              // Two cues on the active row, not one: a brand-tinted fill and
+              // a left marker. On a dense list the fill alone is easy to lose
+              // when scanning, and the marker survives a low-contrast display.
+              "relative flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13.5px] font-semibold transition-colors duration-200",
               item.nested && "ml-6",
               active
-                ? "bg-white/6 text-ink-850"
-                : "text-ink-500 hover:bg-white/8 hover:text-ink-900"
+                ? "bg-brand-soft text-brand-text"
+                : "text-subtle hover:bg-tint-2 hover:text-strong"
             )}
           >
+            {active && (
+              <span
+                aria-hidden
+                className="absolute top-1/2 -left-px h-4 w-[3px] -translate-y-1/2 rounded-full bg-brand"
+              />
+            )}
             <Icon
-              className={cn("size-4", active ? "text-ink-600" : "text-ink-500")}
+              className={cn("size-4", active ? "text-brand-text" : "text-subtle")}
               aria-hidden
             />
             {item.label}
@@ -87,24 +98,24 @@ export function OrgSwitcher() {
       <DropdownTrigger
         disabled={!multi}
         className={cn(
-          "flex w-full items-center gap-2.5 rounded-xl border border-line bg-coal-800 px-3 py-2.5 text-left shadow-(--shadow-soft)",
-          multi && "hover:border-white/20"
+          "flex w-full items-center gap-2.5 rounded-xl border border-line bg-surface px-3 py-2.5 text-left shadow-(--shadow-soft)",
+          multi && "hover:border-line-strong"
         )}
         aria-label={`Organization: ${orgName ?? "workspace"}${multi ? " — switch" : ""}`}
       >
-        <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-white/90 text-[12px] font-extrabold text-coal-950">
+        <span className="flex size-7 shrink-0 items-center justify-center rounded-lg bg-[linear-gradient(135deg,var(--brand),var(--indigo-500))] text-[12px] font-extrabold text-brand-on">
           {(orgName ?? "W").slice(0, 1).toUpperCase()}
         </span>
         <span className="min-w-0 flex-1">
-          <span className="block truncate text-[13px] leading-tight font-bold text-ink-900">
+          <span className="block truncate text-[13px] leading-tight font-bold text-strong">
             {orgName}
           </span>
-          <span className="block text-[11px] font-semibold text-ink-500 capitalize">
+          <span className="block text-[11px] font-semibold text-subtle capitalize">
             {role}
           </span>
         </span>
         {multi && (
-          <ChevronsUpDown className="size-3.5 shrink-0 text-ink-500" aria-hidden />
+          <ChevronsUpDown className="size-3.5 shrink-0 text-subtle" aria-hidden />
         )}
       </DropdownTrigger>
       {multi && (
@@ -112,12 +123,12 @@ export function OrgSwitcher() {
           <DropdownLabel>Organizations</DropdownLabel>
           {orgs.map((o) => (
             <DropdownItem key={o.org_id} onSelect={() => selectOrg(o.org_id)}>
-              <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-white/10 text-[11px] font-extrabold text-ink-900">
+              <span className="flex size-6 shrink-0 items-center justify-center rounded-md bg-tint-2 text-[11px] font-extrabold text-strong">
                 {o.name.slice(0, 1).toUpperCase()}
               </span>
               <span className="min-w-0 flex-1 truncate">{o.name}</span>
               {o.org_id === orgId && (
-                <Check className="size-4 text-ink-600" aria-hidden />
+                <Check className="size-4 text-muted" aria-hidden />
               )}
             </DropdownItem>
           ))}
@@ -154,28 +165,34 @@ export function CreditsWidget() {
     };
   }, [api, orgId]);
 
+  const held = credits?.held ?? 0;
+
   return (
     <Link
       href="/billing"
-      className="block rounded-xl border border-line bg-coal-800 p-3 shadow-(--shadow-soft) transition-colors hover:border-white/15"
+      className="card-brand block p-3 transition-colors hover:border-brand-ring"
     >
       <div className="flex items-center justify-between">
-        <p className="text-[11px] font-bold tracking-wider text-ink-500 uppercase">
+        <p className="text-[11px] font-bold tracking-wider text-subtle uppercase">
           Credits
         </p>
         {credits && (
-          <span className="rounded-md bg-white/6 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-ink-900 uppercase">
+          <span className="rounded-md bg-brand-soft px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-brand-text uppercase">
             {credits.tier}
           </span>
         )}
       </div>
-      <p className="mt-1 text-xl font-extrabold text-ink-900 tabular-nums">
+      <p className="mt-1 text-xl font-extrabold text-strong tabular-nums">
         {credits ? formatNumber(credits.total) : "—"}
       </p>
-      {credits && (
-        <p className="mt-0.5 text-[11px] text-ink-500 tabular-nums">
-          {formatNumber(credits.subscription_credits)} plan ·{" "}
-          {formatNumber(credits.purchased_credits)} purchased
+      {credits && <CreditMeter credits={credits} className="mt-2.5" />}
+      {/* A balance that drops mid-run is the single most alarming thing this
+          widget can show. Naming the escrow inline is what stops it reading
+          as money disappearing. */}
+      {held > 0 && (
+        <p className="mt-2 text-[11px] leading-relaxed text-subtle">
+          {formatNumber(held)} reserved by a review in flight — the unused part
+          returns when it finishes.
         </p>
       )}
     </Link>
@@ -188,19 +205,19 @@ export function UserMenu() {
   return (
     <Dropdown>
       <DropdownTrigger
-        className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left hover:bg-white/8"
+        className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left hover:bg-tint-2"
         aria-label={`Account menu for ${email}`}
       >
-        <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-coal-800 text-[11px] font-extrabold text-white">
+        <span className="flex size-7 shrink-0 items-center justify-center rounded-full bg-[linear-gradient(135deg,var(--indigo-500),var(--cyan-500))] text-[11px] font-extrabold text-white">
           {email.slice(0, 1).toUpperCase()}
         </span>
-        <span className="min-w-0 flex-1 truncate text-[12.5px] font-semibold text-ink-600">
+        <span className="min-w-0 flex-1 truncate text-[12.5px] font-semibold text-muted">
           {email}
         </span>
       </DropdownTrigger>
       <DropdownContent className="w-[240px]" align="start">
         <DropdownLabel>Signed in as</DropdownLabel>
-        <p className="truncate px-2.5 pb-2 text-[13px] font-semibold text-ink-900">
+        <p className="truncate px-2.5 pb-2 text-[13px] font-semibold text-strong">
           {email}
         </p>
         <DropdownSeparator />
@@ -209,7 +226,7 @@ export function UserMenu() {
             void signOut().then(() => window.location.assign("/login"));
           }}
         >
-          <LogOut className="size-4 text-ink-500" aria-hidden />
+          <LogOut className="size-4 text-subtle" aria-hidden />
           Sign out
         </DropdownItem>
       </DropdownContent>
@@ -228,14 +245,20 @@ export function SidebarBody({ onNavigate }: { onNavigate?: () => void }) {
       </div>
       <div className="space-y-3 px-1 pt-3">
         <CreditsWidget />
-        <div className="rounded-xl bg-white/6 p-3">
-          <p className="flex items-center gap-1.5 text-[11px] font-bold text-ink-850">
-            <Sparkles className="size-3.5" aria-hidden />
+        <div className="rounded-xl border border-line bg-tint p-3">
+          <p className="flex items-center gap-1.5 text-[11px] font-bold text-body">
+            <Sparkles className="size-3.5 text-accent-text" aria-hidden />
             Decision support
           </p>
-          <p className="mt-1 text-[11px] leading-relaxed text-ink-950/60">
+          <p className="mt-1 text-[11px] leading-relaxed text-subtle">
             Reports inform your compliance process — they are not legal advice.
           </p>
+        </div>
+        <div className="flex items-center justify-between gap-2 border-t border-line pt-3">
+          <span className="text-[11px] font-bold tracking-wider text-subtle uppercase">
+            Theme
+          </span>
+          <ThemeSwitch />
         </div>
         <UserMenu />
       </div>

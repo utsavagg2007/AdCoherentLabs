@@ -1,17 +1,31 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Space_Grotesk } from "next/font/google";
+import { Inter, JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
+import Script from "next/script";
+import { ThemeProvider, themeInitScript } from "@/components/theme";
 import "./globals.css";
 
+/* Inter carries the interface — it holds up at 11px in dense tables, which
+   the report and ledger views lean on hard. Plus Jakarta Sans is the display
+   voice: warmer than a grotesk, still enterprise. JetBrains Mono replaces the
+   old `ui-monospace` stack, which rendered as a different face on every OS
+   and was a real part of why evidence quotes looked ragged. */
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
   display: "swap",
 });
 
-const grotesk = Space_Grotesk({
+const jakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-grotesk",
+  weight: ["500", "600", "700", "800"],
+  variable: "--font-jakarta",
+  display: "swap",
+});
+
+const jetbrains = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "600"],
+  variable: "--font-jetbrains",
   display: "swap",
 });
 
@@ -25,7 +39,12 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0a0b0d",
+  // Matches --surface-canvas in each theme, so the browser chrome on mobile
+  // never disagrees with the page behind it.
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f6f6fb" },
+    { media: "(prefers-color-scheme: dark)", color: "#07070e" },
+  ],
 };
 
 export default function RootLayout({
@@ -34,10 +53,22 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${grotesk.variable}`}
+      className={`${inter.variable} ${jakarta.variable} ${jetbrains.variable}`}
       data-scroll-behavior="smooth"
+      // themeInitScript writes data-theme onto this element before React
+      // hydrates, so the server markup and the DOM legitimately differ here.
+      suppressHydrationWarning
     >
-      <body className="min-h-dvh antialiased">{children}</body>
+      <head>
+        <Script
+          id="adcoherent-theme-init"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: themeInitScript }}
+        />
+      </head>
+      <body className="min-h-dvh antialiased">
+        <ThemeProvider>{children}</ThemeProvider>
+      </body>
     </html>
   );
 }

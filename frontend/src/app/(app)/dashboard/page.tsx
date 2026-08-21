@@ -119,7 +119,7 @@ export default function DashboardPage() {
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
               {/* credits */}
               <div className="card p-4">
-                <p className="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-ink-500 uppercase">
+                <p className="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-subtle uppercase">
                   <CircleDollarSign className="size-3.5" aria-hidden />
                   Credit balance
                 </p>
@@ -127,10 +127,10 @@ export default function DashboardPage() {
                   <Skeleton className="mt-2 h-8 w-24" />
                 ) : (
                   <>
-                    <p className="mt-1.5 text-3xl font-extrabold text-ink-900 tabular-nums">
+                    <p className="mt-1.5 text-3xl font-extrabold text-strong tabular-nums">
                       {formatNumber(credits?.total)}
                     </p>
-                    <p className="mt-1 text-[12px] text-ink-500 tabular-nums">
+                    <p className="mt-1 text-[12px] text-subtle tabular-nums">
                       {formatNumber(credits?.subscription_credits)} subscription
                       · {formatNumber(credits?.purchased_credits)} purchased
                     </p>
@@ -138,7 +138,7 @@ export default function DashboardPage() {
                 )}
                 <Link
                   href="/billing"
-                  className="mt-3 inline-flex items-center gap-1 text-[12.5px] font-bold text-ink-900 hover:text-white"
+                  className="mt-3 inline-flex items-center gap-1 text-[12.5px] font-bold text-strong hover:text-brand-text"
                 >
                   Manage credits
                   <ArrowRight className="size-3.5" aria-hidden />
@@ -147,7 +147,7 @@ export default function DashboardPage() {
 
               {/* plan */}
               <div className="card p-4">
-                <p className="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-ink-500 uppercase">
+                <p className="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-subtle uppercase">
                   <Gauge className="size-3.5" aria-hidden />
                   Plan
                 </p>
@@ -155,10 +155,10 @@ export default function DashboardPage() {
                   <Skeleton className="mt-2 h-8 w-24" />
                 ) : (
                   <>
-                    <p className="mt-1.5 text-3xl font-extrabold text-ink-900 capitalize">
+                    <p className="mt-1.5 text-3xl font-extrabold text-strong capitalize">
                       {orgMe.data?.tier}
                     </p>
-                    <p className="mt-1 text-[12px] text-ink-500">
+                    <p className="mt-1 text-[12px] text-subtle">
                       {orgMe.data?.entitlements.credits_per_month != null
                         ? `${formatNumber(orgMe.data.entitlements.credits_per_month)} credits / month`
                         : "Custom credit provisioning"}
@@ -169,7 +169,7 @@ export default function DashboardPage() {
                 )}
                 <Link
                   href="/billing"
-                  className="mt-3 inline-flex items-center gap-1 text-[12.5px] font-bold text-ink-900 hover:text-white"
+                  className="mt-3 inline-flex items-center gap-1 text-[12.5px] font-bold text-strong hover:text-brand-text"
                 >
                   View plan
                   <ArrowRight className="size-3.5" aria-hidden />
@@ -178,19 +178,19 @@ export default function DashboardPage() {
 
               {/* active runs */}
               <div className="card p-4">
-                <p className="text-[11px] font-bold tracking-wider text-ink-500 uppercase">
+                <p className="text-[11px] font-bold tracking-wider text-subtle uppercase">
                   Active runs
                 </p>
                 {runs.loading ? (
                   <Skeleton className="mt-2 h-8 w-16" />
                 ) : (
                   <>
-                    <p className="mt-1.5 text-3xl font-extrabold text-ink-900 tabular-nums">
+                    <p className="mt-1.5 text-3xl font-extrabold text-strong tabular-nums">
                       {activeRuns.length}
                     </p>
-                    <p className="mt-1 text-[12px] text-ink-500">
+                    <p className="mt-1 text-[12px] text-subtle">
                       {humanReview.length > 0 ? (
-                        <span className="font-bold text-amber-300">
+                        <span className="font-bold text-warn">
                           {humanReview.length} awaiting human review
                         </span>
                       ) : (
@@ -201,7 +201,7 @@ export default function DashboardPage() {
                 )}
                 <Link
                   href="/reports"
-                  className="mt-3 inline-flex items-center gap-1 text-[12.5px] font-bold text-ink-900 hover:text-white"
+                  className="mt-3 inline-flex items-center gap-1 text-[12.5px] font-bold text-strong hover:text-brand-text"
                 >
                   Run history
                   <ArrowRight className="size-3.5" aria-hidden />
@@ -210,17 +210,17 @@ export default function DashboardPage() {
 
               {/* open findings */}
               <div className="card p-4">
-                <p className="text-[11px] font-bold tracking-wider text-ink-500 uppercase">
+                <p className="text-[11px] font-bold tracking-wider text-subtle uppercase">
                   Open findings
                 </p>
                 {findings.loading ? (
                   <Skeleton className="mt-2 h-8 w-16" />
                 ) : (
                   <>
-                    <p className="mt-1.5 text-3xl font-extrabold text-ink-900 tabular-nums">
+                    <p className="mt-1.5 text-3xl font-extrabold text-strong tabular-nums">
                       {openTotal}
                     </p>
-                    <div className="mt-1.5 flex items-center gap-3 text-[12px] font-semibold text-ink-500 tabular-nums">
+                    <div className="mt-1.5 flex items-center gap-3 text-[12px] font-semibold text-subtle tabular-nums">
                       <span className="inline-flex items-center gap-1">
                         <SeverityDot severity="high" /> {bySeverity.high}
                       </span>
@@ -235,7 +235,7 @@ export default function DashboardPage() {
                 )}
                 <Link
                   href="/reports?tab=findings"
-                  className="mt-3 inline-flex items-center gap-1 text-[12.5px] font-bold text-ink-900 hover:text-white"
+                  className="mt-3 inline-flex items-center gap-1 text-[12.5px] font-bold text-strong hover:text-brand-text"
                 >
                   Review queue
                   <ArrowRight className="size-3.5" aria-hidden />
@@ -244,12 +244,12 @@ export default function DashboardPage() {
             </div>
 
             {isBrandNew ? (
-              <div className="card bg-grid-faint p-8 sm:p-10">
+              <div className="card bg-dots p-8 sm:p-10">
                 <div className="mx-auto max-w-2xl text-center">
-                  <h2 className="text-xl font-extrabold tracking-tight text-ink-900">
+                  <h2 className="text-xl font-extrabold tracking-tight text-strong">
                     Run your first compliance review
                   </h2>
-                  <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-ink-500">
+                  <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-subtle">
                     Paste ad copy or upload a creative. Four layers do the rest
                     — and every finding arrives with its evidence.
                   </p>
@@ -259,13 +259,13 @@ export default function DashboardPage() {
                     const Icon = s.icon;
                     return (
                       <div key={s.title} className="text-center">
-                        <div className="mx-auto flex size-11 items-center justify-center rounded-2xl border border-white/15 bg-white/6 text-ink-600">
+                        <div className="mx-auto flex size-11 items-center justify-center rounded-2xl border border-line-strong bg-tint text-muted">
                           <Icon className="size-5" aria-hidden />
                         </div>
-                        <p className="mt-2.5 text-[13px] font-bold text-ink-900">
+                        <p className="mt-2.5 text-[13px] font-bold text-strong">
                           {i + 1}. {s.title}
                         </p>
-                        <p className="mt-1 text-[12px] leading-relaxed text-ink-500">
+                        <p className="mt-1 text-[12px] leading-relaxed text-subtle">
                           {s.text}
                         </p>
                       </div>
@@ -284,12 +284,12 @@ export default function DashboardPage() {
                 {/* recent runs */}
                 <section aria-label="Recent runs" className="card overflow-hidden">
                   <div className="flex items-center justify-between border-b border-line px-4 py-3">
-                    <h2 className="text-[13px] font-extrabold tracking-wide text-ink-900 uppercase">
+                    <h2 className="text-[13px] font-extrabold tracking-wide text-strong uppercase">
                       Recent runs
                     </h2>
                     <Link
                       href="/reports"
-                      className="text-[12.5px] font-bold text-ink-900 hover:text-white"
+                      className="text-[12.5px] font-bold text-strong hover:text-brand-text"
                     >
                       View all
                     </Link>
@@ -313,18 +313,18 @@ export default function DashboardPage() {
                         <li key={r.id}>
                           <Link
                             href={`/runs/${r.id}`}
-                            className="flex items-center gap-4 px-4 py-3 transition-colors hover:bg-cream/70"
+                            className="flex items-center gap-4 px-4 py-3 transition-colors hover:bg-hover"
                           >
                             <span className="min-w-0 flex-1">
-                              <span className="block truncate font-mono text-[12px] font-semibold text-ink-800">
+                              <span className="block truncate font-mono text-[12px] font-semibold text-body">
                                 {r.id.slice(0, 8)}
                               </span>
-                              <span className="mt-0.5 block text-[11.5px] text-ink-500">
+                              <span className="mt-0.5 block text-[11.5px] text-subtle">
                                 {timeAgo(r.created_at)} · {r.tier}
                               </span>
                             </span>
                             <RunStatusBadge status={r.status} />
-                            <ArrowRight className="size-4 text-ink-700" aria-hidden />
+                            <ArrowRight className="size-4 text-muted" aria-hidden />
                           </Link>
                         </li>
                       ))}
@@ -335,12 +335,12 @@ export default function DashboardPage() {
                 {/* recent findings */}
                 <section aria-label="Recent findings" className="card overflow-hidden">
                   <div className="flex items-center justify-between border-b border-line px-4 py-3">
-                    <h2 className="text-[13px] font-extrabold tracking-wide text-ink-900 uppercase">
+                    <h2 className="text-[13px] font-extrabold tracking-wide text-strong uppercase">
                       Recent open findings
                     </h2>
                     <Link
                       href="/reports?tab=findings"
-                      className="text-[12.5px] font-bold text-ink-900 hover:text-white"
+                      className="text-[12.5px] font-bold text-strong hover:text-brand-text"
                     >
                       Queue
                     </Link>
@@ -363,15 +363,15 @@ export default function DashboardPage() {
                         <li key={f.id}>
                           <Link
                             href={`/runs/${f.run_id}`}
-                            className="block px-4 py-3 transition-colors hover:bg-cream/70"
+                            className="block px-4 py-3 transition-colors hover:bg-hover"
                           >
                             <div className="flex items-center gap-2">
                               <SeverityBadge severity={f.severity} />
-                              <span className="truncate text-[11.5px] font-semibold text-ink-500">
+                              <span className="truncate text-[11.5px] font-semibold text-subtle">
                                 {frameworkLabel(f.framework)}
                               </span>
                             </div>
-                            <p className="mt-1.5 line-clamp-2 text-[13px] leading-snug text-ink-800">
+                            <p className="mt-1.5 line-clamp-2 text-[13px] leading-snug text-body">
                               {truncate(f.message, 140)}
                             </p>
                           </Link>

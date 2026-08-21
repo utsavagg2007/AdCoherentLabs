@@ -46,15 +46,15 @@ export function HowItWorks() {
     <section
       id="how-it-works"
       aria-label="How the four-layer review works"
-      className="relative bg-coal-900"
+      className="relative bg-canvas"
     >
       <div className="container-page py-20 sm:py-28">
         <Reveal className="max-w-2xl">
           <p className="eyebrow">How it works</p>
-          <h2 className="text-chrome mt-3 font-display text-4xl font-bold tracking-[-0.02em] text-balance sm:text-5xl">
+          <h2 className="text-gradient mt-3 font-display text-4xl font-bold tracking-[-0.02em] text-balance sm:text-5xl">
             Four layers. One verified answer.
           </h2>
-          <p className="mt-4 max-w-xl text-[15.5px] leading-relaxed text-ink-600 text-pretty">
+          <p className="mt-4 max-w-xl text-[15.5px] leading-relaxed text-muted text-pretty">
             Each layer hands structured evidence to the next. Nothing reaches
             your report without passing deterministic verification.
           </p>
@@ -69,17 +69,17 @@ export function HowItWorks() {
           {LAYERS.map((l, i) => (
             <Reveal as="li" key={l.name} delay={i * 70} className="relative">
               <div className="card flex flex-col gap-5 p-6 sm:flex-row sm:gap-7 sm:p-7">
-                <div className="relative flex size-14 shrink-0 items-center justify-center rounded-2xl border border-white/12 bg-coal-700 shadow-(--shadow-soft)">
-                  <l.icon className="size-6 text-ink-800" aria-hidden />
+                <div className="relative flex size-14 shrink-0 items-center justify-center rounded-2xl border border-line bg-hover shadow-(--shadow-soft)">
+                  <l.icon className="size-6 text-body" aria-hidden />
                 </div>
                 <div className="min-w-0">
-                  <p className="font-mono text-[11px] font-bold tracking-[0.2em] text-ink-500 uppercase">
+                  <p className="font-mono text-[11px] font-bold tracking-[0.2em] text-subtle uppercase">
                     {l.layer}
                   </p>
-                  <h3 className="mt-1 font-display text-xl font-bold text-ink-900">
+                  <h3 className="mt-1 font-display text-xl font-bold text-strong">
                     {l.name}
                   </h3>
-                  <p className="mt-2 max-w-2xl text-[14.5px] leading-relaxed text-ink-600">
+                  <p className="mt-2 max-w-2xl text-[14.5px] leading-relaxed text-muted">
                     {l.copy}
                   </p>
                   <ul className="mt-4 flex flex-wrap gap-2">

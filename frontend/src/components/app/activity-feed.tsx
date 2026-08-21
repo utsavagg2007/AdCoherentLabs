@@ -37,7 +37,7 @@ function DetailChips({ detail }: { detail: Record<string, unknown> }) {
       {frameworks.map((f) => (
         <span
           key={f}
-          className="rounded border border-white/10 bg-white/5 px-1.5 py-px font-mono text-[10.5px] font-semibold text-ink-600"
+          className="rounded border border-line bg-tint px-1.5 py-px font-mono text-[10.5px] font-semibold text-muted"
         >
           {f}
         </span>
@@ -102,18 +102,18 @@ export function ActivityFeed({
   return (
     <section aria-label="Live activity" className="card overflow-hidden">
       <div className="flex items-center justify-between border-b border-line px-5 py-3.5">
-        <h2 className="flex items-center gap-2 text-[13.5px] font-extrabold text-ink-900">
-          <Activity className="size-4 text-ink-500" aria-hidden />
+        <h2 className="flex items-center gap-2 text-[13.5px] font-extrabold text-strong">
+          <Activity className="size-4 text-subtle" aria-hidden />
           Live activity
         </h2>
         <span
           className={cn(
             "inline-flex items-center gap-1.5 text-[12px] font-semibold",
             active
-              ? "text-ink-600"
+              ? "text-muted"
               : terminal === "failed"
-                ? "text-red-300"
-                : "text-emerald-300"
+                ? "text-fail"
+                : "text-pass"
           )}
         >
           {active ? (
@@ -146,7 +146,7 @@ export function ActivityFeed({
         aria-live="polite"
       >
         {events.length === 0 && (
-          <li className="flex items-center gap-2.5 px-2.5 py-2 text-[13px] text-ink-500">
+          <li className="flex items-center gap-2.5 px-2.5 py-2 text-[13px] text-subtle">
             <Spinner className="size-3.5" />
             Waiting for the first update…
           </li>
@@ -162,7 +162,7 @@ export function ActivityFeed({
               <span
                 className={cn(
                   "mt-0.5 w-[72px] shrink-0 font-mono text-[10.5px] font-bold tracking-wider uppercase",
-                  isError ? "text-red-300" : "text-ink-500"
+                  isError ? "text-fail" : "text-subtle"
                 )}
               >
                 {STAGE_LABEL[e.stage] ?? e.stage}
@@ -174,8 +174,8 @@ export function ActivityFeed({
                     latest && !reduced
                       ? "text-shimmer"
                       : isError
-                        ? "text-red-300"
-                        : "text-ink-700"
+                        ? "text-fail"
+                        : "text-muted"
                   )}
                 >
                   {e.message}
@@ -187,7 +187,7 @@ export function ActivityFeed({
         })}
       </ol>
 
-      <p className="border-t border-line px-5 py-2.5 text-[11.5px] leading-relaxed text-ink-500">
+      <p className="border-t border-line px-5 py-2.5 text-[11.5px] leading-relaxed text-subtle">
         Stage names and aggregate counts only — your creative&apos;s content and
         the model&apos;s reasoning never appear in this feed.
       </p>

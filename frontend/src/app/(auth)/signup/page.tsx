@@ -5,6 +5,7 @@ import { useState } from "react";
 import { Eye, EyeOff, MailCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getSupabase, supabaseConfigured } from "@/lib/supabase";
+import { AuthDivider, OAuthButtons } from "@/components/auth/oauth-buttons";
 
 export default function SignupPage() {
   const [email, setEmail] = useState("");
@@ -53,15 +54,15 @@ export default function SignupPage() {
   if (done) {
     return (
       <div className="text-center">
-        <div className="mx-auto flex size-14 items-center justify-center rounded-2xl border border-white/15 bg-white/6 text-ink-600">
+        <div className="mx-auto flex size-14 items-center justify-center rounded-2xl border border-line-strong bg-tint text-muted">
           <MailCheck className="size-6" aria-hidden />
         </div>
-        <h1 className="mt-5 text-2xl font-extrabold tracking-tight text-ink-900">
+        <h1 className="mt-5 text-2xl font-extrabold tracking-tight text-strong">
           Check your email
         </h1>
-        <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-ink-500">
+        <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-subtle">
           If an account can be created for{" "}
-          <span className="font-semibold text-ink-800">{email}</span>, a
+          <span className="font-semibold text-body">{email}</span>, a
           confirmation link is on its way. Confirm it, then sign in.
         </p>
         <Button href="/login" variant="secondary" className="mt-7">
@@ -73,21 +74,27 @@ export default function SignupPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-extrabold tracking-tight text-ink-900">
+      <h1 className="text-2xl font-extrabold tracking-tight text-strong">
         Create your account
       </h1>
-      <p className="mt-1.5 text-sm text-ink-500">
+      <p className="mt-1.5 text-sm text-subtle">
         Start on the Free plan — 25 credits monthly, no card required.
       </p>
 
       {!configured && (
-        <div role="alert" className="mt-6 rounded-xl border border-amber-400/25 bg-amber-400/10 p-3.5 text-[13px] leading-relaxed text-amber-200">
+        <div role="alert" className="mt-6 rounded-xl border border-warn-line bg-warn-soft p-3.5 text-[13px] leading-relaxed text-warn">
           Authentication isn&apos;t configured. Set the Supabase environment
           variables, then restart the dev server.
         </div>
       )}
 
-      <form onSubmit={onSubmit} className="mt-7 space-y-4" noValidate>
+      {/* A social sign-up skips email confirmation entirely — the provider
+          has already verified the address — so it is the path most people
+          should take, and it leads. */}
+      <OAuthButtons verb="Sign up with" className="mt-7" />
+      <AuthDivider label="or use email" />
+
+      <form onSubmit={onSubmit} className="space-y-4" noValidate>
         <div>
           <label htmlFor="email" className="label">
             Work email
@@ -124,13 +131,13 @@ export default function SignupPage() {
               type="button"
               onClick={() => setShowPw((s) => !s)}
               aria-label={showPw ? "Hide password" : "Show password"}
-              className="absolute top-1/2 right-3 -translate-y-1/2 rounded-md p-1 text-ink-500 hover:text-ink-800"
+              className="absolute top-1/2 right-3 -translate-y-1/2 rounded-md p-1 text-subtle hover:text-body"
             >
               {showPw ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
             </button>
           </div>
           {pwTooShort && (
-            <p id="pw-hint" className="mt-1.5 text-[12.5px] text-red-300">
+            <p id="pw-hint" className="mt-1.5 text-[12.5px] text-fail">
               Use at least 8 characters.
             </p>
           )}
@@ -150,14 +157,14 @@ export default function SignupPage() {
             placeholder="Repeat your password"
           />
           {mismatch && (
-            <p className="mt-1.5 text-[12.5px] text-red-300">
+            <p className="mt-1.5 text-[12.5px] text-fail">
               Passwords don&apos;t match.
             </p>
           )}
         </div>
 
         {error && (
-          <div role="alert" className="rounded-xl border border-red-400/25 bg-red-400/10 p-3.5 text-[13px] leading-relaxed text-red-300">
+          <div role="alert" className="rounded-xl border border-fail-line bg-fail-soft p-3.5 text-[13px] leading-relaxed text-fail">
             {error}
           </div>
         )}
@@ -175,11 +182,11 @@ export default function SignupPage() {
         </Button>
       </form>
 
-      <p className="mt-6 text-center text-[13.5px] text-ink-500">
+      <p className="mt-6 text-center text-[13.5px] text-subtle">
         Already have an account?{" "}
         <Link
           href="/login"
-          className="font-bold text-ink-900 hover:text-white"
+          className="font-bold text-strong hover:text-brand-text"
         >
           Sign in
         </Link>

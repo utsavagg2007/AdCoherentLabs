@@ -41,11 +41,11 @@ export function JurisdictionSelect({
           aria-label="Target jurisdictions"
         >
           <span className="flex min-w-0 items-center gap-2">
-            <MapPin className="size-4 shrink-0 text-ink-500" aria-hidden />
+            <MapPin className="size-4 shrink-0 text-subtle" aria-hidden />
             <span
               className={cn(
                 "truncate",
-                selected.length === 0 && "text-ink-500"
+                selected.length === 0 && "text-subtle"
               )}
             >
               {selected.length === 0
@@ -53,13 +53,13 @@ export function JurisdictionSelect({
                 : `${selected.length} state${selected.length > 1 ? "s" : ""} targeted`}
             </span>
           </span>
-          <ChevronsUpDown className="size-3.5 shrink-0 text-ink-500" aria-hidden />
+          <ChevronsUpDown className="size-3.5 shrink-0 text-subtle" aria-hidden />
         </PopoverPrimitive.Trigger>
         <PopoverPrimitive.Portal>
           <PopoverPrimitive.Content
             align="start"
             sideOffset={6}
-            className="z-50 w-[300px] rounded-xl border border-line bg-coal-800 shadow-(--shadow-float)"
+            className="z-50 w-[300px] rounded-xl border border-line bg-surface shadow-(--shadow-float)"
           >
             <div className="border-b border-line p-2">
               <input
@@ -83,23 +83,23 @@ export function JurisdictionSelect({
                       className={cn(
                         "flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-[13px] font-medium",
                         on
-                          ? "bg-white/6 text-ink-950"
-                          : "text-ink-800 hover:bg-cream"
+                          ? "bg-tint text-strong"
+                          : "text-body hover:bg-surface"
                       )}
                     >
                       <span
                         className={cn(
                           "flex size-4 items-center justify-center rounded border",
                           on
-                            ? "border-white/70 bg-white/90 text-coal-950"
-                            : "border-white/15 bg-coal-800"
+                            ? "border-brand bg-brand text-brand-on"
+                            : "border-line-strong bg-surface"
                         )}
                         aria-hidden
                       >
                         {on && <Check className="size-3" />}
                       </span>
                       <span className="flex-1">{j.name}</span>
-                      <span className="font-mono text-[11px] text-ink-500">
+                      <span className="font-mono text-[11px] text-subtle">
                         {j.code}
                       </span>
                     </button>
@@ -107,7 +107,7 @@ export function JurisdictionSelect({
                 );
               })}
               {filtered.length === 0 && (
-                <li className="px-3 py-4 text-center text-[12.5px] text-ink-500">
+                <li className="px-3 py-4 text-center text-[12.5px] text-subtle">
                   No matching state.
                 </li>
               )}
@@ -117,7 +117,7 @@ export function JurisdictionSelect({
                 <button
                   type="button"
                   onClick={() => onChange([])}
-                  className="w-full rounded-lg px-2 py-1.5 text-[12.5px] font-semibold text-ink-500 hover:bg-cream hover:text-ink-900"
+                  className="w-full rounded-lg px-2 py-1.5 text-[12.5px] font-semibold text-subtle hover:bg-surface hover:text-strong"
                 >
                   Clear selection
                 </button>
@@ -133,7 +133,7 @@ export function JurisdictionSelect({
             const j = US_JURISDICTIONS.find((x) => x.code === code);
             return (
               <li key={code}>
-                <span className="inline-flex items-center gap-1 rounded-full border border-white/15 bg-white/6 py-0.5 pr-1 pl-2.5 text-[11.5px] font-bold text-ink-850">
+                <span className="inline-flex items-center gap-1 rounded-full border border-line-strong bg-tint py-0.5 pr-1 pl-2.5 text-[11.5px] font-bold text-body">
                   {j?.name ?? code}
                   <button
                     type="button"
@@ -149,7 +149,7 @@ export function JurisdictionSelect({
           })}
         </ul>
       )}
-      <p className="mt-2 text-[11.5px] leading-relaxed text-ink-500">
+      <p className="mt-2 text-[11.5px] leading-relaxed text-subtle">
         State targeting adds state UDAP coverage alongside federal frameworks.
       </p>
     </div>

@@ -72,37 +72,37 @@ export default function SubmissionDetailPage({
           <section className="card p-4" aria-label="Submission details">
             <dl className="grid gap-x-6 gap-y-3 text-[13px] sm:grid-cols-4">
               <div>
-                <dt className="text-[10.5px] font-bold tracking-wider text-ink-500 uppercase">
+                <dt className="text-[10.5px] font-bold tracking-wider text-subtle uppercase">
                   Format
                 </dt>
-                <dd className="mt-0.5 font-bold text-ink-900 capitalize">
+                <dd className="mt-0.5 font-bold text-strong capitalize">
                   {kind}
                   {kind === "carousel" && cards ? ` · ${cards} cards` : ""}
                 </dd>
               </div>
               <div>
-                <dt className="text-[10.5px] font-bold tracking-wider text-ink-500 uppercase">
+                <dt className="text-[10.5px] font-bold tracking-wider text-subtle uppercase">
                   Jurisdictions
                 </dt>
-                <dd className="mt-0.5 font-bold text-ink-900">
+                <dd className="mt-0.5 font-bold text-strong">
                   {submission.target_jurisdictions?.length
                     ? submission.target_jurisdictions.join(", ")
                     : "Nationwide"}
                 </dd>
               </div>
               <div>
-                <dt className="text-[10.5px] font-bold tracking-wider text-ink-500 uppercase">
+                <dt className="text-[10.5px] font-bold tracking-wider text-subtle uppercase">
                   Assets
                 </dt>
-                <dd className="mt-0.5 font-bold text-ink-900 tabular-nums">
+                <dd className="mt-0.5 font-bold text-strong tabular-nums">
                   {assets.length || "Inline"}
                 </dd>
               </div>
               <div>
-                <dt className="text-[10.5px] font-bold tracking-wider text-ink-500 uppercase">
+                <dt className="text-[10.5px] font-bold tracking-wider text-subtle uppercase">
                   Runs
                 </dt>
-                <dd className="mt-0.5 font-bold text-ink-900 tabular-nums">
+                <dd className="mt-0.5 font-bold text-strong tabular-nums">
                   {runs.length}
                 </dd>
               </div>
@@ -112,16 +112,16 @@ export default function SubmissionDetailPage({
           {/* assets */}
           {assets.length > 0 && (
             <section aria-label="Stored assets">
-              <h2 className="mb-3 text-[13px] font-extrabold tracking-wide text-ink-900 uppercase">
+              <h2 className="mb-3 text-[13px] font-extrabold tracking-wide text-strong uppercase">
                 Stored assets
               </h2>
               <ul className="grid gap-2 sm:grid-cols-2">
                 {assets.map((a, i) => (
                   <li
                     key={a.id}
-                    className="flex items-center gap-3 rounded-xl border border-line bg-coal-800 p-3"
+                    className="flex items-center gap-3 rounded-xl border border-line bg-surface p-3"
                   >
-                    <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-cream text-ink-500">
+                    <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-surface text-subtle">
                       {a.kind === "image" ? (
                         <FileImage className="size-4.5" aria-hidden />
                       ) : (
@@ -129,15 +129,15 @@ export default function SubmissionDetailPage({
                       )}
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block text-[13px] font-bold text-ink-900 capitalize">
+                      <span className="block text-[13px] font-bold text-strong capitalize">
                         {a.kind}
                         {assets.length > 1 ? ` · card ${i + 1}` : ""}
                       </span>
-                      <span className="block truncate font-mono text-[11px] text-ink-500">
+                      <span className="block truncate font-mono text-[11px] text-subtle">
                         sha256 {a.checksum.slice(0, 16)}…
                       </span>
                     </span>
-                    <Chip className="border-emerald-400/25 bg-emerald-400/10 text-emerald-300">
+                    <Chip className="border-pass-line bg-pass-soft text-pass">
                       <ShieldCheck className="size-3" aria-hidden />
                       {a.scan_status}
                     </Chip>
@@ -149,12 +149,12 @@ export default function SubmissionDetailPage({
 
           {/* runs */}
           <section aria-label="Runs">
-            <h2 className="mb-3 text-[13px] font-extrabold tracking-wide text-ink-900 uppercase">
+            <h2 className="mb-3 text-[13px] font-extrabold tracking-wide text-strong uppercase">
               Review runs
             </h2>
             <div className="card divide-y divide-line">
               {runs.length === 0 && (
-                <p className="p-4 text-[13px] text-ink-500">
+                <p className="p-4 text-[13px] text-subtle">
                   No runs recorded for this submission.
                 </p>
               )}
@@ -162,24 +162,24 @@ export default function SubmissionDetailPage({
                 <Link
                   key={r.id}
                   href={`/runs/${r.id}`}
-                  className="flex items-center gap-4 px-4 py-3.5 transition-colors hover:bg-cream/70"
+                  className="flex items-center gap-4 px-4 py-3.5 transition-colors hover:bg-hover"
                 >
                   <span className="min-w-0 flex-1">
-                    <span className="block font-mono text-[12px] font-bold text-ink-800">
+                    <span className="block font-mono text-[12px] font-bold text-body">
                       {r.id.slice(0, 8)}
                       {r.resumed_from_run_id && (
-                        <span className="ml-2 rounded-md bg-white/6 px-1.5 py-0.5 text-[10px] font-bold text-ink-900">
+                        <span className="ml-2 rounded-md bg-tint px-1.5 py-0.5 text-[10px] font-bold text-strong">
                           resumed
                         </span>
                       )}
                     </span>
-                    <span className="mt-0.5 block text-[11.5px] text-ink-500">
+                    <span className="mt-0.5 block text-[11.5px] text-subtle">
                       {formatDateTime(r.created_at)} ·{" "}
                       {formatDuration(r.started_at, r.finished_at)}
                     </span>
                   </span>
                   <RunStatusBadge status={r.status} />
-                  <ArrowRight className="size-4 text-ink-700" aria-hidden />
+                  <ArrowRight className="size-4 text-muted" aria-hidden />
                 </Link>
               ))}
             </div>

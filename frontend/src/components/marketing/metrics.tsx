@@ -58,7 +58,7 @@ function Counter({
   const display = animate ? Math.round(value * progress) : value;
 
   return (
-    <span className="text-chrome font-display text-6xl font-bold tracking-[-0.04em] tabular-nums sm:text-7xl">
+    <span className="text-gradient font-display text-6xl font-bold tracking-[-0.04em] tabular-nums sm:text-7xl">
       {display}
       {suffix}
     </span>
@@ -97,16 +97,16 @@ export function Metrics() {
                 suffix={m.suffix}
                 animate={inView && !reduced}
               />
-              <p className="mt-3 text-[15px] font-bold text-ink-850">
+              <p className="mt-3 text-[15px] font-bold text-body">
                 {m.label}
               </p>
-              <p className="mx-auto mt-2 max-w-xs text-[13.5px] leading-relaxed text-ink-500 sm:mx-0">
+              <p className="mx-auto mt-2 max-w-xs text-[13.5px] leading-relaxed text-subtle sm:mx-0">
                 {m.detail}
               </p>
             </div>
           ))}
         </div>
-        <p className="mt-12 text-center text-[12px] text-ink-500">
+        <p className="mt-12 text-center text-[12px] text-subtle">
           Facts describe the analysis pipeline, not legal coverage. Findings
           always ship with their evidence.
         </p>

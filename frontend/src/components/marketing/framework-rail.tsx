@@ -16,7 +16,7 @@ const FRAMEWORKS = [
 
 function Chip({ label }: { label: string }) {
   return (
-    <li className="shrink-0 rounded-full border border-white/10 bg-white/[0.04] px-4 py-2 font-mono text-[13px] font-semibold tracking-tight whitespace-nowrap text-ink-700">
+    <li className="shrink-0 rounded-full border border-line bg-white/[0.04] px-4 py-2 font-mono text-[13px] font-semibold tracking-tight whitespace-nowrap text-muted">
       {label}
     </li>
   );
@@ -26,7 +26,7 @@ export function FrameworkRail() {
   return (
     <section
       aria-label="Regulatory frameworks in scope"
-      className="relative overflow-hidden border-b border-line bg-brushed"
+      className="relative overflow-hidden border-b border-line bg-sunken"
     >
       <div className="py-12 sm:py-14">
         <p className="eyebrow text-center">
@@ -53,7 +53,7 @@ export function FrameworkRail() {
             ))}
           </ul>
         </div>
-        <p className="mx-auto mt-7 max-w-xl px-5 text-center text-[13px] leading-relaxed text-ink-500">
+        <p className="mx-auto mt-7 max-w-xl px-5 text-center text-[13px] leading-relaxed text-subtle">
           Applicable coverage for any given review is determined by the
           creative, detected product signals, target jurisdictions, and your
           plan&apos;s framework scope.

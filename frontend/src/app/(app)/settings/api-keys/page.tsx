@@ -178,16 +178,16 @@ export default function ApiKeysPage() {
                 <div key={k.id} className="flex items-center gap-4 px-4 py-3.5">
                   <span className="min-w-0 flex-1">
                     <span className="flex items-center gap-2">
-                      <span className="truncate text-[14px] font-bold text-ink-900">
+                      <span className="truncate text-[14px] font-bold text-strong">
                         {k.name}
                       </span>
                       {revoked && (
-                        <Badge className="border-red-400/25 bg-red-400/10 text-red-300">
+                        <Badge className="border-fail-line bg-fail-soft text-fail">
                           Revoked {formatDate(k.revoked_at)}
                         </Badge>
                       )}
                     </span>
-                    <span className="mt-0.5 block text-[11.5px] text-ink-500">
+                    <span className="mt-0.5 block text-[11.5px] text-subtle">
                       Created {formatDate(k.created_at)} · last used{" "}
                       {k.last_used_at ? timeAgo(k.last_used_at) : "never"}
                       {k.rate_limit_rpm ? ` · ${k.rate_limit_rpm} rpm cap` : ""}
@@ -197,7 +197,7 @@ export default function ApiKeysPage() {
                     {(k.scopes ?? []).map((s) => (
                       <Badge
                         key={s}
-                        className="border-white/15 bg-white/6 font-mono text-ink-850"
+                        className="border-line-strong bg-tint font-mono text-body"
                       >
                         {s}
                       </Badge>
@@ -208,7 +208,7 @@ export default function ApiKeysPage() {
                       type="button"
                       onClick={() => setRevoking(k)}
                       aria-label={`Revoke ${k.name}`}
-                      className="rounded-lg p-2 text-ink-500 hover:bg-red-400/10 hover:text-red-300"
+                      className="rounded-lg p-2 text-subtle hover:bg-fail-soft hover:text-fail"
                     >
                       <Trash2 className="size-4" />
                     </button>
@@ -249,7 +249,7 @@ export default function ApiKeysPage() {
                   return (
                     <label
                       key={s.id}
-                      className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-line p-3 hover:bg-cream/60"
+                      className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-line p-3 hover:bg-hover"
                     >
                       <input
                         type="checkbox"
@@ -262,10 +262,10 @@ export default function ApiKeysPage() {
                         className="mt-0.5 size-4 accent-violet-600"
                       />
                       <span>
-                        <span className="font-mono text-[13px] font-bold text-ink-900">
+                        <span className="font-mono text-[13px] font-bold text-strong">
                           {s.label}
                         </span>
-                        <span className="block text-[12px] text-ink-500">
+                        <span className="block text-[12px] text-subtle">
                           {s.help}
                         </span>
                       </span>
@@ -277,7 +277,7 @@ export default function ApiKeysPage() {
             <div>
               <label htmlFor="key-rpm" className="label">
                 Rate limit{" "}
-                <span className="font-normal text-ink-500">
+                <span className="font-normal text-subtle">
                   (requests/minute, optional)
                 </span>
               </label>
@@ -295,7 +295,7 @@ export default function ApiKeysPage() {
             {createError != null && (
               <div
                 role="alert"
-                className="flex items-start gap-2.5 rounded-xl border border-amber-400/30 bg-amber-400/10 p-3.5 text-[13px] leading-relaxed text-amber-200"
+                className="flex items-start gap-2.5 rounded-xl border border-warn-line bg-warn-soft p-3.5 text-[13px] leading-relaxed text-warn"
               >
                 <ShieldAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
                 <p>
@@ -340,24 +340,24 @@ export default function ApiKeysPage() {
         >
           {created && (
             <div className="space-y-4">
-              <div className="rounded-xl border border-white/15 bg-white/6 p-3.5">
-                <p className="text-[11px] font-bold tracking-wider text-ink-900 uppercase">
+              <div className="rounded-xl border border-line-strong bg-tint p-3.5">
+                <p className="text-[11px] font-bold tracking-wider text-strong uppercase">
                   {created.prefix ? `Key · prefix ${created.prefix}` : "API key"}
                 </p>
-                <code className="mt-1.5 block font-mono text-[12.5px] break-all text-ink-900 select-all">
+                <code className="mt-1.5 block font-mono text-[12.5px] break-all text-strong select-all">
                   {created.api_key}
                 </code>
               </div>
               <div className="flex items-center gap-2.5">
                 <Button variant="secondary" onClick={copySecret}>
                   {copied ? (
-                    <Check className="size-4 text-emerald-300" aria-hidden />
+                    <Check className="size-4 text-pass" aria-hidden />
                   ) : (
                     <Copy className="size-4" aria-hidden />
                   )}
                   {copied ? "Copied" : "Copy key"}
                 </Button>
-                <p className="text-[12px] text-ink-500">
+                <p className="text-[12px] text-subtle">
                   Send it with the <code className="font-mono">X-API-Key</code>{" "}
                   header.
                 </p>
@@ -369,7 +369,7 @@ export default function ApiKeysPage() {
                   onChange={(e) => setConfirmedStored(e.target.checked)}
                   className="mt-0.5 size-4 accent-violet-600"
                 />
-                <span className="text-[13px] leading-relaxed text-ink-600">
+                <span className="text-[13px] leading-relaxed text-muted">
                   I&apos;ve stored this key somewhere safe and understand it
                   won&apos;t be shown again.
                 </span>

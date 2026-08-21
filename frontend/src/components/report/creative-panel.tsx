@@ -19,14 +19,14 @@ interface OverlayBox extends FoundBox {
 }
 
 const SEVERITY_BORDER: Record<Severity, string> = {
-  high: "border-red-500/90",
-  medium: "border-amber-500/90",
-  low: "border-emerald-500/90",
+  high: "border-fail-line/90",
+  medium: "border-warn-line/90",
+  low: "border-pass-line/90",
 };
 const SEVERITY_TAG: Record<Severity, string> = {
-  high: "bg-red-500",
-  medium: "bg-amber-500",
-  low: "bg-emerald-500",
+  high: "bg-fail-solid",
+  medium: "bg-warn-solid",
+  low: "bg-pass-solid",
 };
 
 function AssetImage({
@@ -57,7 +57,7 @@ function AssetImage({
 
   if (failed) {
     return (
-      <div className="flex aspect-video items-center justify-center rounded-xl border border-line bg-cream text-ink-500">
+      <div className="flex aspect-video items-center justify-center rounded-xl border border-line bg-surface text-subtle">
         <div className="text-center">
           <ImageOff className="mx-auto size-6" aria-hidden />
           <p className="mt-2 text-[12px]">
@@ -70,7 +70,7 @@ function AssetImage({
   if (!url) return <Skeleton className="aspect-video w-full" />;
 
   return (
-    <div className="relative overflow-hidden rounded-xl border border-line bg-coal-800">
+    <div className="relative overflow-hidden rounded-xl border border-line bg-surface">
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={url}
@@ -106,9 +106,13 @@ function AssetImage({
                 height: `${Math.min(height, 100 - top)}%`,
               }}
             >
+              {/* Ink, not white: these tags sit on the solid signal colour,
+                  which in dark mode is a light tint — white on it is barely
+                  legible. Ink clears 5.5:1 on every severity in both themes.
+                  The ring separates the tag from the creative underneath. */}
               <span
                 className={cn(
-                  "absolute -top-5 left-0 rounded-sm px-1 py-px text-[9.5px] font-bold text-white",
+                  "absolute -top-5 left-0 rounded-sm px-1 py-px text-[9.5px] font-bold text-[var(--n-975)] ring-1 ring-white/40",
                   SEVERITY_TAG[b.severity]
                 )}
               >
@@ -151,7 +155,7 @@ function AssetText({ path }: { path: string }) {
 
   if (failed) {
     return (
-      <p className="rounded-xl border border-line bg-cream p-4 text-[12.5px] text-ink-500">
+      <p className="rounded-xl border border-line bg-surface p-4 text-[12.5px] text-subtle">
         The source file preview is unavailable right now.
       </p>
     );
@@ -161,7 +165,7 @@ function AssetText({ path }: { path: string }) {
   return (
     <div>
       {/* rendered as plain text — never as markup */}
-      <pre className="max-h-72 overflow-auto rounded-xl border border-line bg-cream/70 p-4 text-[12px] leading-relaxed break-words whitespace-pre-wrap text-ink-800">
+      <pre className="max-h-72 overflow-auto rounded-xl border border-line bg-hover p-4 text-[12px] leading-relaxed break-words whitespace-pre-wrap text-body">
         {content}
       </pre>
       {url && (
@@ -169,7 +173,7 @@ function AssetText({ path }: { path: string }) {
           href={url}
           target="_blank"
           rel="noreferrer"
-          className="mt-2 inline-flex items-center gap-1 text-[12px] font-bold text-ink-900 hover:text-white"
+          className="mt-2 inline-flex items-center gap-1 text-[12px] font-bold text-strong hover:text-brand-text"
         >
           Open source file
           <ExternalLink className="size-3" aria-hidden />
@@ -206,7 +210,7 @@ export function CreativePanel({
   return (
     <section aria-label="Creative" className="card p-4">
       <div className="flex items-center justify-between gap-3">
-        <h2 className="text-[13px] font-extrabold tracking-wide text-ink-900 uppercase">
+        <h2 className="text-[13px] font-extrabold tracking-wide text-strong uppercase">
           Creative
         </h2>
         {overlayEligible && (
@@ -217,8 +221,8 @@ export function CreativePanel({
             className={cn(
               "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11.5px] font-bold transition-colors",
               showBoxes
-                ? "border-white/20 bg-white/6 text-ink-850"
-                : "border-line bg-coal-800 text-ink-500 hover:text-ink-900"
+                ? "border-line-strong bg-tint text-body"
+                : "border-line bg-surface text-subtle hover:text-strong"
             )}
           >
             <Frame className="size-3.5" aria-hidden />
@@ -230,8 +234,8 @@ export function CreativePanel({
       <div className="mt-3 space-y-3">
         {detail.loading && <Skeleton className="aspect-video w-full" />}
         {!detail.loading && assets.length === 0 && (
-          <div className="rounded-xl border border-line bg-cream/70 p-4">
-            <p className="flex items-center gap-2 text-[12.5px] font-semibold text-ink-500">
+          <div className="rounded-xl border border-line bg-hover p-4">
+            <p className="flex items-center gap-2 text-[12.5px] font-semibold text-subtle">
               <FileText className="size-4" aria-hidden />
               Inline submission — the reviewed content is quoted in the
               findings below.
@@ -241,7 +245,7 @@ export function CreativePanel({
         {imageAssets.map((a, i) => (
           <div key={a.id}>
             {imageAssets.length > 1 && (
-              <p className="mb-1 font-mono text-[10.5px] font-bold text-ink-500">
+              <p className="mb-1 font-mono text-[10.5px] font-bold text-subtle">
                 CARD {String(i + 1).padStart(2, "0")}
               </p>
             )}
@@ -258,7 +262,7 @@ export function CreativePanel({
             <AssetText key={a.id} path={a.storage_path} />
           ))}
         {detail.data?.submission.title && (
-          <p className="text-[12px] text-ink-500">
+          <p className="text-[12px] text-subtle">
             “{detail.data.submission.title}”
             {detail.data.submission.target_jurisdictions?.length
               ? ` · ${detail.data.submission.target_jurisdictions.join(", ")}`

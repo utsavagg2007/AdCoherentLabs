@@ -214,16 +214,16 @@ export function Dropzone({
         className={cn(
           "flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed px-6 py-10 text-center transition-colors duration-200",
           dragging
-            ? "border-white/40 bg-white/6"
-            : "border-white/15 bg-coal-850 hover:border-white/25 hover:bg-white/5",
+            ? "border-line-strong bg-tint"
+            : "border-line-strong bg-sunken hover:border-line-strong hover:bg-tint",
           atCapacity && "cursor-not-allowed opacity-60"
         )}
       >
         <UploadCloud
-          className={cn("size-8", dragging ? "text-ink-700" : "text-ink-500")}
+          className={cn("size-8", dragging ? "text-muted" : "text-subtle")}
           aria-hidden
         />
-        <p className="mt-3 text-[14px] font-bold text-ink-900">
+        <p className="mt-3 text-[14px] font-bold text-strong">
           {atCapacity
             ? `Maximum ${maxFiles} card${maxFiles > 1 ? "s" : ""} reached`
             : dragging
@@ -232,12 +232,12 @@ export function Dropzone({
                 ? "Drag carousel cards here, or browse"
                 : "Drag a creative here, or browse"}
         </p>
-        <p className="mt-1 text-[12px] leading-relaxed text-ink-500">
+        <p className="mt-1 text-[12px] leading-relaxed text-subtle">
           {imagesOnly ? "PNG, JPEG, WebP, GIF" : formatsLine(allowedKinds)}
           {capMb ? ` · up to ${capMb} MB on your plan` : ""}
         </p>
         {!imagesOnly && (
-          <p className="mt-0.5 text-[11.5px] text-ink-500">
+          <p className="mt-0.5 text-[11.5px] text-subtle">
             {videoAllowed
               ? maxVideoSeconds != null
                 ? `Video up to ${maxVideoSeconds}s on your plan — analysed frame by frame.`
@@ -268,8 +268,8 @@ export function Dropzone({
               <li
                 key={f.id}
                 className={cn(
-                  "flex items-center gap-3 rounded-xl border bg-coal-800 p-2.5",
-                  problem ? "border-amber-400/30" : "border-line"
+                  "flex items-center gap-3 rounded-xl border bg-surface p-2.5",
+                  problem ? "border-warn-line" : "border-line"
                 )}
               >
                 {f.previewUrl ? (
@@ -280,11 +280,11 @@ export function Dropzone({
                     className="size-11 shrink-0 rounded-lg border border-line object-cover"
                   />
                 ) : (
-                  <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-coal-700 text-ink-500">
+                  <span className="flex size-11 shrink-0 items-center justify-center rounded-lg bg-hover text-subtle">
                     {f.kind === null ? (
-                      <FileWarning className="size-5 text-amber-400" aria-hidden />
+                      <FileWarning className="size-5 text-warn" aria-hidden />
                     ) : f.planLocked ? (
-                      <Lock className="size-5 text-amber-400" aria-hidden />
+                      <Lock className="size-5 text-warn" aria-hidden />
                     ) : f.kind === "video" ? (
                       <Clapperboard className="size-5" aria-hidden />
                     ) : f.kind === "image" ? (
@@ -295,9 +295,9 @@ export function Dropzone({
                   </span>
                 )}
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[12.5px] font-bold text-ink-900">
+                  <span className="block truncate text-[12.5px] font-bold text-strong">
                     {multiple && (
-                      <span className="mr-1.5 font-mono text-[10.5px] text-ink-600">
+                      <span className="mr-1.5 font-mono text-[10.5px] text-muted">
                         {String(i + 1).padStart(2, "0")}
                       </span>
                     )}
@@ -306,7 +306,7 @@ export function Dropzone({
                   <span
                     className={cn(
                       "block text-[11px]",
-                      problem ? "font-semibold text-amber-300" : "text-ink-500"
+                      problem ? "font-semibold text-warn" : "text-subtle"
                     )}
                   >
                     {(f.file.size / (1024 * 1024)).toFixed(2)} MB
@@ -323,7 +323,7 @@ export function Dropzone({
                   type="button"
                   onClick={() => onRemove(f.id)}
                   aria-label={`Remove ${f.file.name}`}
-                  className="cursor-pointer rounded-md p-1.5 text-ink-500 hover:bg-white/8 hover:text-red-300"
+                  className="cursor-pointer rounded-md p-1.5 text-subtle hover:bg-tint-2 hover:text-fail"
                 >
                   <X className="size-4" />
                 </button>

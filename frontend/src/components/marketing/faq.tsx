@@ -35,11 +35,11 @@ const FAQS = [
 
 export function Faq() {
   return (
-    <section id="faq" aria-label="Frequently asked questions" className="bg-coal-900">
+    <section id="faq" aria-label="Frequently asked questions" className="bg-canvas">
       <div className="container-page py-20 sm:py-28">
         <div className="mx-auto max-w-3xl">
           <p className="eyebrow">FAQ</p>
-          <h2 className="text-chrome mt-3 font-display text-4xl font-bold tracking-[-0.02em] text-balance">
+          <h2 className="text-gradient mt-3 font-display text-4xl font-bold tracking-[-0.02em] text-balance">
             Precise answers to fair questions.
           </h2>
           <Accordion type="single" collapsible className="mt-10">

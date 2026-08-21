@@ -272,7 +272,7 @@ export default function NewSubmissionPage() {
                       capMb={capMb}
                       imagesOnly
                     />
-                    <p className="mt-2 text-[12px] text-ink-500">
+                    <p className="mt-2 text-[12px] text-subtle">
                       {cards.length}/10 cards · reviewed as one submission, in
                       this order.
                     </p>
@@ -293,7 +293,7 @@ export default function NewSubmissionPage() {
                       onChange={(e) => setText(e.target.value)}
                       maxLength={2_000_000}
                     />
-                    <p className="mt-1.5 text-right text-[11.5px] text-ink-500 tabular-nums">
+                    <p className="mt-1.5 text-right text-[11.5px] text-subtle tabular-nums">
                       {formatNumber(text.length)} characters
                     </p>
                   </div>
@@ -312,7 +312,7 @@ export default function NewSubmissionPage() {
                       maxLength={2_000_000}
                       spellCheck={false}
                     />
-                    <p className="mt-1.5 text-right text-[11.5px] text-ink-500 tabular-nums">
+                    <p className="mt-1.5 text-right text-[11.5px] text-subtle tabular-nums">
                       {formatNumber(html.length)} characters
                     </p>
                   </div>
@@ -323,7 +323,7 @@ export default function NewSubmissionPage() {
             <div className="grid gap-5 sm:grid-cols-2">
               <div>
                 <label htmlFor="title" className="label">
-                  Title <span className="font-normal text-ink-500">(optional)</span>
+                  Title <span className="font-normal text-subtle">(optional)</span>
                 </label>
                 <input
                   id="title"
@@ -337,7 +337,7 @@ export default function NewSubmissionPage() {
               <div>
                 <span className="label">
                   Target jurisdictions{" "}
-                  <span className="font-normal text-ink-500">(optional)</span>
+                  <span className="font-normal text-subtle">(optional)</span>
                 </span>
                 <JurisdictionSelect
                   selected={jurisdictions}
@@ -350,11 +350,11 @@ export default function NewSubmissionPage() {
               <ErrorPanel error={error} onRetry={() => setConfirming(true)} />
             ) : null}
             {insufficient && (
-              <div role="alert" className="rounded-2xl border border-amber-400/30 bg-amber-400/10 p-5">
-                <p className="text-sm font-bold text-amber-200">
+              <div role="alert" className="rounded-2xl border border-warn-line bg-warn-soft p-5">
+                <p className="text-sm font-bold text-warn">
                   Not enough credits for this review
                 </p>
-                <p className="mt-1 text-[13px] leading-relaxed text-amber-300">
+                <p className="mt-1 text-[13px] leading-relaxed text-warn">
                   It costs{" "}
                   <strong>{String(insufficient.details["needed"] ?? "—")}</strong>{" "}
                   credits and your balance is{" "}
@@ -377,13 +377,13 @@ export default function NewSubmissionPage() {
           {/* -------- summary rail -------- */}
           <aside className="xl:sticky xl:top-6 xl:self-start">
             <div className="card p-5">
-              <h2 className="text-[13px] font-extrabold tracking-wide text-ink-900 uppercase">
+              <h2 className="text-[13px] font-extrabold tracking-wide text-strong uppercase">
                 Review summary
               </h2>
               <dl className="mt-4 space-y-2.5 text-[13px]">
                 <div className="flex justify-between gap-3">
-                  <dt className="text-ink-500">Input</dt>
-                  <dd className="font-bold text-ink-900">
+                  <dt className="text-subtle">Input</dt>
+                  <dd className="font-bold text-strong">
                     {mode === "upload"
                       ? files.length && files[0].kind
                         ? KIND_LABEL[files[0].kind]
@@ -398,25 +398,25 @@ export default function NewSubmissionPage() {
                   </dd>
                 </div>
                 <div className="flex justify-between gap-3">
-                  <dt className="text-ink-500">Jurisdictions</dt>
-                  <dd className="font-bold text-ink-900">
+                  <dt className="text-subtle">Jurisdictions</dt>
+                  <dd className="font-bold text-strong">
                     {jurisdictions.length === 0
                       ? "Nationwide"
                       : jurisdictions.join(", ")}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-3 border-t border-line pt-2.5">
-                  <dt className="text-ink-500">Estimated cost</dt>
-                  <dd className="text-lg font-extrabold text-ink-900 tabular-nums">
+                  <dt className="text-subtle">Estimated cost</dt>
+                  <dd className="text-lg font-extrabold text-strong tabular-nums">
                     {estimate !== null ? `${estimate} credits` : "—"}
                   </dd>
                 </div>
                 <div className="flex justify-between gap-3">
-                  <dt className="text-ink-500">Balance</dt>
-                  <dd className="font-bold text-ink-900 tabular-nums">
+                  <dt className="text-subtle">Balance</dt>
+                  <dd className="font-bold text-strong tabular-nums">
                     {balance !== null ? formatNumber(balance) : "—"}
                     {estimate !== null && balance !== null && (
-                      <span className="ml-1 text-[11.5px] font-semibold text-ink-500">
+                      <span className="ml-1 text-[11.5px] font-semibold text-subtle">
                         → {formatNumber(Math.max(0, balance - estimate))}
                       </span>
                     )}
@@ -424,7 +424,7 @@ export default function NewSubmissionPage() {
                 </div>
               </dl>
               {credits.data && (
-                <p className="mt-3 rounded-lg bg-coal-700 p-2.5 text-[11.5px] leading-relaxed text-ink-500">
+                <p className="mt-3 rounded-lg bg-hover p-2.5 text-[11.5px] leading-relaxed text-subtle">
                   Your {credits.data.tier} plan base prices: text{" "}
                   {priceList.text ?? "—"} · image {priceList.image ?? "—"} ·
                   PDF {priceList.pdf ?? "—"} · doc {priceList.docx ?? "—"}
@@ -446,7 +446,7 @@ export default function NewSubmissionPage() {
               <p
                 className={cn(
                   "mt-2.5 text-center text-[12px] leading-relaxed",
-                  ready ? "text-ink-500" : "font-semibold text-amber-300"
+                  ready ? "text-subtle" : "font-semibold text-warn"
                 )}
                 role={ready ? undefined : "status"}
               >
@@ -465,16 +465,16 @@ export default function NewSubmissionPage() {
           title="Confirm this review"
           description="Credits are charged when the run is accepted."
         >
-          <div className="rounded-xl border border-line bg-cream/70 p-4">
+          <div className="rounded-xl border border-line bg-hover p-4">
             <div className="flex items-baseline justify-between">
-              <span className="text-sm font-semibold text-ink-600">
+              <span className="text-sm font-semibold text-muted">
                 This review will charge
               </span>
-              <span className="text-2xl font-extrabold text-ink-900 tabular-nums">
+              <span className="text-2xl font-extrabold text-strong tabular-nums">
                 {estimate ?? "—"} credits
               </span>
             </div>
-            <p className="mt-1.5 text-[12.5px] leading-relaxed text-ink-500">
+            <p className="mt-1.5 text-[12.5px] leading-relaxed text-subtle">
               {mode === "carousel"
                 ? `Image cost plus ${Math.max(0, cards.length - 1)} additional card${cards.length - 1 === 1 ? "" : "s"}.`
                 : "Priced from your plan's live price list."}{" "}

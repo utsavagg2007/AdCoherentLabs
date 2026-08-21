@@ -83,10 +83,10 @@ export async function Pricing() {
       <div className="container-wide py-20 sm:py-28">
         <Reveal className="mx-auto max-w-2xl text-center">
           <p className="eyebrow">Pricing</p>
-          <h2 className="text-chrome mt-3 font-display text-4xl font-bold tracking-[-0.02em] text-balance sm:text-5xl">
+          <h2 className="text-gradient mt-3 font-display text-4xl font-bold tracking-[-0.02em] text-balance sm:text-5xl">
             Priced by the review, not the seat.
           </h2>
-          <p className="mt-4 text-[15.5px] leading-relaxed text-ink-600 text-pretty">
+          <p className="mt-4 text-[15.5px] leading-relaxed text-muted text-pretty">
             Every plan runs the same four-layer engine. Credits meter the
             work — you pay for what a review actually uses, not a flat fee.
           </p>
@@ -94,10 +94,10 @@ export async function Pricing() {
 
         {!data ? (
           <div className="card mx-auto mt-14 max-w-md p-8 text-center">
-            <p className="text-[15px] font-semibold text-ink-850">
+            <p className="text-[15px] font-semibold text-body">
               Live pricing is momentarily unavailable.
             </p>
-            <p className="mt-2 text-[13.5px] leading-relaxed text-ink-600">
+            <p className="mt-2 text-[13.5px] leading-relaxed text-muted">
               Prices are published by the platform in real time. Refresh in a
               moment, or create a free account — the Free plan needs no card.
             </p>
@@ -120,27 +120,27 @@ export async function Pricing() {
                       className={cn(
                         "card relative flex w-full flex-col p-6",
                         featured &&
-                          "border-white/25 shadow-(--shadow-float) ring-1 ring-white/10"
+                          "border-line-strong shadow-(--shadow-float) ring-1 ring-line"
                       )}
                     >
                       {featured && (
-                        <span className="absolute -top-3 left-1/2 inline-flex -translate-x-1/2 items-center gap-1 rounded-full border border-white/20 bg-coal-700 px-3 py-1 text-[11px] font-bold tracking-wider text-ink-850 uppercase shadow-(--shadow-soft)">
+                        <span className="absolute -top-3 left-1/2 inline-flex -translate-x-1/2 items-center gap-1 rounded-full border border-line-strong bg-hover px-3 py-1 text-[11px] font-bold tracking-wider text-body uppercase shadow-(--shadow-soft)">
                           <Sparkles className="size-3" aria-hidden />
                           Most chosen
                         </span>
                       )}
-                      <h3 className="font-display text-lg font-bold text-ink-900">
+                      <h3 className="font-display text-lg font-bold text-strong">
                         {p.name}
                       </h3>
-                      <p className="mt-1 min-h-9 text-[12.5px] leading-snug text-ink-600">
+                      <p className="mt-1 min-h-9 text-[12.5px] leading-snug text-muted">
                         {p.tagline}
                       </p>
                       <p className="mt-4">
-                        <span className="text-chrome font-display text-4xl font-bold tracking-tight">
+                        <span className="text-gradient font-display text-4xl font-bold tracking-tight">
                           {price(p.monthly_usd_cents)}
                         </span>
                         {p.monthly_usd_cents !== null && (
-                          <span className="ml-1 text-[13px] font-medium text-ink-500">
+                          <span className="ml-1 text-[13px] font-medium text-subtle">
                             /month
                           </span>
                         )}
@@ -149,10 +149,10 @@ export async function Pricing() {
                         {highlights(p).map((h) => (
                           <li
                             key={h}
-                            className="flex items-start gap-2 text-[13px] leading-snug text-ink-700"
+                            className="flex items-start gap-2 text-[13px] leading-snug text-muted"
                           >
                             <Check
-                              className="mt-0.5 size-3.5 shrink-0 text-emerald-300"
+                              className="mt-0.5 size-3.5 shrink-0 text-pass"
                               aria-hidden
                             />
                             {h}
@@ -185,8 +185,8 @@ export async function Pricing() {
             {data.packs.length > 0 && (
               <Reveal className="mx-auto mt-10 max-w-2xl">
                 <div className="card flex flex-col items-center gap-3 p-5 text-center sm:flex-row sm:justify-between sm:text-left">
-                  <p className="text-[13.5px] leading-relaxed text-ink-600">
-                    <span className="font-semibold text-ink-850">
+                  <p className="text-[13.5px] leading-relaxed text-muted">
+                    <span className="font-semibold text-body">
                       Credit packs
                     </span>{" "}
                     for burst volume — on any active paid plan, they never
@@ -205,7 +205,7 @@ export async function Pricing() {
           </>
         )}
 
-        <p className="mt-10 text-center text-[12px] text-ink-500">
+        <p className="mt-10 text-center text-[12px] text-subtle">
           Prices are published live by the platform. Credits are reserved when
           a run starts and charged from what it actually uses; whatever is left
           over goes back to your balance. Every line item is on the report.

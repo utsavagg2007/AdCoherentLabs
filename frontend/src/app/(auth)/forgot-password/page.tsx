@@ -33,15 +33,15 @@ export default function ForgotPasswordPage() {
   if (done) {
     return (
       <div className="text-center">
-        <div className="mx-auto flex size-14 items-center justify-center rounded-2xl border border-white/15 bg-white/6 text-ink-600">
+        <div className="mx-auto flex size-14 items-center justify-center rounded-2xl border border-line-strong bg-tint text-muted">
           <MailCheck className="size-6" aria-hidden />
         </div>
-        <h1 className="mt-5 text-2xl font-extrabold tracking-tight text-ink-900">
+        <h1 className="mt-5 text-2xl font-extrabold tracking-tight text-strong">
           Check your email
         </h1>
-        <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-ink-500">
+        <p className="mx-auto mt-2 max-w-xs text-sm leading-relaxed text-subtle">
           If an account exists for{" "}
-          <span className="font-semibold text-ink-800">{email}</span>, a reset
+          <span className="font-semibold text-body">{email}</span>, a reset
           link is on its way.
         </p>
         <Button href="/login" variant="secondary" className="mt-7">
@@ -53,10 +53,10 @@ export default function ForgotPasswordPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-extrabold tracking-tight text-ink-900">
+      <h1 className="text-2xl font-extrabold tracking-tight text-strong">
         Reset your password
       </h1>
-      <p className="mt-1.5 text-sm text-ink-500">
+      <p className="mt-1.5 text-sm text-subtle">
         Enter your email and we&apos;ll send a reset link.
       </p>
       <form onSubmit={onSubmit} className="mt-7 space-y-4" noValidate>
@@ -76,7 +76,7 @@ export default function ForgotPasswordPage() {
           />
         </div>
         {error && (
-          <div role="alert" className="rounded-xl border border-red-400/25 bg-red-400/10 p-3.5 text-[13px] text-red-300">
+          <div role="alert" className="rounded-xl border border-fail-line bg-fail-soft p-3.5 text-[13px] text-fail">
             {error}
           </div>
         )}
@@ -90,9 +90,9 @@ export default function ForgotPasswordPage() {
           Send reset link
         </Button>
       </form>
-      <p className="mt-6 text-center text-[13.5px] text-ink-500">
+      <p className="mt-6 text-center text-[13.5px] text-subtle">
         Remembered it?{" "}
-        <Link href="/login" className="font-bold text-ink-900 hover:text-white">
+        <Link href="/login" className="font-bold text-strong hover:text-brand-text">
           Sign in
         </Link>
       </p>
