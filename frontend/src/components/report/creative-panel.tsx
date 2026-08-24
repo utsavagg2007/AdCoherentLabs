@@ -86,7 +86,7 @@ function AssetImage({
       />
       {showBoxes &&
         natural &&
-        boxes.map((b) => {
+        boxes.map((b, bi) => {
           const left = b.normalized ? b.x * 100 : (b.x / natural.w) * 100;
           const top = b.normalized ? b.y * 100 : (b.y / natural.h) * 100;
           const width = b.normalized ? b.w * 100 : (b.w / natural.w) * 100;
@@ -94,7 +94,7 @@ function AssetImage({
           if (width <= 0 || height <= 0 || left > 100 || top > 100) return null;
           return (
             <div
-              key={b.index}
+              key={`${bi}:${b.index}`}
               className={cn(
                 "pointer-events-none absolute rounded-sm border-2",
                 SEVERITY_BORDER[b.severity]

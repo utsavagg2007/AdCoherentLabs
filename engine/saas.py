@@ -225,22 +225,55 @@ class SupabaseDataPlane:
 
     # -- low-level helpers --------------------------------------------------
 
+    def _rollback_quietly(self) -> None:
+        """Return the session to a usable state after a failed statement.
+
+        Postgres aborts the whole transaction on ANY error and then refuses
+        every later statement with InFailedSqlTransaction until the block
+        ends. This object holds ONE long-lived connection for the life of the
+        worker process, so without this a single failure poisons every
+        subsequent query — including the handler that marks the job failed,
+        which leaves the job wedged in 'leased' forever.
+
+        That is not hypothetical: it is exactly how run d31c5f66 hung on
+        2026-08-24. The worker started 21 minutes before migration 0012, a
+        meter call hit UndefinedFunction on app.meter_effort, and the
+        connection never recovered.
+        """
+        try:
+            if self.conn is not None:
+                self.conn.rollback()
+        except Exception:      # noqa: BLE001 - the connection is already lost
+            pass
+
     def _one(self, sql: str, params: dict | tuple = ()) -> dict | None:
         assert self.conn is not None, "call connect() first"
-        with self.conn.cursor() as cur:
-            cur.execute(sql, params)
-            return cur.fetchone()
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute(sql, params)
+                return cur.fetchone()
+        except Exception:
+            self._rollback_quietly()
+            raise
 
     def _all(self, sql: str, params: dict | tuple = ()) -> list[dict]:
         assert self.conn is not None, "call connect() first"
-        with self.conn.cursor() as cur:
-            cur.execute(sql, params)
-            return cur.fetchall()
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute(sql, params)
+                return cur.fetchall()
+        except Exception:
+            self._rollback_quietly()
+            raise
 
     def _exec(self, sql: str, params: dict | tuple = (), *, commit: bool = True) -> None:
         assert self.conn is not None, "call connect() first"
-        with self.conn.cursor() as cur:
-            cur.execute(sql, params)
+        try:
+            with self.conn.cursor() as cur:
+                cur.execute(sql, params)
+        except Exception:
+            self._rollback_quietly()
+            raise
         if commit:
             self.conn.commit()
 
@@ -432,10 +465,29 @@ class SupabaseDataPlane:
         the run is still going. That is the whole point of metering in real
         time rather than settling at the end."""
         assert self.conn is not None
-        with self.conn.cursor() as cur:
-            cur.execute("select app.meter_effort(%s, %s, %s, %s, %s) as m",
-                        (org_id, run_id, unit, qty, Jsonb(meta or {})))
-            reading = cur.fetchone()["m"]
+        try:
+            with self.conn.cursor() as cur:
+                # EVERY parameter is cast explicitly. app.meter_effort is
+                # declared (uuid, uuid, text, numeric, jsonb) and the engine
+                # always hands `qty` through float() - psycopg then binds it as
+                # DOUBLE PRECISION, which Postgres will NOT implicitly narrow to
+                # numeric during function resolution. Without the cast every
+                # call raised UndefinedFunction, orchestrator._meter swallowed
+                # it as "meter sink failed", and the run completed having billed
+                # NOTHING. Passing an int happens to work, which is exactly why
+                # a hand test can pass while the real path never charges.
+                cur.execute(
+                    "select app.meter_effort("
+                    "  %s::uuid, %s::uuid, %s::text, %s::numeric, %s::jsonb) as m",
+                    (org_id, run_id, unit, qty, Jsonb(meta or {})))
+                reading = cur.fetchone()["m"]
+        except Exception:
+            # The engine treats a metering failure as "unmetered, carry on"
+            # (orchestrator._meter swallows it). That contract only holds if
+            # the CONNECTION survives too — otherwise the run dies two
+            # statements later on InFailedSqlTransaction instead.
+            self._rollback_quietly()
+            raise
         self.conn.commit()
         return reading
 

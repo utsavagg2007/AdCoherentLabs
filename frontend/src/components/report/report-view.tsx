@@ -175,8 +175,13 @@ function FindingCard({
 
       {(finding.regulation_citations?.length ?? 0) > 0 && (
         <div className="mt-3 flex flex-wrap gap-1.5">
-          {finding.regulation_citations!.map((c) => (
-            <Chip key={c}>{c}</Chip>
+          {/* The index is part of the key on purpose: these strings are model
+              output and the model DOES emit the same citation twice on one
+              finding (observed: "58 to 72" duplicated), which React rejects as
+              a duplicate key. Deduping instead would silently drop a citation
+              the reviewer is entitled to see. */}
+          {finding.regulation_citations!.map((c, ci) => (
+            <Chip key={`${ci}:${c}`}>{c}</Chip>
           ))}
         </div>
       )}
@@ -531,8 +536,8 @@ export function ReportView({
                 — every framework the router applied to this creative.
               </p>
               <ul className="mt-3 divide-y divide-line">
-                {frameworkRows.map((r) => (
-                  <li key={r.framework} className="flex items-center gap-3 py-2.5">
+                {frameworkRows.map((r, ri) => (
+                  <li key={`${ri}:${r.framework}`} className="flex items-center gap-3 py-2.5">
                     <span
                       className={cn(
                         "w-[108px] shrink-0 rounded-md border px-2 py-1 text-center text-[11px] font-extrabold tracking-wide uppercase",
@@ -592,7 +597,7 @@ export function ReportView({
                 <div className="space-y-4">
                   {group.items.map(({ f, i }) => (
                     <FindingCard
-                      key={f.finding_id ?? i}
+                      key={`${i}:${f.finding_id ?? ""}`}
                       finding={f}
                       index={i}
                       dbRow={

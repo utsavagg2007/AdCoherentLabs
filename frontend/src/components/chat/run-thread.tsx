@@ -118,6 +118,17 @@ export function RunThread({
             Running the four-layer review — evidence, claims, regulation, then
             deterministic verification.
           </p>
+          {/* Without this, a retry looks like the review inexplicably starting
+              over from the first stage — the stage rail really does reset,
+              because the attempt really does re-run. Naming it is the
+              difference between "it restarted twice" and "attempt 2 of 3". */}
+          {(resp?.queue?.attempts ?? 0) > 1 && (
+            <p className="mt-2 text-[13px] text-warn">
+              First attempt didn&apos;t finish — this is attempt{" "}
+              {resp!.queue!.attempts} of 3. Retries are automatic and you are
+              not charged for one that fails.
+            </p>
+          )}
           <StageRail status={status} />
           <div className="mt-3">
             <ActivityFeed runId={runId} active terminal={null} />

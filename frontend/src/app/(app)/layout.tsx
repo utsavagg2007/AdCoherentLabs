@@ -31,7 +31,12 @@ function Shell({ children }: { children: React.ReactNode }) {
     if (orgs.length === 0) router.replace("/onboarding");
   }, [loading, loadingOrgs, orgs.length, session, router]);
 
-  if (loading || !session || loadingOrgs) {
+  // `orgs.length === 0` is what makes this a FIRST-LOAD gate rather than a
+  // "whenever orgs are being re-read" gate. A background re-discovery (org
+  // switch, or a refresh after the session object changes) keeps the current
+  // page mounted instead of tearing it down for a full-screen spinner and
+  // losing whatever the user had in progress.
+  if (loading || !session || (loadingOrgs && orgs.length === 0)) {
     return (
       <div className="flex min-h-dvh flex-col items-center justify-center gap-6 bg-canvas">
         <Logo />

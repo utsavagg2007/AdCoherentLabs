@@ -168,11 +168,20 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
     [configured]
   );
 
+  // WHO is signed in, not WHICH session object. supabase-js mints a brand new
+  // Session on every token refresh — and it refreshes whenever the tab regains
+  // focus. Keying discovery on `session` therefore rebuilt `loadOrgs`, re-ran
+  // the effect below, flipped `loadingOrgs` back to true, and the app shell
+  // (app/layout.tsx) unmounted the whole page for "Opening your workspace".
+  // That is what made switching tabs look like a full page reload and threw
+  // away in-progress state such as the review transcript.
+  const userId = session?.user?.id ?? null;
+
   const loadOrgs = useCallback(async (isStale: () => boolean = () => false) => {
     // called via a microtask so state updates never run synchronously
     // inside the invoking effect
     await Promise.resolve();
-    if (!configured || !session) {
+    if (!configured || !userId) {
       orgSelection.id = null;
       setOrgs([]);
       setOrgId(null);
@@ -238,7 +247,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
     } finally {
       if (!isStale()) setLoadingOrgs(false);
     }
-  }, [configured, session, api]);
+  }, [configured, userId, api]);
 
   useEffect(() => {
     // Discovery waits until the auth session has settled — a run started

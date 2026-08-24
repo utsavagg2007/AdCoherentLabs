@@ -4,7 +4,12 @@ Five tiers. Paid starts at "hobby". Each tier pins a model and hard
 budgets so a single review can never burn more credits than its tier's
 pricing supports:
 
-  max_output_tokens        enforced ceiling passed to the provider
+  max_output_tokens        enforced ceiling passed to the provider. THIS is the
+                           value the provider actually uses;
+                           public.plan_entitlements mirrors it and
+                           engine.saas._entitlement_drift reports a mismatch.
+                           Change BOTH or runs fail on a limit nobody can see
+                           in the database.
   chunks_per_query         retrieval k per (framework, query) pair
   max_chunks_per_framework cap on regulation excerpts sent per framework
   max_context_chars        cap on the total regulation-excerpt text
@@ -43,27 +48,27 @@ _OPENROUTER_HOBBY_MODEL = os.environ.get("OPENROUTER_HOBBY_MODEL", "qwen/qwen3.7
 TIERS: dict[str, TierConfig] = {
     "free": TierConfig(
         name="free", paid=False, provider="openrouter", model=_OPENROUTER_FREE_MODEL,
-        max_output_tokens=4_000, effort=None,
+        max_output_tokens=8_000, effort=None,
         chunks_per_query=3, max_chunks_per_framework=6, max_context_chars=24_000,
     ),
     "hobby": TierConfig(
         name="hobby", paid=True, provider="openrouter", model=_OPENROUTER_HOBBY_MODEL,
-        max_output_tokens=6_000, effort=None,
+        max_output_tokens=12_000, effort=None,
         chunks_per_query=4, max_chunks_per_framework=8, max_context_chars=40_000,
     ),
     "pro": TierConfig(
         name="pro", paid=True, provider="anthropic", model="claude-sonnet-5",
-        max_output_tokens=8_000, effort="medium",
+        max_output_tokens=16_000, effort="medium",
         chunks_per_query=5, max_chunks_per_framework=10, max_context_chars=60_000,
     ),
     "design": TierConfig(
         name="design", paid=True, provider="anthropic", model="claude-opus-4-8",
-        max_output_tokens=16_000, effort="high",
+        max_output_tokens=32_000, effort="high",
         chunks_per_query=6, max_chunks_per_framework=12, max_context_chars=90_000,
     ),
     "enterprise": TierConfig(
         name="enterprise", paid=True, provider="anthropic", model="claude-opus-4-8",
-        max_output_tokens=32_000, effort="high",
+        max_output_tokens=64_000, effort="high",
         chunks_per_query=8, max_chunks_per_framework=16, max_context_chars=140_000,
     ),
 }
