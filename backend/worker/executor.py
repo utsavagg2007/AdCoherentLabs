@@ -198,8 +198,19 @@ def _execute_fresh(db: SupabaseDataPlane, run: dict, ent, tmpdir: str):
           "frameworks": frameworks, **({"media": media_meta} if media_meta else {})})
 
     db.set_run(run_id, status="running_llm")
+    # Substantiation the user supplied when the intake asked what backs their
+    # claims. It rides the SAME channel a reviewer's resume guidance uses —
+    # review_and_verify injects it into the review prompt as authoritative
+    # operator direction — so Layer 3 can clear a claim against supplied
+    # evidence instead of escalating it for lack of any.
+    guidance = (run.get("operator_guidance") or "").strip() or None
+    if guidance:
+        emit("llm", "llm.substantiation",
+             "Applying the substantiation you provided for the claims in "
+             "this creative.", {"chars": len(guidance)})
     result = review_and_verify(asset, ent.tier,
                                max_llm_rounds=DEFAULT_MAX_LLM_ROUNDS,
+                               human_guidance=guidance,
                                progress=emit, meter=meter)
 
     if bypassed:

@@ -379,7 +379,7 @@ and will refuse while `SUPABASE_MODE=cloud`. That refusal is correct.
 | `ENGINE.md` | the four-layer engine in depth |
 | `backend/README.md` | backend runbook and design notes |
 | `supabase.md` | schema and data-plane detail |
-| `DEPLOY_FIREBASE.md` | deployment, and its open questions |
+| `DEPLOY.md` | deployment, and its open questions |
 | `AUTH_AUDIT_AND_PLAN.md` | auth hardening status |
 
 **Reports are decision support, not legal advice.** That framing holds in the

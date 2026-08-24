@@ -339,6 +339,9 @@ export class ApiClient {
       content: string;
       title?: string;
       target_jurisdictions: string[];
+      /** What the advertiser says backs the claims; reaches Layer 3 as
+       *  authoritative operator direction. Omitted when the user skips. */
+      substantiation?: string;
     },
     idempotencyKey: string
   ) {
@@ -348,6 +351,7 @@ export class ApiClient {
       target_jurisdictions: payload.target_jurisdictions,
     };
     if (payload.title) json.title = payload.title;
+    if (payload.substantiation) json.substantiation = payload.substantiation;
     return this.request<SubmissionAccepted>("/v1/submissions", {
       method: "POST",
       json,
@@ -356,7 +360,12 @@ export class ApiClient {
   }
 
   submitFiles(
-    payload: { files: File[]; title?: string; target_jurisdictions: string[] },
+    payload: {
+      files: File[];
+      title?: string;
+      target_jurisdictions: string[];
+      substantiation?: string;
+    },
     idempotencyKey: string
   ) {
     const form = new FormData();
@@ -368,6 +377,8 @@ export class ApiClient {
     if (payload.title) form.append("title", payload.title);
     if (payload.target_jurisdictions.length)
       form.append("target_jurisdictions", payload.target_jurisdictions.join(","));
+    if (payload.substantiation)
+      form.append("substantiation", payload.substantiation);
     return this.request<SubmissionAccepted>("/v1/submissions", {
       method: "POST",
       body: form,

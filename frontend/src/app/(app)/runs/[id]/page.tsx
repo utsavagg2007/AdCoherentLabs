@@ -17,7 +17,6 @@ import {
   UserRoundSearch,
 } from "lucide-react";
 import { ActivityFeed } from "@/components/app/activity-feed";
-import { EffortBreakdown, RunCreditPanel } from "@/components/app/credits";
 import { PageBody, PageHeader } from "@/components/app/page-header";
 import { ReportView } from "@/components/report/report-view";
 import { useApi, useOrg } from "@/components/providers";
@@ -37,7 +36,6 @@ import { getSupabase, supabaseConfigured } from "@/lib/supabase";
 import {
   ACTIVE_RUN_STATUSES,
   type ReportResponse,
-  type RunEffort,
   type RunResponse,
 } from "@/lib/types";
 import { cn, formatDateTime } from "@/lib/utils";
@@ -71,25 +69,6 @@ function RunView({ id }: { id: string }) {
   const isActive =
     status !== null && (ACTIVE_RUN_STATUSES as string[]).includes(status);
   const isTerminalWithReport = status === "complete" || status === "human_review";
-
-  // Effort line items behind the charge. Re-fetched on every status change so
-  // the breakdown grows while the run is metering and lands on its final
-  // shape the moment the hold settles.
-  const [effort, setEffort] = useState<RunEffort | null>(null);
-  useEffect(() => {
-    let cancelled = false;
-    api
-      .runEffort(id)
-      .then((e) => {
-        if (!cancelled) setEffort(e);
-      })
-      .catch(() => {
-        /* pre-0012 runs have no effort record; the panel simply hides */
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [api, id, status]);
 
   // -- data loading ---------------------------------------------------------
   const load = async () => {
@@ -257,22 +236,10 @@ function RunView({ id }: { id: string }) {
             </div>
           )}
 
-          {/* ---------------- what this run cost ---------------- */}
-          {runResp!.credits && (
-            <section
-              aria-label="Credits for this run"
-              className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)]"
-            >
-              <RunCreditPanel credits={runResp!.credits} />
-              {effort && effort.units.length > 0 ? (
-                <EffortBreakdown effort={effort} />
-              ) : (
-                <div className="card flex items-center justify-center p-6 text-center text-[12.5px] leading-relaxed text-subtle">
-                  Usage line items appear here as the engine meters the run.
-                </div>
-              )}
-            </section>
-          )}
+          {/* Cost is deliberately absent. The run still meters against its
+              escrow server-side; the product does not put a meter in front of
+              a reviewer. GET /v1/runs/{id} still returns `credits` for API
+              clients and operators. */}
 
           {/* ---------------- active: stage strip ---------------- */}
           {isActive && (
@@ -386,7 +353,7 @@ function RunView({ id }: { id: string }) {
                     </details>
                   )}
                   <div className="mt-5 flex flex-wrap gap-2.5">
-                    <Button href="/submissions/new">
+                    <Button href="/dashboard">
                       <RefreshCcw className="size-4" aria-hidden />
                       Start a new review
                     </Button>

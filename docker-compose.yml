@@ -42,6 +42,10 @@ services:
         NEXT_PUBLIC_SUPABASE_URL: ${SUPABASE_URL:?set SUPABASE_URL in .env}
         NEXT_PUBLIC_SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:?set SUPABASE_ANON_KEY in .env - the PUBLIC anon key, not service_role}
         NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://127.0.0.1:8080}
+        # Defaulted rather than `:?` — both have safe fallbacks inside
+        # the app, so a fresh clone still builds without setting them.
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+        NEXT_PUBLIC_AUTH_PROVIDERS: ${NEXT_PUBLIC_AUTH_PROVIDERS:-google,facebook,slack}
     ports:
       # Loopback-bound like every other published port here: only the reverse
       # proxy is ever meant to listen publicly (Appendix C).

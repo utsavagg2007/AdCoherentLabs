@@ -3,7 +3,7 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   // Emit .next/standalone — a self-contained server plus only the traced
   // node_modules the app actually reaches. Required by frontend/Dockerfile and
-  // by Cloud Run: without it the runtime image has to carry the full
+  // by any deploy: without it the runtime image has to carry the full
   // node_modules tree (hundreds of MB) just to run `next start`.
   //
   // Caveat the tracer does not handle: `public/` and `.next/static` are NOT

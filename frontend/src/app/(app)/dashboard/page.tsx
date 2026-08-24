@@ -1,392 +1,446 @@
 "use client";
 
-import Link from "next/link";
+/**
+ * The review console — one conversation, one creative.
+ *
+ * This replaces the old form-shaped workbench (mode tabs, a price quote, and a
+ * "Charge N credits & run" button). A compliance review is a documented
+ * exchange, so it is rendered as a record: you send the creative, the console
+ * asks the two things that change what gets checked, the engine works in the
+ * open, and its own questions come back in the same thread.
+ *
+ * Cost appears nowhere. Credits are still metered server-side against the run's
+ * escrow; the product decision is that the reviewer should be thinking about
+ * the ad, not the meter.
+ *
+ * Reload safety: the run id lives in `?run=`, and everything above it is
+ * rebuilt from the submission and the run's own `operator_guidance`. The
+ * transcript is a view of the audit trail, not state that only exists here.
+ */
+
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { FileText, Layers, MapPin, ShieldCheck, Sparkles } from "lucide-react";
+import { Composer, describeDraft, type Draft } from "@/components/chat/composer";
 import {
-  ArrowRight,
-  CircleDollarSign,
-  FileSearch2,
-  Gauge,
-  Scale,
-  ScanSearch,
-  ShieldCheck,
-  SquarePlus,
-} from "lucide-react";
-import { PageBody, PageHeader } from "@/components/app/page-header";
+  JurisdictionQuestion,
+  SubstantiationQuestion,
+} from "@/components/chat/intake";
+import { RunThread } from "@/components/chat/run-thread";
+import { Transcript, Turn, TurnCard } from "@/components/chat/turn";
 import { useApi, useOrg } from "@/components/providers";
 import { Button } from "@/components/ui/button";
-import {
-  RunStatusBadge,
-  SeverityBadge,
-  SeverityDot,
-} from "@/components/ui/badge";
-import {
-  Disclaimer,
-  EmptyState,
-  ErrorPanel,
-  Skeleton,
-} from "@/components/ui/feedback";
+import { Disclaimer, PageLoading } from "@/components/ui/feedback";
+import { useToast } from "@/components/ui/toast";
+import { isApiError } from "@/lib/api";
+import { spotClaims, type SpottedClaim } from "@/lib/claims";
 import { useAsyncData } from "@/lib/hooks";
-import { frameworkLabel } from "@/lib/labels";
-import { ACTIVE_RUN_STATUSES, type Severity } from "@/lib/types";
-import { formatNumber, timeAgo, truncate } from "@/lib/utils";
+import { US_JURISDICTIONS } from "@/lib/jurisdictions";
+import { newIdempotencyKey, truncate } from "@/lib/utils";
 
-const REVIEW_STEPS = [
-  {
-    icon: ScanSearch,
-    title: "Extract",
-    text: "OCR and vision turn the creative into structured evidence.",
-  },
-  {
-    icon: FileSearch2,
-    title: "Identify",
-    text: "NLP finds every claim, qualifier, and disclosure.",
-  },
-  {
-    icon: Scale,
-    title: "Ground",
-    text: "The AI review cites the regulation text it relied on.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Verify",
-    text: "Deterministic checks audit the review before you see it.",
-  },
-];
+/** What the "You" turn shows for the creative — never the raw File object. */
+interface CreativeSummary {
+  label: string;
+  excerpt: string | null;
+  at: string;
+}
 
-export default function DashboardPage() {
+export default function ReviewConsolePage() {
+  return (
+    <Suspense fallback={<PageLoading label="Opening the review console" />}>
+      <Console />
+    </Suspense>
+  );
+}
+
+function Console() {
   const api = useApi();
-  const { orgId, orgName } = useOrg();
+  const { orgId } = useOrg();
+  const router = useRouter();
+  const params = useSearchParams();
+  const { toast } = useToast();
+
+  const urlRun = params.get("run");
 
   const orgMe = useAsyncData((s) => api.orgMe(s), [api, orgId]);
-  const runs = useAsyncData((s) => api.listRuns({ limit: 25 }, s), [api, orgId]);
-  const findings = useAsyncData(
-    (s) => api.listFindings({ status: "open", limit: 200 }, s),
-    [api, orgId]
+  const ent = orgMe.data?.entitlements;
+
+  // -- conversation state ---------------------------------------------------
+  const [creative, setCreative] = useState<CreativeSummary | null>(null);
+  const [draft, setDraft] = useState<Draft | null>(null);
+  const [claims, setClaims] = useState<SpottedClaim[]>([]);
+  const [jurisdictions, setJurisdictions] = useState<string[] | null>(null);
+  /** undefined = not asked yet, null = explicitly skipped. */
+  const [substantiation, setSubstantiation] = useState<string | null | undefined>(
+    undefined
   );
-  const submissions = useAsyncData(
-    (s) => api.listSubmissions(null, 8, s),
-    [api, orgId]
+  const [runIds, setRunIds] = useState<string[]>([]);
+  const [submitting, setSubmitting] = useState(false);
+  const [rejected, setRejected] = useState<string | null>(null);
+
+  // Idempotency: one key per distinct payload, reused verbatim on retry.
+  const idemRef = useRef<{ fingerprint: string; key: string } | null>(null);
+  // Guards the one-shot rebuild below without re-reading state during render.
+  const restoredRef = useRef<string | null>(null);
+
+  // -- restore from ?run= ---------------------------------------------------
+  const restore = useCallback(
+    async (runId: string) => {
+      try {
+        const rr = await api.getRun(runId);
+        const sub = await api.getSubmission(rr.run.submission_id);
+        const kind = String(sub.submission.params?.pricing_kind ?? "text");
+        const cards = Number(sub.submission.params?.cards ?? 1);
+        setCreative({
+          label:
+            cards > 1
+              ? `Carousel · ${cards} cards`
+              : sub.submission.title || KIND_TEXT[kind] || "Creative",
+          excerpt: null,
+          at: sub.submission.created_at,
+        });
+        setJurisdictions(sub.submission.target_jurisdictions ?? []);
+        setSubstantiation(rr.run.operator_guidance);
+        setRunIds([runId]);
+      } catch {
+        // A stale or foreign run id: drop it and start clean rather than
+        // stranding the user on a console that renders nothing.
+        router.replace("/dashboard");
+      }
+    },
+    [api, router]
   );
 
-  const credits = orgMe.data?.credits ?? null;
-  const activeRuns =
-    runs.data?.runs.filter((r) =>
-      (ACTIVE_RUN_STATUSES as string[]).includes(r.status)
-    ) ?? [];
-  const humanReview =
-    runs.data?.runs.filter((r) => r.status === "human_review") ?? [];
+  useEffect(() => {
+    if (!urlRun || restoredRef.current === urlRun) return;
+    restoredRef.current = urlRun;
+    void restore(urlRun);
+  }, [urlRun, restore]);
 
-  const bySeverity: Record<Severity, number> = { high: 0, medium: 0, low: 0 };
-  for (const f of findings.data?.findings ?? []) {
-    if (f.severity in bySeverity) bySeverity[f.severity] += 1;
+  // -- actions --------------------------------------------------------------
+  function acceptDraft(d: Draft) {
+    const now = new Date().toISOString();
+    if (d.mode === "files") {
+      const many = d.files.length > 1;
+      setCreative({
+        label: describeDraft(d),
+        excerpt: many
+          ? d.files.map((f) => f.file.name).join(", ")
+          : (d.files[0]?.file.name ?? null),
+        at: now,
+      });
+      setClaims([]); // no client-side text to read; Layer 2 finds the claims
+    } else {
+      setCreative({
+        label: describeDraft(d),
+        excerpt: truncate(d.text.replace(/\s+/g, " ").trim(), 260),
+        at: now,
+      });
+      setClaims(spotClaims(d.text));
+    }
+    setDraft(d);
+    setJurisdictions(null);
+    setSubstantiation(undefined);
+    setRejected(null);
   }
-  const openTotal = bySeverity.high + bySeverity.medium + bySeverity.low;
 
-  const isBrandNew =
-    !runs.loading &&
-    !submissions.loading &&
-    (runs.data?.runs.length ?? 0) === 0 &&
-    (submissions.data?.submissions.length ?? 0) === 0;
+  async function submit(codes: string[], backing: string | null) {
+    if (!draft || submitting) return;
+    const fingerprint = JSON.stringify({
+      mode: draft.mode,
+      codes,
+      backing,
+      body:
+        draft.mode === "files"
+          ? draft.files.map((f) => `${f.file.name}:${f.file.size}`).join("|")
+          : `${draft.text.length}:${draft.text.slice(0, 64)}`,
+    });
+    if (!idemRef.current || idemRef.current.fingerprint !== fingerprint) {
+      idemRef.current = { fingerprint, key: newIdempotencyKey() };
+    }
+    setSubmitting(true);
+    setRejected(null);
+    try {
+      const payload = {
+        target_jurisdictions: codes,
+        ...(backing ? { substantiation: backing } : {}),
+      };
+      const accepted =
+        draft.mode === "files"
+          ? await api.submitFiles(
+              { files: draft.files.map((f) => f.file), ...payload },
+              idemRef.current.key
+            )
+          : await api.submitInline(
+              { kind: draft.mode, content: draft.text, ...payload },
+              idemRef.current.key
+            );
+      idemRef.current = null;
+      setRunIds([accepted.run_id]);
+      restoredRef.current = accepted.run_id;
+      router.replace(`/dashboard?run=${accepted.run_id}`);
+    } catch (e) {
+      if (isApiError(e) && e.status === 402) {
+        setRejected(e.message);
+      } else {
+        toast({
+          kind: "error",
+          title: "Couldn't start the review",
+          detail: isApiError(e) ? e.message : "Try again in a moment.",
+        });
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
-  const firstError = orgMe.error || runs.error;
+  function reset() {
+    setCreative(null);
+    setDraft(null);
+    setClaims([]);
+    setJurisdictions(null);
+    setSubstantiation(undefined);
+    setRunIds([]);
+    setRejected(null);
+    restoredRef.current = null;
+    idemRef.current = null;
+    router.replace("/dashboard");
+  }
+
+  const asking =
+    creative !== null &&
+    runIds.length === 0 &&
+    (jurisdictions === null || substantiation === undefined);
+  const started = runIds.length > 0;
 
   return (
-    <>
-      <PageHeader
-        title="Dashboard"
-        description={orgName ? `Compliance review activity for ${orgName}.` : undefined}
-        actions={
-          <Button href="/submissions/new">
-            <SquarePlus className="size-4" aria-hidden />
+    // -mb-16 cancels the app shell's pb-16 so the composer can sit flush.
+    <div className="-mb-16 flex min-h-[calc(100dvh-3.5rem)] flex-col lg:min-h-dvh">
+      <ConsoleHeader
+        subject={creative?.label ?? null}
+        jurisdictions={jurisdictions}
+        onReset={started ? reset : undefined}
+      />
+
+      <div className="flex-1">
+        <Transcript>
+          {creative === null ? (
+            <EmptyState />
+          ) : (
+            <>
+              <Turn role="you" at={creative.at} className="chat-turn-enter">
+                <p className="font-semibold text-strong">{creative.label}</p>
+                {creative.excerpt && (
+                  <p className="mt-2 border-l-2 border-line-strong pl-3 text-[13.5px] leading-relaxed text-muted">
+                    {creative.excerpt}
+                  </p>
+                )}
+              </Turn>
+
+              {/* Q1 — jurisdictions */}
+              <Turn role="assistant" at={creative.at} className="chat-turn-enter">
+                {jurisdictions === null ? (
+                  <JurisdictionQuestion onAnswer={setJurisdictions} />
+                ) : (
+                  <p>
+                    Before I start — where will this run?
+                  </p>
+                )}
+              </Turn>
+              {jurisdictions !== null && (
+                <Turn role="you" at={creative.at} className="chat-turn-enter">
+                  <p className="flex items-center gap-2">
+                    <MapPin className="size-4 shrink-0 text-subtle" aria-hidden />
+                    {jurisdictions.length === 0
+                      ? "Nationwide — no state targeting."
+                      : jurisdictions.map(stateName).join(", ")}
+                  </p>
+                </Turn>
+              )}
+
+              {/* Q2 — substantiation */}
+              {jurisdictions !== null && (
+                <Turn role="assistant" at={creative.at} className="chat-turn-enter">
+                  {substantiation === undefined ? (
+                    <SubstantiationQuestion
+                      claims={claims}
+                      onAnswer={(v) => {
+                        setSubstantiation(v);
+                        void submit(jurisdictions, v);
+                      }}
+                    />
+                  ) : (
+                    <p>
+                      {claims.length > 0
+                        ? "And what supports the claims in it?"
+                        : "Is there evidence I should review alongside this?"}
+                    </p>
+                  )}
+                </Turn>
+              )}
+              {substantiation !== undefined && (
+                <Turn role="you" at={creative.at} className="chat-turn-enter">
+                  {substantiation ? (
+                    <p className="whitespace-pre-wrap">{substantiation}</p>
+                  ) : (
+                    <p className="text-subtle">
+                      Nothing to add — reviewing the creative on its own.
+                    </p>
+                  )}
+                </Turn>
+              )}
+
+              {rejected && (
+                <Turn role="assistant" at={new Date()}>
+                  <p>I couldn&apos;t start this one.</p>
+                  <TurnCard tone="warn">
+                    <p className="text-[13.5px] leading-relaxed text-warn">
+                      {rejected}
+                    </p>
+                    <div className="mt-4">
+                      <Button size="sm" href="/billing">
+                        Review your plan
+                      </Button>
+                    </div>
+                  </TurnCard>
+                </Turn>
+              )}
+
+              {runIds.map((id) => (
+                <RunThread
+                  key={id}
+                  runId={id}
+                  onResumed={(next) =>
+                    setRunIds((prev) =>
+                      prev.includes(next) ? prev : [...prev, next]
+                    )
+                  }
+                />
+              ))}
+            </>
+          )}
+        </Transcript>
+      </div>
+
+      {/* -- composer ---------------------------------------------------- */}
+      <div className="glass sticky bottom-0 z-30 border-t border-line pt-3 pb-4">
+        <div className="mx-auto w-full max-w-[52rem] px-4 sm:px-6">
+          {started ? (
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-line bg-raised px-4 py-3">
+              <p className="text-[13px] text-subtle">
+                This conversation is one review. Start another to send a new
+                creative.
+              </p>
+              <Button size="sm" variant="secondary" onClick={reset}>
+                <Sparkles className="size-4" aria-hidden />
+                New review
+              </Button>
+            </div>
+          ) : (
+            <Composer
+              onSubmit={acceptDraft}
+              disabled={asking || submitting}
+              busy={submitting}
+              autoFocus
+              capMb={ent?.max_upload_mb ?? null}
+              allowedKinds={ent?.allowed_kinds ?? null}
+              maxVideoSeconds={ent?.max_video_seconds ?? null}
+              placeholder={
+                asking
+                  ? "Answer above to start the review…"
+                  : "Paste the ad copy, or drop the creative here."
+              }
+            />
+          )}
+          <Disclaimer className="mt-2.5 px-1" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ConsoleHeader({
+  subject,
+  jurisdictions,
+  onReset,
+}: {
+  subject: string | null;
+  jurisdictions: string[] | null;
+  onReset?: () => void;
+}) {
+  return (
+    <header className="glass sticky top-0 z-30 border-b border-line">
+      <div className="mx-auto flex w-full max-w-[52rem] items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
+        <div className="min-w-0">
+          <h1 className="truncate text-[15px] font-extrabold text-strong">
+            {subject ?? "New review"}
+          </h1>
+          <p className="truncate text-[12px] text-subtle">
+            {jurisdictions === null
+              ? "Four-layer compliance review"
+              : jurisdictions.length === 0
+                ? "Nationwide · federal frameworks"
+                : `${jurisdictions.length} state${jurisdictions.length === 1 ? "" : "s"} · federal + state UDAP`}
+          </p>
+        </div>
+        {onReset && (
+          <Button size="sm" variant="ghost" onClick={onReset}>
             New review
           </Button>
-        }
-      />
-      <PageBody>
-        {firstError ? (
-          <ErrorPanel
-            error={firstError}
-            onRetry={() => {
-              orgMe.refresh();
-              runs.refresh();
-              findings.refresh();
-              submissions.refresh();
-            }}
-          />
-        ) : (
-          <div className="space-y-6">
-            {/* stat row */}
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-              {/* credits */}
-              <div className="card p-4">
-                <p className="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-subtle uppercase">
-                  <CircleDollarSign className="size-3.5" aria-hidden />
-                  Credit balance
-                </p>
-                {orgMe.loading ? (
-                  <Skeleton className="mt-2 h-8 w-24" />
-                ) : (
-                  <>
-                    <p className="mt-1.5 text-3xl font-extrabold text-strong tabular-nums">
-                      {formatNumber(credits?.total)}
-                    </p>
-                    <p className="mt-1 text-[12px] text-subtle tabular-nums">
-                      {formatNumber(credits?.subscription_credits)} subscription
-                      · {formatNumber(credits?.purchased_credits)} purchased
-                    </p>
-                  </>
-                )}
-                <Link
-                  href="/billing"
-                  className="mt-3 inline-flex items-center gap-1 text-[12.5px] font-bold text-strong hover:text-brand-text"
-                >
-                  Manage credits
-                  <ArrowRight className="size-3.5" aria-hidden />
-                </Link>
-              </div>
-
-              {/* plan */}
-              <div className="card p-4">
-                <p className="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-subtle uppercase">
-                  <Gauge className="size-3.5" aria-hidden />
-                  Plan
-                </p>
-                {orgMe.loading ? (
-                  <Skeleton className="mt-2 h-8 w-24" />
-                ) : (
-                  <>
-                    <p className="mt-1.5 text-3xl font-extrabold text-strong capitalize">
-                      {orgMe.data?.tier}
-                    </p>
-                    <p className="mt-1 text-[12px] text-subtle">
-                      {orgMe.data?.entitlements.credits_per_month != null
-                        ? `${formatNumber(orgMe.data.entitlements.credits_per_month)} credits / month`
-                        : "Custom credit provisioning"}
-                      {" · "}
-                      {orgMe.data?.entitlements.max_upload_mb ?? 10} MB uploads
-                    </p>
-                  </>
-                )}
-                <Link
-                  href="/billing"
-                  className="mt-3 inline-flex items-center gap-1 text-[12.5px] font-bold text-strong hover:text-brand-text"
-                >
-                  View plan
-                  <ArrowRight className="size-3.5" aria-hidden />
-                </Link>
-              </div>
-
-              {/* active runs */}
-              <div className="card p-4">
-                <p className="text-[11px] font-bold tracking-wider text-subtle uppercase">
-                  Active runs
-                </p>
-                {runs.loading ? (
-                  <Skeleton className="mt-2 h-8 w-16" />
-                ) : (
-                  <>
-                    <p className="mt-1.5 text-3xl font-extrabold text-strong tabular-nums">
-                      {activeRuns.length}
-                    </p>
-                    <p className="mt-1 text-[12px] text-subtle">
-                      {humanReview.length > 0 ? (
-                        <span className="font-bold text-warn">
-                          {humanReview.length} awaiting human review
-                        </span>
-                      ) : (
-                        "in the four-layer pipeline"
-                      )}
-                    </p>
-                  </>
-                )}
-                <Link
-                  href="/reports"
-                  className="mt-3 inline-flex items-center gap-1 text-[12.5px] font-bold text-strong hover:text-brand-text"
-                >
-                  Run history
-                  <ArrowRight className="size-3.5" aria-hidden />
-                </Link>
-              </div>
-
-              {/* open findings */}
-              <div className="card p-4">
-                <p className="text-[11px] font-bold tracking-wider text-subtle uppercase">
-                  Open findings
-                </p>
-                {findings.loading ? (
-                  <Skeleton className="mt-2 h-8 w-16" />
-                ) : (
-                  <>
-                    <p className="mt-1.5 text-3xl font-extrabold text-strong tabular-nums">
-                      {openTotal}
-                    </p>
-                    <div className="mt-1.5 flex items-center gap-3 text-[12px] font-semibold text-subtle tabular-nums">
-                      <span className="inline-flex items-center gap-1">
-                        <SeverityDot severity="high" /> {bySeverity.high}
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <SeverityDot severity="medium" /> {bySeverity.medium}
-                      </span>
-                      <span className="inline-flex items-center gap-1">
-                        <SeverityDot severity="low" /> {bySeverity.low}
-                      </span>
-                    </div>
-                  </>
-                )}
-                <Link
-                  href="/reports?tab=findings"
-                  className="mt-3 inline-flex items-center gap-1 text-[12.5px] font-bold text-strong hover:text-brand-text"
-                >
-                  Review queue
-                  <ArrowRight className="size-3.5" aria-hidden />
-                </Link>
-              </div>
-            </div>
-
-            {isBrandNew ? (
-              <div className="card bg-dots p-8 sm:p-10">
-                <div className="mx-auto max-w-2xl text-center">
-                  <h2 className="text-xl font-extrabold tracking-tight text-strong">
-                    Run your first compliance review
-                  </h2>
-                  <p className="mx-auto mt-2 max-w-md text-sm leading-relaxed text-subtle">
-                    Paste ad copy or upload a creative. Four layers do the rest
-                    — and every finding arrives with its evidence.
-                  </p>
-                </div>
-                <div className="mx-auto mt-8 grid max-w-3xl gap-4 sm:grid-cols-4">
-                  {REVIEW_STEPS.map((s, i) => {
-                    const Icon = s.icon;
-                    return (
-                      <div key={s.title} className="text-center">
-                        <div className="mx-auto flex size-11 items-center justify-center rounded-2xl border border-line-strong bg-tint text-muted">
-                          <Icon className="size-5" aria-hidden />
-                        </div>
-                        <p className="mt-2.5 text-[13px] font-bold text-strong">
-                          {i + 1}. {s.title}
-                        </p>
-                        <p className="mt-1 text-[12px] leading-relaxed text-subtle">
-                          {s.text}
-                        </p>
-                      </div>
-                    );
-                  })}
-                </div>
-                <div className="mt-8 flex justify-center">
-                  <Button href="/submissions/new" size="lg">
-                    Start a review
-                    <ArrowRight className="size-4" aria-hidden />
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr]">
-                {/* recent runs */}
-                <section aria-label="Recent runs" className="card overflow-hidden">
-                  <div className="flex items-center justify-between border-b border-line px-4 py-3">
-                    <h2 className="text-[13px] font-extrabold tracking-wide text-strong uppercase">
-                      Recent runs
-                    </h2>
-                    <Link
-                      href="/reports"
-                      className="text-[12.5px] font-bold text-strong hover:text-brand-text"
-                    >
-                      View all
-                    </Link>
-                  </div>
-                  {runs.loading ? (
-                    <div className="space-y-3 p-4">
-                      <Skeleton className="h-10" />
-                      <Skeleton className="h-10" />
-                      <Skeleton className="h-10" />
-                    </div>
-                  ) : (runs.data?.runs.length ?? 0) === 0 ? (
-                    <div className="p-4">
-                      <EmptyState
-                        title="No runs yet"
-                        description="Submit a creative to start your first review."
-                      />
-                    </div>
-                  ) : (
-                    <ul className="divide-y divide-line">
-                      {runs.data!.runs.slice(0, 6).map((r) => (
-                        <li key={r.id}>
-                          <Link
-                            href={`/runs/${r.id}`}
-                            className="flex items-center gap-4 px-4 py-3 transition-colors hover:bg-hover"
-                          >
-                            <span className="min-w-0 flex-1">
-                              <span className="block truncate font-mono text-[12px] font-semibold text-body">
-                                {r.id.slice(0, 8)}
-                              </span>
-                              <span className="mt-0.5 block text-[11.5px] text-subtle">
-                                {timeAgo(r.created_at)} · {r.tier}
-                              </span>
-                            </span>
-                            <RunStatusBadge status={r.status} />
-                            <ArrowRight className="size-4 text-muted" aria-hidden />
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </section>
-
-                {/* recent findings */}
-                <section aria-label="Recent findings" className="card overflow-hidden">
-                  <div className="flex items-center justify-between border-b border-line px-4 py-3">
-                    <h2 className="text-[13px] font-extrabold tracking-wide text-strong uppercase">
-                      Recent open findings
-                    </h2>
-                    <Link
-                      href="/reports?tab=findings"
-                      className="text-[12.5px] font-bold text-strong hover:text-brand-text"
-                    >
-                      Queue
-                    </Link>
-                  </div>
-                  {findings.loading ? (
-                    <div className="space-y-3 p-4">
-                      <Skeleton className="h-12" />
-                      <Skeleton className="h-12" />
-                    </div>
-                  ) : (findings.data?.findings.length ?? 0) === 0 ? (
-                    <div className="p-4">
-                      <EmptyState
-                        title="No open findings"
-                        description="Findings from completed reviews appear here for triage."
-                      />
-                    </div>
-                  ) : (
-                    <ul className="divide-y divide-line">
-                      {findings.data!.findings.slice(0, 6).map((f) => (
-                        <li key={f.id}>
-                          <Link
-                            href={`/runs/${f.run_id}`}
-                            className="block px-4 py-3 transition-colors hover:bg-hover"
-                          >
-                            <div className="flex items-center gap-2">
-                              <SeverityBadge severity={f.severity} />
-                              <span className="truncate text-[11.5px] font-semibold text-subtle">
-                                {frameworkLabel(f.framework)}
-                              </span>
-                            </div>
-                            <p className="mt-1.5 line-clamp-2 text-[13px] leading-snug text-body">
-                              {truncate(f.message, 140)}
-                            </p>
-                          </Link>
-                        </li>
-                      ))}
-                    </ul>
-                  )}
-                </section>
-              </div>
-            )}
-
-            <Disclaimer />
-          </div>
         )}
-      </PageBody>
-    </>
+      </div>
+    </header>
   );
+}
+
+function EmptyState() {
+  return (
+    <div className="py-14 sm:py-20">
+      <h2 className="font-display text-2xl font-extrabold text-strong sm:text-3xl">
+        What are we reviewing?
+      </h2>
+      <p className="mt-2 max-w-lg text-[14.5px] leading-relaxed text-muted">
+        Send the creative and I&apos;ll check it against the regulatory
+        frameworks that apply, quote the evidence for every finding, and cite
+        the rule behind it.
+      </p>
+      <ul className="mt-8 space-y-3.5">
+        {[
+          {
+            icon: FileText,
+            text: "Paste ad copy or HTML straight into the box below.",
+          },
+          {
+            icon: Layers,
+            text: "Or drop an image, PDF, Word document, or video — several images become a carousel.",
+          },
+          {
+            icon: ShieldCheck,
+            text: "I'll ask where it runs and what backs your claims before starting.",
+          },
+        ].map(({ icon: Icon, text }) => (
+          <li key={text} className="flex items-start gap-3">
+            <Icon className="mt-0.5 size-4 shrink-0 text-brand" aria-hidden />
+            <span className="text-[13.5px] leading-relaxed text-muted">
+              {text}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+const KIND_TEXT: Record<string, string> = {
+  text: "Pasted text",
+  html: "Pasted HTML",
+  image: "Image",
+  carousel: "Carousel",
+  pdf: "PDF",
+  docx: "Word document",
+  video: "Video",
+};
+
+function stateName(code: string): string {
+  return US_JURISDICTIONS.find((j) => j.code === code)?.name ?? code;
 }

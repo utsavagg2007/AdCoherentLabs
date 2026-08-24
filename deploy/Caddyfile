@@ -1,0 +1,59 @@
+# Single origin for the whole application — the job firebase.json's `rewrites`
+# block used to do. The browser only ever talks to https://$SITE_DOMAIN, so
+# CORS is not a deployment variable and session cookies stay first-party.
+#
+# SITE_DOMAIN comes from the environment (see docker-compose.prod.yml). Caddy
+# obtains and renews the TLS certificate for it automatically and redirects
+# :80 -> :443; neither needs configuring here.
+
+{$SITE_DOMAIN} {
+	encode zstd gzip
+
+	# --- the API -------------------------------------------------------------
+	# /webhooks/stripe is top-level, NOT under /v1 (backend/app/routes/billing.py
+	# declares its router with no prefix). Leave it out of this matcher and
+	# Stripe's POSTs land on the Next.js app, which answers 404 — Stripe retries
+	# for three days and every checkout silently fails to credit the account.
+	@api path /v1/* /healthz /readyz /webhooks/stripe /docs /redoc
+	handle @api {
+		reverse_proxy api:8080 {
+			# A report run takes minutes on a cold model import, and
+			# submissions are multipart uploads. Caddy imposes no response
+			# deadline by default; these make the ceiling explicit rather
+			# than leaving it to whatever fronts the box.
+			transport http {
+				read_timeout 300s
+				write_timeout 300s
+			}
+		}
+	}
+
+	# /metrics is deliberately NOT proxied. It is reachable on the VM's loopback
+	# for a local scraper; publishing it needs METRICS_BASIC_AUTH set first.
+
+	# --- immutable build output ----------------------------------------------
+	# Content-hashed by `next build`, so it can be cached forever.
+	@next-static path /_next/static/*
+	handle @next-static {
+		header Cache-Control "public, max-age=31536000, immutable"
+		reverse_proxy frontend:3000
+	}
+
+	# --- everything else is the Next.js app ----------------------------------
+	handle {
+		reverse_proxy frontend:3000
+	}
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+	}
+
+	log {
+		output file /data/access.log {
+			roll_size 50MiB
+			roll_keep 5
+		}
+	}
+}

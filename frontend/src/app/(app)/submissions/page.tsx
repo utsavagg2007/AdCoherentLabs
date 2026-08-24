@@ -65,7 +65,7 @@ export default function SubmissionsPage() {
         title="Submissions"
         description="Every creative your team has sent for review."
         actions={
-          <Button href="/submissions/new">
+          <Button href="/dashboard">
             <SquarePlus className="size-4" aria-hidden />
             New review
           </Button>
@@ -86,7 +86,7 @@ export default function SubmissionsPage() {
             title="No submissions yet"
             description="Paste ad copy or upload a creative — the review takes it from there."
             action={
-              <Button href="/submissions/new">
+              <Button href="/dashboard">
                 Start your first review
                 <ArrowRight className="size-4" aria-hidden />
               </Button>

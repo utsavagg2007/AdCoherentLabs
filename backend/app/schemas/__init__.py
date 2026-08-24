@@ -22,6 +22,13 @@ class InlineSubmission(StrictModel):
     content: str = Field(min_length=1, max_length=2_000_000)
     title: str | None = Field(default=None, max_length=300)
     target_jurisdictions: list[str] = Field(default_factory=list, max_length=60)
+    #: What the advertiser says backs the claims in this creative. Collected
+    #: conversationally before the run and handed to Layer 3 as authoritative
+    #: operator direction (engine.orchestrator.review_and_verify's
+    #: `human_guidance`), the same channel a reviewer's resume guidance uses.
+    #: Optional: without it the engine reasons from the creative alone, which
+    #: is what every run did before this field existed.
+    substantiation: str | None = Field(default=None, max_length=20_000)
 
 
 class SubmissionAccepted(StrictModel):

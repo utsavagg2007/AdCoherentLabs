@@ -12,7 +12,7 @@
 #            loop and it is why the image historically carried no source.
 #
 #   runtime  self-contained: the source is COPYed in. Required for ANY deploy —
-#            Cloud Run, a VPS, or a plain `docker run` on a co-developer's
+#            the production VM or a plain `docker run` on a co-developer's
 #            machine — because none of those have the bind mount. Without this
 #            target the image starts and then dies on `ModuleNotFoundError:
 #            engine`, since PYTHONPATH points at an empty /repo.

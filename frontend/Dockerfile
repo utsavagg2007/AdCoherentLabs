@@ -6,9 +6,9 @@
 #
 # THE THING THAT CATCHES PEOPLE OUT: every NEXT_PUBLIC_* value is inlined into
 # the client JavaScript by `next build`. They are BUILD-time inputs, not
-# run-time ones. Passing them with `docker run -e` or a Cloud Run env var does
-# nothing — the strings are already baked into the bundle. That is why they are
-# ARGs here, and why changing the API URL means a rebuild, not a restart.
+# run-time ones. Passing them with `docker run -e` or a compose `environment:`
+# entry does nothing — they are already baked into the bundle. That is why they
+# are ARGs here, and why changing the API URL means a rebuild, not a restart.
 #
 # Corollary: only ever pass PUBLIC values as build args. They end up readable by
 # every visitor AND recorded in the image's layer history. The anon key is
@@ -36,9 +36,19 @@ COPY . .
 ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
 ARG NEXT_PUBLIC_API_URL
+# Social sign-in. SITE_URL is the origin Supabase returns the browser to after
+# a provider approves; left unset it falls back to window.location.origin,
+# which is wrong behind a proxy. AUTH_PROVIDERS trims the buttons to what is
+# actually enabled in Supabase. Both are PUBLIC — the provider client secrets
+# live in the Supabase dashboard and must never reach a build arg, which is
+# recorded in the image's layer history.
+ARG NEXT_PUBLIC_SITE_URL
+ARG NEXT_PUBLIC_AUTH_PROVIDERS
 ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL \
     NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY \
     NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
+    NEXT_PUBLIC_SITE_URL=$NEXT_PUBLIC_SITE_URL \
+    NEXT_PUBLIC_AUTH_PROVIDERS=$NEXT_PUBLIC_AUTH_PROVIDERS \
     NEXT_TELEMETRY_DISABLED=1
 
 RUN npm run build
@@ -71,7 +81,7 @@ EXPOSE 3000
 
 # server.js honours PORT and HOSTNAME. HOSTNAME=0.0.0.0 is required: the
 # default binds localhost inside the container's own namespace, so Docker port
-# publishing and Cloud Run health checks both see a dead port.
+# publishing and the reverse proxy's health checks both see a dead port.
 ENV PORT=3000 \
     HOSTNAME=0.0.0.0
 CMD ["node", "server.js"]

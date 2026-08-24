@@ -13,7 +13,7 @@
 .idea
 
 # --- SECRETS: never bake env into an image ----------------------------------
-# Cloud Run and compose both inject these at run time. The templates are
+# Compose injects these at run time on every host. The templates are
 # excluded too — the image has no use for them.
 .env
 .env.*

@@ -10,9 +10,10 @@
 # the engine's RAG layer needs (host loopback is wrong inside a container).
 #
 # APP_IN_CONTAINER=1 means "I am on the local compose network, next to the
-# redis and clamav SIDECARS" — not merely "I am in a container". Cloud Run runs
-# this same image and must NOT set it: there is no `redis` or `clamav` host to
-# resolve there, and rewriting the URLs to those names would break both.
+# redis and clamav SIDECARS" — not merely "I am in a container". A host that
+# runs this same image WITHOUT those sidecars must NOT set it: there is no
+# `redis` or `clamav` name to resolve, and rewriting the URLs to those names
+# would break both.
 set -e
 cd /repo/backend
 
@@ -36,9 +37,9 @@ if [ "${SUPABASE_MODE:-local}" = "cloud" ]; then
   # The engine's RAG store reads DATABASE_URL specifically, while the backend
   # reads DATABASE_URL_API/_WORKER. If the env set only SUPABASE_DB_URL the RAG
   # layer would get "" and retrieval would come back EMPTY rather than erroring
-  # — a silent quality failure, not a crash. Align it for host, compose and
-  # Cloud Run alike (this used to live in the APP_IN_CONTAINER block, where
-  # Cloud Run never reached it).
+  # — a silent quality failure, not a crash. Align it for host and compose
+  # alike (this used to live in the APP_IN_CONTAINER block, which any run
+  # without the sidecars never reaches).
   export DATABASE_URL="${DATABASE_URL:-$SUPABASE_DB_URL}"
 fi
 
@@ -77,16 +78,15 @@ fi
 
 case "$1" in
   api)
-    # $PORT wins: Cloud Run (and most PaaS) ASSIGNS the port and routes traffic
-    # only there — a container that binds anything else fails its start probe
-    # with "the user-provided container failed to listen on $PORT". API_PORT
-    # stays as the compose/host default.
+    # $PORT wins where the platform ASSIGNS a port and routes traffic only
+    # there — a container that binds anything else fails its start probe with
+    # "the user-provided container failed to listen on $PORT". API_PORT stays
+    # as the compose/host default, which is what the VM deploy uses.
     #
-    # Workers: 2 suits a compose box. On Cloud Run, horizontal scaling is the
-    # platform's job and each instance is often 1 vCPU, where a second worker
-    # just doubles the memory for the model imports — set UVICORN_WORKERS=1
-    # there. It is an env var rather than a hardcode so the same image serves
-    # both without a rebuild.
+    # Workers: 2 suits a compose box. On a 1-vCPU host a second worker just
+    # doubles the memory for the model imports — set UVICORN_WORKERS=1 there.
+    # It is an env var rather than a hardcode so the same image serves both
+    # without a rebuild.
     exec uvicorn app.main:app --host 0.0.0.0 \
          --port "${PORT:-${API_PORT:-8080}}" \
          --workers "${UVICORN_WORKERS:-2}"

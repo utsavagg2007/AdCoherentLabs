@@ -13,16 +13,14 @@ import {
   CircleDollarSign,
   ExternalLink,
   Package,
-  ReceiptText,
   Sparkles,
 } from "lucide-react";
 import { PageBody, PageHeader } from "@/components/app/page-header";
-import { CREDITS_REFRESH_EVENT } from "@/components/app/sidebar";
 import { useApi, useOrg } from "@/components/providers";
 import { Button } from "@/components/ui/button";
 import { EmptyState, ErrorPanel, Skeleton } from "@/components/ui/feedback";
 import { CreditsArt } from "@/components/app/empty-art";
-import { CreditMeter, MeteringExplainer } from "@/components/app/credits";
+import { CreditMeter } from "@/components/app/credits";
 import { useToast } from "@/components/ui/toast";
 import { describeError, isApiError } from "@/lib/api";
 import { useAsyncData } from "@/lib/hooks";
@@ -73,7 +71,6 @@ function BillingContent() {
   const isAdmin = role === "admin" || role === "owner";
   const tier = orgMe.data?.tier;
   const packsAllowed = Boolean(orgMe.data?.entitlements.credit_packs_allowed);
-  const priceList = credits.data?.price_list;
 
   // checkout return (Stripe or the dev simulator) — toast + refresh once
   useEffect(() => {
@@ -102,7 +99,6 @@ function BillingContent() {
     orgMe.refresh({ silent: true });
     credits.refresh({ silent: true });
     ledger.refresh({ silent: true });
-    window.dispatchEvent(new Event(CREDITS_REFRESH_EVENT));
     router.replace("/billing", { scroll: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
@@ -308,59 +304,12 @@ function BillingContent() {
                 )}
               </div>
 
-              {/* price list */}
-              <div className="card p-5">
-                <p className="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-subtle uppercase">
-                  <ReceiptText className="size-3.5" aria-hidden />
-                  Cost per review
-                </p>
-                {credits.loading ? (
-                  <Skeleton className="mt-2 h-24" />
-                ) : (
-                  <>
-                    <dl className="mt-3 space-y-1.5 text-[13px] tabular-nums">
-                      {(
-                        [
-                          ["Text", priceList?.text],
-                          ["Image", priceList?.image],
-                          ["PDF", priceList?.pdf],
-                          ["Document", priceList?.docx],
-                          ["Video", priceList?.video],
-                          ["Extra carousel card", priceList?.carousel_card],
-                        ] as const
-                      )
-                        .filter(([, v]) => v != null)
-                        .map(([label, value]) => (
-                          <div
-                            key={label}
-                            className="flex items-center justify-between rounded-lg bg-hover px-3 py-1.5"
-                          >
-                            <dt className="font-semibold text-muted">{label}</dt>
-                            <dd className="font-extrabold text-strong">
-                              {value} cr
-                            </dd>
-                          </div>
-                        ))}
-                    </dl>
-                    <p className="mt-3 text-[11.5px] leading-relaxed text-subtle">
-                      This is the <strong className="font-bold text-body">floor</strong>,
-                      not the whole price. Credits are reserved when a run
-                      starts, metered as the engine works, and the unused
-                      remainder is returned when it finishes.
-                    </p>
-                  </>
-                )}
-              </div>
+              {/* Per-review cost is deliberately not shown. The engine meters
+                  every run against its escrow server-side; surfacing a price
+                  per creative turned the review console into a checkout. The
+                  live figures remain on GET /v1/plans and GET /v1/credits for
+                  API clients and for finance. */}
             </div>
-
-            {/* The pricing model in full. Reading live rates means this can
-                never contradict what the engine actually charged. */}
-            {credits.data && (
-              <MeteringExplainer
-                rates={credits.data.effort_rates}
-                floorExample={priceList?.image ?? priceList?.text ?? undefined}
-              />
-            )}
 
             {/* credit packs */}
             <section aria-label="Credit packs">

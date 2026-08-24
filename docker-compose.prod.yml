@@ -1,0 +1,83 @@
+# Production overlay — single Linux VM, one `docker compose` invocation.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+#
+# This file replaces what Firebase Hosting + Cloud Run used to do. Caddy is the
+# CDN, the TLS terminator and the single origin; the app containers are the same
+# images that run locally. See DEPLOY.md for the full walkthrough.
+#
+# It is an OVERLAY, not a copy: every service definition still comes from
+# docker-compose.yml and backend/docker-compose.backend.yml, so the two paths
+# cannot drift. Only the three things that genuinely differ in production are
+# restated here.
+
+services:
+  # ---------------------------------------------------------------------------
+  # 1. The backend services build the `runtime` target, not `dev`.
+  #
+  # The dev definition builds `target: dev` (dependencies only) and bind-mounts
+  # `..:/repo:ro` for a no-rebuild edit loop. On a server there is no working
+  # tree to mount: the source has to be COPYed into the image. `!override` on
+  # the volume list is load-bearing — Compose MERGES list entries by default, so
+  # without it the read-only /repo mount survives the overlay and shadows the
+  # source that was just baked in, and every container dies on
+  # `ModuleNotFoundError: engine`.
+  # ---------------------------------------------------------------------------
+  api:
+    image: adcoherent-backend:runtime
+    build:
+      target: runtime
+    volumes: !override []
+
+  worker:
+    image: adcoherent-backend:runtime
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: runtime
+    volumes: !override
+      # OCR models are ~200 MB and download on first use. Without this volume
+      # every container replacement re-downloads them mid-job.
+      - paddlex-models:/root/.paddlex
+
+  scheduler:
+    image: adcoherent-backend:runtime
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+      target: runtime
+    volumes: !override []
+
+  # ---------------------------------------------------------------------------
+  # 2. Caddy — the only process on this box that listens publicly.
+  #
+  # Every other service stays bound to 127.0.0.1 (see the port comments in
+  # docker-compose.yml); Caddy reaches them over the `backend` network by
+  # service name. It fetches and renews Let's Encrypt certificates on its own,
+  # which is the whole reason it is here rather than nginx.
+  # ---------------------------------------------------------------------------
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"       # required: ACME HTTP-01 challenge + the HTTPS redirect
+      - "443:443"
+      - "443:443/udp" # HTTP/3
+    environment:
+      # Read by deploy/Caddyfile. Set it in .env — a bare domain, no scheme:
+      #   SITE_DOMAIN=app.example.com
+      SITE_DOMAIN: ${SITE_DOMAIN:?set SITE_DOMAIN in .env - the public hostname, no scheme}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data      # certificates and ACME account keys - MUST persist
+      - caddy-config:/config
+    networks: [backend]
+    depends_on:
+      api:
+        condition: service_started
+      frontend:
+        condition: service_started
+    restart: unless-stopped
+
+volumes:
+  caddy-data:
+  caddy-config:

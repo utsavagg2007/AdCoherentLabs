@@ -32,11 +32,14 @@ router = APIRouter(prefix="/v1/runs", tags=["runs"])
 
 async def _own_run(run_id: str, org_id: str) -> dict:
     row = await db.fetch_one(
+        # operator_guidance is the org's own text — the substantiation given at
+        # intake, or a reviewer's resume guidance. Returned so a client can
+        # rebuild the review conversation after a reload instead of losing it.
         "select id::text, submission_id::text, status, tier, model_id, "
         "       prompt_version, rulepack_version, rag_corpus_hash, "
         "       input_tokens, output_tokens, engine_run_id, "
-        "       resumed_from_run_id::text, error, created_at, started_at, "
-        "       finished_at "
+        "       resumed_from_run_id::text, operator_guidance, error, "
+        "       created_at, started_at, finished_at "
         "from public.analysis_runs where id = %s and org_id = %s",
         (run_id, org_id))
     if row is None:

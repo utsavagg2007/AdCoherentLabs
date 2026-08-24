@@ -223,6 +223,12 @@ export interface RunDetail extends RunRow {
   rag_corpus_hash: string | null;
   input_tokens: number | null;
   output_tokens: number | null;
+  /**
+   * The org's own text: substantiation given at intake, or a reviewer's
+   * guidance on a resume. Returned so the review conversation can be rebuilt
+   * after a reload rather than lost.
+   */
+  operator_guidance: string | null;
   error: string | null;
 }
 

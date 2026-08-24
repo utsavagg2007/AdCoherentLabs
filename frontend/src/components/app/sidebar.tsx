@@ -2,7 +2,6 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
 import {
   Check,
   ChevronsUpDown,
@@ -10,11 +9,10 @@ import {
   CreditCard,
   FolderOpen,
   KeyRound,
-  LayoutDashboard,
   LogOut,
+  MessagesSquare,
   Settings2,
   Sparkles,
-  SquarePlus,
 } from "lucide-react";
 import {
   Dropdown,
@@ -24,18 +22,17 @@ import {
   DropdownSeparator,
   DropdownTrigger,
 } from "@/components/ui/dropdown";
-import { useApi, useAuth, useOrg } from "@/components/providers";
-import { CreditMeter } from "@/components/app/credits";
+import { useAuth, useOrg } from "@/components/providers";
 import { ThemeSwitch } from "@/components/theme";
-import type { CreditBalance } from "@/lib/types";
-import { cn, formatNumber } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 
+// "New review" is gone as a separate destination: /dashboard IS the review
+// console now, and /submissions/new redirects into it.
 const NAV = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/submissions/new", label: "New review", icon: SquarePlus },
+  { href: "/dashboard", label: "Review console", icon: MessagesSquare },
   { href: "/submissions", label: "Submissions", icon: FolderOpen },
   { href: "/reports", label: "Reports", icon: ClipboardList },
-  { href: "/billing", label: "Billing & credits", icon: CreditCard },
+  { href: "/billing", label: "Plan & billing", icon: CreditCard },
   { href: "/settings", label: "Settings", icon: Settings2 },
   { href: "/settings/api-keys", label: "API keys", icon: KeyRound, nested: true },
 ];
@@ -138,67 +135,6 @@ export function OrgSwitcher() {
   );
 }
 
-export const CREDITS_REFRESH_EVENT = "adcoherent:credits-refresh";
-
-export function CreditsWidget() {
-  const api = useApi();
-  const { orgId } = useOrg();
-  const [credits, setCredits] = useState<CreditBalance | null>(null);
-
-  useEffect(() => {
-    if (!orgId) return;
-    let cancelled = false;
-    const load = () =>
-      api
-        .credits()
-        .then((c) => {
-          if (!cancelled) setCredits(c);
-        })
-        .catch(() => {
-          /* the pages surface credit errors properly */
-        });
-    load();
-    window.addEventListener(CREDITS_REFRESH_EVENT, load);
-    return () => {
-      cancelled = true;
-      window.removeEventListener(CREDITS_REFRESH_EVENT, load);
-    };
-  }, [api, orgId]);
-
-  const held = credits?.held ?? 0;
-
-  return (
-    <Link
-      href="/billing"
-      className="card-brand block p-3 transition-colors hover:border-brand-ring"
-    >
-      <div className="flex items-center justify-between">
-        <p className="text-[11px] font-bold tracking-wider text-subtle uppercase">
-          Credits
-        </p>
-        {credits && (
-          <span className="rounded-md bg-brand-soft px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-brand-text uppercase">
-            {credits.tier}
-          </span>
-        )}
-      </div>
-      <p className="mt-1 text-xl font-extrabold text-strong tabular-nums">
-        {credits ? formatNumber(credits.total) : "—"}
-      </p>
-      {credits && <CreditMeter credits={credits} className="mt-2.5" />}
-      {/* A balance that drops mid-run is the single most alarming thing this
-          widget can show. Naming the escrow inline is what stops it reading
-          as money disappearing. */}
-      {held > 0 && (
-        <p className="mt-2 text-[11px] leading-relaxed text-subtle">
-          {formatNumber(held)} reserved by a review in flight — the unused part
-          returns when it finishes.
-        </p>
-      )}
-    </Link>
-  );
-}
-
 export function UserMenu() {
   const { session, signOut } = useAuth();
   const email = session?.user.email ?? "Account";
@@ -244,7 +180,6 @@ export function SidebarBody({ onNavigate }: { onNavigate?: () => void }) {
         <NavLinks onNavigate={onNavigate} />
       </div>
       <div className="space-y-3 px-1 pt-3">
-        <CreditsWidget />
         <div className="rounded-xl border border-line bg-tint p-3">
           <p className="flex items-center gap-1.5 text-[11px] font-bold text-body">
             <Sparkles className="size-3.5 text-accent-text" aria-hidden />

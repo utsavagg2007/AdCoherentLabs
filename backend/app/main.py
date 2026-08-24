@@ -22,6 +22,7 @@ from .config import settings
 from .errors import install_error_handlers
 from .logging_setup import setup_logging
 from .middleware.body_limit import BodyLimitMiddleware
+from .middleware.internal_errors import InternalErrorMiddleware
 from .middleware.ratelimit_ip import IpRateLimitMiddleware
 from .middleware.request_id import RequestIdMiddleware
 from .middleware.security_headers import SecurityHeadersMiddleware
@@ -60,8 +61,15 @@ def create_app() -> FastAPI:
 
     # Starlette middleware is LIFO: added last = outermost. §6.1 order,
     # outermost first: request_id → security headers → body cap → CORS →
-    # ip rate limit → (auth/org/limits as route dependencies) → handlers.
+    # internal-error catch → ip rate limit → (auth/org/limits as route
+    # dependencies) → handlers.
     app.add_middleware(IpRateLimitMiddleware)
+    # MUST stay directly inside CORS. FastAPI's `@app.exception_handler(
+    # Exception)` runs in ServerErrorMiddleware, which wraps the whole stack,
+    # so its 500 never gets Access-Control-Allow-Origin — the browser then
+    # cannot read the response at all and reports a network failure instead of
+    # the status. Catching here puts the 500 back inside CORS.
+    app.add_middleware(InternalErrorMiddleware)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins,       # exact origins, no wildcard

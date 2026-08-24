@@ -33,8 +33,9 @@ router = APIRouter(prefix="/v1/submissions", tags=["submissions"])
 _MAX_CARDS = 10
 
 
-async def _parse_input(request: Request, ctx: AuthContext) -> tuple[list[uploads.ProcessedUpload], str, int, str | None, list[str]]:
-    """→ (processed uploads, pricing_kind, cards, title, jurisdictions)."""
+async def _parse_input(request: Request, ctx: AuthContext) -> tuple[list[uploads.ProcessedUpload], str, int, str | None, list[str], str | None]:
+    """→ (processed uploads, pricing_kind, cards, title, jurisdictions,
+    substantiation)."""
     content_type = (request.headers.get("content-type") or "").lower()
     max_mb = int(ctx.entitlements.get("max_upload_mb") or 10)
 
@@ -45,7 +46,8 @@ async def _parse_input(request: Request, ctx: AuthContext) -> tuple[list[uploads
         except ApiError as exc:
             metrics.UPLOAD_REJECTS.labels(reason=exc.code).inc()
             raise
-        return [processed], body.kind, 1, body.title, body.target_jurisdictions
+        return ([processed], body.kind, 1, body.title,
+                body.target_jurisdictions, body.substantiation)
 
     if content_type.startswith("multipart/form-data"):
         form = await request.form()
@@ -57,6 +59,11 @@ async def _parse_input(request: Request, ctx: AuthContext) -> tuple[list[uploads
         title = str(form.get("title") or "") or None
         juris_raw = str(form.get("target_jurisdictions") or "")
         jurisdictions = [j.strip() for j in juris_raw.split(",") if j.strip()]
+        substantiation = (str(form.get("substantiation") or "").strip()
+                          or None)
+        if substantiation and len(substantiation) > 20_000:
+            raise ApiError(422, "bad_request",
+                           "substantiation is capped at 20,000 characters.")
         allowed_kinds = list(ctx.entitlements.get("allowed_kinds")
                              or ["text", "html", "image"])
         max_video_s = ctx.entitlements.get("max_video_seconds")
@@ -79,7 +86,8 @@ async def _parse_input(request: Request, ctx: AuthContext) -> tuple[list[uploads
         if kind != "image" and len(processed) > 1:
             raise ApiError(422, "bad_asset", "Only image carousels may have multiple files.")
         pricing_kind = "carousel" if (kind == "image" and len(processed) > 1) else kind
-        return processed, pricing_kind, len(processed), title, jurisdictions
+        return (processed, pricing_kind, len(processed), title, jurisdictions,
+                substantiation)
 
     raise ApiError(415, "unsupported_media_type",
                    "Send multipart/form-data or application/json.")
@@ -88,12 +96,16 @@ async def _parse_input(request: Request, ctx: AuthContext) -> tuple[list[uploads
 @router.post("", status_code=202)
 async def create_submission(request: Request,
                             ctx: AuthContext = Depends(submit_gate)):
-    processed, pricing_kind, cards, title, jurisdictions = await _parse_input(request, ctx)
+    (processed, pricing_kind, cards, title, jurisdictions,
+     substantiation) = await _parse_input(request, ctx)
 
     idem_key = request.headers.get("Idempotency-Key")
+    # substantiation is part of the payload: changing the answer changes the
+    # run, so an identical Idempotency-Key must NOT replay the old result.
     fingerprint = idempotency.request_fingerprint({
         "org": ctx.org_id, "kind": pricing_kind, "title": title,
         "jurisdictions": jurisdictions,
+        "substantiation": substantiation,
         "checksums": [p.checksum for p in processed]})
     if idem_key:
         replay = await idempotency.lookup(ctx.org_id, "submissions", idem_key, fingerprint)
@@ -116,14 +128,19 @@ async def create_submission(request: Request,
     try:
         async with db.transaction() as conn:
             await credits.ensure_cycle_grant_tx(conn, ctx.org_id)
-            # floor = the published base price (ingest/CV/storage — the fixed
-            # cost of accepting a creative). forecast = expected metered effort
-            # on top. Both are escrowed; whatever the run does not use comes
-            # back at settle.
-            floor = await credits.cost_tx(conn, ctx.org_id, pricing_kind, cards)
+            # 0013: the charge IS the engine's token spend (2 credits per 1k,
+            # every tier). There is no base-price component any more, so the
+            # escrow floor is 0 and the whole reserve is the forecast. Whatever
+            # the run does not meter comes back at settle.
+            #
+            # floor=0 is what makes settle_hold's greatest(floor, ceil(metered))
+            # reduce to ceil(metered). credit_costs still exists and still backs
+            # the PUBLISHED price list on GET /v1/plans — it just no longer
+            # charges.
+            floor = 0
             forecast = await credits.forecast_tx(conn, ctx.org_id,
                                                  pricing_kind, cards)
-            cost = floor + forecast
+            cost = forecast
 
             await conn.execute(
                 "insert into public.submissions "
@@ -140,12 +157,17 @@ async def create_submission(request: Request,
                     "  storage_path, checksum, scan_status) "
                     "values (%s, %s, %s, %s, %s, 'clean')",
                     (submission_id, ctx.org_id, p.kind, path, p.checksum))
+            # operator_guidance carries the substantiation the user gave when
+            # asked what backs their claims. resumed_from_run_id stays null, so
+            # the worker still takes the FRESH path (executor._execute_fresh)
+            # and passes this to review_and_verify as human_guidance.
             await conn.execute(
                 "insert into public.analysis_runs "
-                "  (id, submission_id, org_id, status, tier, model_id) "
-                "values (%s, %s, %s, 'queued', %s, %s)",
+                "  (id, submission_id, org_id, status, tier, model_id, "
+                "   operator_guidance) "
+                "values (%s, %s, %s, 'queued', %s, %s, %s)",
                 (run_id, submission_id, ctx.org_id, ctx.tier,
-                 ctx.entitlements.get("llm_model")))
+                 ctx.entitlements.get("llm_model"), substantiation))
 
             decision = await credits.reserve_tx(conn, ctx.org_id, run_id,
                                                 floor, forecast)
@@ -166,12 +188,13 @@ async def create_submission(request: Request,
                                  "balance": decision.get("balance"),
                                  "floor": floor, "forecast": forecast,
                                  "tier": ctx.tier, "via": ctx.principal})))
+                # User-visible, and deliberately carries no credit figures: the
+                # product does not show cost. The numbers stay in `details` for
+                # API clients and in the audit event above.
                 body = {"error": {"code": "insufficient_credits",
-                                  "message": f"This run reserves {decision.get('needed')} "
-                                             f"credits ({floor} base + {forecast} for "
-                                             f"expected model usage); balance is "
-                                             f"{decision.get('balance')}. Unused credits "
-                                             f"are returned when the run finishes.",
+                                  "message": "Not enough review capacity left on this "
+                                             "plan to start another review. Upgrade "
+                                             "the plan or add a pack to continue.",
                                   "request_id": request.state.request_id,
                                   "details": {"needed": decision.get("needed"),
                                               "balance": decision.get("balance"),
@@ -187,11 +210,10 @@ async def create_submission(request: Request,
                 "insert into public.run_events "
                 "  (run_id, org_id, stage, event, message, detail) "
                 "values (%s, %s, 'queued', 'run.queued', %s, %s::jsonb)",
+                # Renders in the run's activity feed, which no longer surfaces
+                # cost at all. `detail` below keeps the numbers for operators.
                 (run_id, ctx.org_id,
-                 f"Run accepted — {decision['reserved']} credits reserved "
-                 f"({floor} base + {forecast} for model usage). You are "
-                 "charged for what the review actually uses; the rest comes "
-                 "back when it finishes.",
+                 "Review accepted — starting the four-layer analysis.",
                  json.dumps({"credits_reserved": decision["reserved"],
                              "floor": floor, "forecast": forecast,
                              "kind": pricing_kind, "cards": cards})))
